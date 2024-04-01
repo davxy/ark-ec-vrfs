@@ -1,0 +1,30 @@
+[package]
+name = "ark-ecvrf"
+version = "0.1.0"
+edition = "2021"
+authors = [ "Davide Galassi" ]
+description = "EC VRF as specified by RFC-9381"
+repository = "https://github.com/davxy/ark-ecvrf"
+
+[dependencies]
+ark-ec = { version = "0.4.2", default-features = false }
+ark-ff = { version = "0.4.2", default-features = false }
+ark-std = { version = "0.4.0", default-features = false }
+ark-serialize = { version = "0.4.2", default-features = false }
+sha2 = { version = "0.10.8", default-features = false }
+rand_core = { version = "0.6.4", default-features = false, optional = true }
+
+[dev-dependencies]
+ark-ed25519 = "0.4.0"
+
+[features]
+default = ["std"]
+std = [
+  "getrandom",
+  "ark-std/std",
+  "ark-ec/std",
+  "rand_core/std",
+]
+getrandom = [
+  "rand_core"
+]
