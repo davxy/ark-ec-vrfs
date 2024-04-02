@@ -10,38 +10,61 @@ use ark_ff::PrimeField;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Valid};
 use ark_std::{vec, vec::Vec};
 
-// In typical case us qLen / 2
-const CLEN: usize = 16;
-const DOM_SEP_START: u8 = 0x02;
-const DOM_SEP_END: u8 = 0x00;
+use core::ops::{Index, RangeFrom, RangeFull, RangeTo};
+
+pub type ScalarField<S> = <<S as Suite>::Affine as AffineRepr>::ScalarField;
+pub type AffinePoint<S> = <S as Suite>::Affine;
 
 pub trait Suite: Copy + Clone {
-    /// see RFC9381 Section 7.10
+    /// See RFC9381 Section 7.10
     const SUITE_ID: u8;
+    /// Must be at least equal to the Hash length.
+    /// In typical case us qLen / 2.
+    const CHALLENGE_LEN: usize;
 
     type Affine: AffineRepr;
 
-    fn nonce(sk: &ScalarField<Self>, pt: Input<Self>) -> ScalarField<Self>;
+    type Hash: Index<usize, Output = u8>
+        + Index<RangeTo<usize>, Output = [u8]>
+        + Index<RangeFrom<usize>, Output = [u8]>
+        + Index<RangeFull, Output = [u8]>;
+
+    /// Hasher
+    fn hash(data: &[u8]) -> Self::Hash;
+
+    /// ECVRF nonce generation
+    ///
+    /// As described by section 5.1.6 of [RFC8032](https://tools.ietf.org/html/rfc8032).
+    ///
+    /// `Hash` MUST be be at least 64 bytes (e.g. sha512).
+    /// Panics if `Hash` is less than 32 bytes.
+    fn nonce(sk: &ScalarField<Self>, pt: Input<Self>) -> ScalarField<Self> {
+        let mut buf = Vec::new();
+        sk.serialize_compressed(&mut buf).unwrap();
+        let sk_hash = &Self::hash(&buf)[32..];
+        buf.clear();
+        pt.0.serialize_compressed(&mut buf).unwrap();
+        let v = [sk_hash, &buf[..]].concat();
+        let h = &Self::hash(&v)[..];
+        ScalarField::<Self>::from_le_bytes_mod_order(h)
+    }
 
     /// ECVRF challenge generation
     ///
     /// Hashes several points on the curve.
     fn challenge(pts: &[&AffinePoint<Self>], ad: &[u8]) -> ScalarField<Self> {
+        const DOM_SEP_START: u8 = 0x02;
+        const DOM_SEP_END: u8 = 0x00;
         let mut buf = vec![Self::SUITE_ID, DOM_SEP_START];
         pts.into_iter().for_each(|p| {
             p.serialize_compressed(&mut buf).unwrap();
         });
         buf.extend_from_slice(ad);
         buf.push(DOM_SEP_END);
-        let hash = &Self::hash(&buf)[..CLEN];
+        let hash = &Self::hash(&buf)[..Self::CHALLENGE_LEN];
         ScalarField::<Self>::from_be_bytes_mod_order(hash)
     }
-
-    fn hash(data: &[u8]) -> Vec<u8>;
 }
-
-pub type ScalarField<S> = <<S as Suite>::Affine as AffineRepr>::ScalarField;
-pub type AffinePoint<S> = <S as Suite>::Affine;
 
 pub(crate) mod utils {
     // Hasher
@@ -68,25 +91,13 @@ pub mod suites {
 
         impl Suite for Ed25519Sha512 {
             const SUITE_ID: u8 = 0x04;
+            const CHALLENGE_LEN: usize = 16;
 
             type Affine = ark_ed25519::EdwardsAffine;
+            type Hash = [u8; 64];
 
-            /// ECVRF nonce generation
-            ///
-            /// Section 5.1.6 of [RFC8032](https://tools.ietf.org/html/rfc8032).
-            fn nonce(sk: &ScalarField<Self>, pt: Input<Self>) -> ScalarField<Self> {
-                let mut buf = Vec::new();
-                sk.serialize_compressed(&mut buf).unwrap();
-                let sk_hash = &Self::hash(&buf)[32..];
-                buf.clear();
-                pt.0.serialize_compressed(&mut buf).unwrap();
-                let v = [sk_hash, &buf[..]].concat();
-                let h = Self::hash(&v);
-                ScalarField::<Self>::from_le_bytes_mod_order(&h)
-            }
-
-            fn hash(data: &[u8]) -> Vec<u8> {
-                utils::sha512(data).to_vec()
+            fn hash(data: &[u8]) -> Self::Hash {
+                utils::sha512(data)
             }
         }
     }
@@ -144,7 +155,7 @@ impl<S: Suite> Secret<S> {
 
     pub fn from_seed(seed: [u8; 32]) -> Self {
         let bytes = S::hash(&seed);
-        let scalar = <ScalarField<S> as PrimeField>::from_le_bytes_mod_order(&bytes);
+        let scalar = <ScalarField<S> as PrimeField>::from_le_bytes_mod_order(&bytes[..]);
         Self::from_scalar(scalar)
     }
 
@@ -233,24 +244,23 @@ mod tests {
     struct TestSuite;
     impl Suite for TestSuite {
         const SUITE_ID: u8 = 0xFF;
+        const CHALLENGE_LEN: usize = 16;
         type Affine = ark_ed25519::EdwardsAffine;
+        type Hash = [u8; 64];
 
-        fn nonce(_sk: &ScalarField<Self>, _pt: Input<Self>) -> ScalarField<Self> {
-            let mut rng = ark_std::test_rng();
-            <ScalarField<Self>>::rand(&mut rng)
-        }
-
-        fn hash(data: &[u8]) -> Vec<u8> {
-            utils::sha512(data).to_vec()
+        fn hash(data: &[u8]) -> Self::Hash {
+            utils::sha512(data)
         }
     }
     type Secret = super::Secret<TestSuite>;
     type Public = super::Public<TestSuite>;
 
-    fn make_dummy_point(s: u32) -> AffinePoint<TestSuite> {
+    fn rand_point() -> AffinePoint<TestSuite> {
         // TODO: use test_rng
-        let s = ScalarField::<TestSuite>::from_be_bytes_mod_order(&s.to_be_bytes()[..]);
-        (AffinePoint::<TestSuite>::generator() * s).into_affine()
+        // let s = ScalarField::<TestSuite>::from_be_bytes_mod_order(&s.to_be_bytes()[..]);
+        // (AffinePoint::<TestSuite>::generator() * s).into_affine()
+        let mut rng = ark_std::test_rng();
+        AffinePoint::<TestSuite>::rand(&mut rng)
     }
 
     #[test]
@@ -273,7 +283,7 @@ mod tests {
     fn sign_verify_works() {
         let secret = Secret::from_seed(TEST_SEED);
         let public = secret.public();
-        let input = Input(make_dummy_point(123));
+        let input = Input(rand_point());
 
         let signature = secret.sign(input, b"foo");
         assert_eq!(signature.gamma, secret.output(input));
