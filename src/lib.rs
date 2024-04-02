@@ -12,6 +12,9 @@ use ark_std::{vec, vec::Vec};
 
 use core::ops::{Index, RangeFrom, RangeFull, RangeTo};
 
+pub mod suites;
+mod utils;
+
 pub type ScalarField<S> = <<S as Suite>::Affine as AffineRepr>::ScalarField;
 pub type AffinePoint<S> = <S as Suite>::Affine;
 
@@ -63,43 +66,6 @@ pub trait Suite: Copy + Clone {
         buf.push(DOM_SEP_END);
         let hash = &Self::hash(&buf)[..Self::CHALLENGE_LEN];
         ScalarField::<Self>::from_be_bytes_mod_order(hash)
-    }
-}
-
-pub(crate) mod utils {
-    // Hasher
-    #[inline(always)]
-    pub fn sha512(input: &[u8]) -> [u8; 64] {
-        use sha2::{Digest, Sha512};
-        let mut hasher = Sha512::new();
-        hasher.update(input);
-        let result = hasher.finalize();
-        let mut h = [0u8; 64];
-        h.copy_from_slice(&result);
-        h
-    }
-}
-
-pub mod suites {
-    pub mod ed25519 {
-        use crate::Suite;
-        use crate::*;
-
-        /// ECVRF-EDWARDS25519-SHA512-TAI
-        #[derive(Copy, Clone)]
-        struct Ed25519Sha512;
-
-        impl Suite for Ed25519Sha512 {
-            const SUITE_ID: u8 = 0x04;
-            const CHALLENGE_LEN: usize = 16;
-
-            type Affine = ark_ed25519::EdwardsAffine;
-            type Hash = [u8; 64];
-
-            fn hash(data: &[u8]) -> Self::Hash {
-                utils::sha512(data)
-            }
-        }
     }
 }
 
@@ -218,6 +184,12 @@ impl<S: Suite> Public<S> {
 /// VRF input point.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Input<S: Suite>(pub S::Affine);
+
+impl<S: Suite> Input<S> {
+    pub fn from(value: <S as Suite>::Affine) -> Self {
+        Input(value)
+    }
+}
 
 /// VRF output point.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
