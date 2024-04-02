@@ -45,6 +45,10 @@ pub(crate) fn blake2(input: &[u8]) -> [u8; 64] {
 /// for any elliptic curve.
 ///
 /// To use this algorithm, hash length MUST be at least equal to the field length.
+///
+/// The running time of this algorithm depends on input string. For the
+/// ciphersuites specified in Section 5.5, this algorithm is expected to
+/// find a valid curve point after approximately two attempts on average.
 pub fn hash_to_curve_tai<S: Suite>(data: &[u8]) -> Option<AffinePoint<S>> {
     use ark_ec::AffineRepr;
     use ark_ff::Field;
@@ -67,7 +71,10 @@ pub fn hash_to_curve_tai<S: Suite>(data: &[u8]) -> Option<AffinePoint<S>> {
             return None;
         }
         if let Ok(pt) = AffinePoint::<S>::deserialize_compressed_unchecked(&hash[..]) {
-            return Some(pt.clear_cofactor());
+            let pt = pt.clear_cofactor();
+            if !pt.is_zero() {
+                return Some(pt);
+            }
         }
     }
     None

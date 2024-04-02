@@ -11,13 +11,16 @@ ark-ec = { version = "0.4.2", default-features = false }
 ark-ff = { version = "0.4.2", default-features = false }
 ark-std = { version = "0.4.0", default-features = false }
 ark-serialize = { version = "0.4.2", default-features = false }
-sha2 = { version = "0.10.8", default-features = false }
 rand_core = { version = "0.6.4", default-features = false, optional = true }
-
 # Curves
 ark-ed25519 = { version = "0.4.0", default-features = false, optional = true }
 ark-ed-on-bls12-381-bandersnatch = { version = "0.4.0", default-features = false, optional = true }
-blake2b_simd = "1.0.2"
+# Hashing
+blake2b_simd = { version = "1.0.2", default-features = false, optional = true }
+sha2 = { version = "0.10.8", default-features = false, optional = true }
+
+[dev-dependencies]
+hex = "0.4.3"
 
 [features]
 default = [
@@ -37,5 +40,11 @@ curves = [
   "ed25519",
   "bandersnatch",
 ]
-ed25519 = [ "ark-ed25519" ]
-bandersnatch = [ "ark-ed-on-bls12-381-bandersnatch" ]
+ed25519 = [
+  "ark-ed25519",
+  "sha2",
+]
+bandersnatch = [
+  "ark-ed-on-bls12-381-bandersnatch",
+  "blake2b_simd",
+]
