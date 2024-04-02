@@ -1,14 +1,3 @@
-macro_rules! suite_types {
-    ($suite:ident) => {
-        pub type Secret = crate::Secret<$suite>;
-        pub type Public = crate::Public<$suite>;
-        pub type Input = crate::Input<$suite>;
-        pub type Output = crate::Output<$suite>;
-        pub type AffinePoint = crate::AffinePoint<$suite>;
-        pub type ScalarField = crate::ScalarField<$suite>;
-    };
-}
-
 #[cfg(feature = "ed25519")]
 pub mod ed25519 {
     use crate::*;
@@ -34,6 +23,7 @@ pub mod ed25519 {
 
 #[cfg(feature = "bandersnatch")]
 pub mod bandersnatch {
+
     use crate::*;
 
     /// ECVRF-BANDESNATCH-BLAKE2-TAI
@@ -46,7 +36,7 @@ pub mod bandersnatch {
         const SUITE_ID: u8 = 0x10;
         const CHALLENGE_LEN: usize = 32;
 
-        type Affine = ark_ed_on_bls12_381_bandersnatch::EdwardsAffine;
+        type Affine = ark_ed_on_bls12_381_bandersnatch::SWAffine;
         type Hash = [u8; 64];
 
         fn hash(data: &[u8]) -> Self::Hash {

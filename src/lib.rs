@@ -13,7 +13,7 @@ use ark_std::{vec, vec::Vec};
 use core::ops::{Index, RangeFrom, RangeFull, RangeTo};
 
 pub mod suites;
-mod utils;
+pub mod utils;
 
 pub type ScalarField<S> = <<S as Suite>::Affine as AffineRepr>::ScalarField;
 pub type AffinePoint<S> = <S as Suite>::Affine;
@@ -233,6 +233,18 @@ impl<S: Suite> Input<S> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Output<S: Suite>(pub S::Affine);
 
+impl<S: Suite> Output<S> {
+    /// Proof to hash as defined by RFC9381 section 5.2
+    pub fn hash(&self) -> S::Hash {
+        const DOM_SEP_START: u8 = 0x03;
+        const DOM_SEP_END: u8 = 0x00;
+        let mut buf = vec![S::SUITE_ID, DOM_SEP_START];
+        self.0.serialize_compressed(&mut buf).unwrap();
+        buf.push(DOM_SEP_END);
+        S::hash(&buf)
+    }
+}
+
 /// VRF signature generic over the cipher suite.
 ///
 /// An output point which can be used to derive the actual output together
@@ -243,31 +255,22 @@ pub struct Signature<S: Suite> {
     s: ScalarField<S>,
 }
 
+impl<S: Suite> Signature<S> {
+    /// Proof to hash as defined by RFC9381 section 5.2
+    pub fn hash(&self) -> S::Hash {
+        self.gamma.hash()
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::utils::testing::*;
+    use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
     use ark_std::UniformRand;
 
-    const TEST_SEED: &[u8] = b"test seed";
-
-    #[derive(Debug, Copy, Clone, PartialEq)]
-    struct TestSuite;
-    impl Suite for TestSuite {
-        const SUITE_ID: u8 = 0xFF;
-        const CHALLENGE_LEN: usize = 16;
-        type Affine = ark_ed25519::EdwardsAffine;
-        type Hash = [u8; 64];
-
-        fn hash(data: &[u8]) -> Self::Hash {
-            utils::sha512(data)
-        }
-    }
-    type Secret = super::Secret<TestSuite>;
-    type Public = super::Public<TestSuite>;
-
-    fn rand_point() -> AffinePoint<TestSuite> {
+    fn rand_point() -> AffinePoint {
         let mut rng = ark_std::test_rng();
-        AffinePoint::<TestSuite>::rand(&mut rng)
+        AffinePoint::rand(&mut rng)
     }
 
     #[test]
@@ -290,12 +293,23 @@ mod tests {
     fn sign_verify_works() {
         let secret = Secret::from_seed(TEST_SEED);
         let public = secret.public();
-        let input = Input(rand_point());
+        let input = Input::from(rand_point());
 
         let signature = secret.sign(input, b"foo");
         assert_eq!(signature.gamma, secret.output(input));
 
         let result = public.verify(input, b"foo", &signature);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn proof_to_hash_works() {
+        let secret = Secret::from_seed(TEST_SEED);
+        let input = Input::from(rand_point());
+        let output = secret.output(input);
+
+        let hash = output.hash();
+        let expected = "84d003045914369f046fbac917bf798a";
+        assert_eq!(expected, hex::encode(&hash[..16]));
     }
 }
