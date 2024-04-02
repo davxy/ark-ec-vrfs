@@ -10,62 +10,99 @@ use ark_ff::PrimeField;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Valid};
 use ark_std::{vec, vec::Vec};
 
-// see RFC9381 Section 7.10
-const SUITE_ID: u8 = 0x04;
 // In typical case us qLen / 2
 const CLEN: usize = 16;
 const DOM_SEP_START: u8 = 0x02;
 const DOM_SEP_END: u8 = 0x00;
 
-// Hasher
-#[inline(always)]
-fn sha512(input: &[u8]) -> [u8; 64] {
-    use sha2::{Digest, Sha512};
-    let mut hasher = Sha512::new();
-    hasher.update(input);
-    let result = hasher.finalize();
-    let mut h = [0u8; 64];
-    h.copy_from_slice(&result);
-    h
+pub trait Suite: Copy + Clone {
+    /// see RFC9381 Section 7.10
+    const SUITE_ID: u8;
+
+    type Affine: AffineRepr;
+
+    fn nonce(sk: &ScalarField<Self>, pt: Input<Self>) -> ScalarField<Self>;
+
+    /// ECVRF challenge generation
+    ///
+    /// Hashes several points on the curve.
+    fn challenge(pts: &[&AffinePoint<Self>], ad: &[u8]) -> ScalarField<Self> {
+        let mut buf = vec![Self::SUITE_ID, DOM_SEP_START];
+        pts.into_iter().for_each(|p| {
+            p.serialize_compressed(&mut buf).unwrap();
+        });
+        buf.extend_from_slice(ad);
+        buf.push(DOM_SEP_END);
+        let hash = &Self::hash(&buf)[..CLEN];
+        ScalarField::<Self>::from_be_bytes_mod_order(hash)
+    }
+
+    fn hash(data: &[u8]) -> Vec<u8>;
 }
 
-/// ECVRF nonce generation according to Section 5.1.6 of [RFC8032](https://tools.ietf.org/html/rfc8032).
-#[inline(always)]
-pub fn nonce_gen<P: AffineRepr>(sk: &Secret<P>, pt: Input<P>) -> <P as AffineRepr>::ScalarField {
-    let mut buf = Vec::new();
-    sk.scalar.serialize_compressed(&mut buf).unwrap();
-    let sk_hash = &sha512(&buf)[32..];
-    buf.clear();
-    pt.0.serialize_compressed(&mut buf).unwrap();
-    let v = [sk_hash, &buf[..]].concat();
-    let h = sha512(&v);
-    <P as AffineRepr>::ScalarField::from_le_bytes_mod_order(&h)
+pub type ScalarField<S> = <<S as Suite>::Affine as AffineRepr>::ScalarField;
+pub type AffinePoint<S> = <S as Suite>::Affine;
+
+pub(crate) mod utils {
+    // Hasher
+    #[inline(always)]
+    pub fn sha512(input: &[u8]) -> [u8; 64] {
+        use sha2::{Digest, Sha512};
+        let mut hasher = Sha512::new();
+        hasher.update(input);
+        let result = hasher.finalize();
+        let mut h = [0u8; 64];
+        h.copy_from_slice(&result);
+        h
+    }
 }
 
-/// `ECVRF_challenge_generation` -- Hashes several points on the curve
-#[inline(always)]
-pub fn challenge_gen<P: AffineRepr>(points: &[&P], ad: &[u8]) -> <P as AffineRepr>::ScalarField {
-    let mut buf = vec![SUITE_ID, DOM_SEP_START];
-    points.into_iter().for_each(|p| {
-        p.serialize_compressed(&mut buf).unwrap();
-    });
-    buf.extend_from_slice(ad);
-    buf.push(DOM_SEP_END);
-    let hash = &sha512(&buf)[..CLEN];
-    <P as AffineRepr>::ScalarField::from_be_bytes_mod_order(hash)
+pub mod suites {
+    pub mod ed25519 {
+        use crate::Suite;
+        use crate::*;
+
+        /// ECVRF-EDWARDS25519-SHA512-TAI
+        #[derive(Copy, Clone)]
+        struct Ed25519Sha512;
+
+        impl Suite for Ed25519Sha512 {
+            const SUITE_ID: u8 = 0x04;
+
+            type Affine = ark_ed25519::EdwardsAffine;
+
+            /// ECVRF nonce generation
+            ///
+            /// Section 5.1.6 of [RFC8032](https://tools.ietf.org/html/rfc8032).
+            fn nonce(sk: &ScalarField<Self>, pt: Input<Self>) -> ScalarField<Self> {
+                let mut buf = Vec::new();
+                sk.serialize_compressed(&mut buf).unwrap();
+                let sk_hash = &Self::hash(&buf)[32..];
+                buf.clear();
+                pt.0.serialize_compressed(&mut buf).unwrap();
+                let v = [sk_hash, &buf[..]].concat();
+                let h = Self::hash(&v);
+                ScalarField::<Self>::from_le_bytes_mod_order(&h)
+            }
+
+            fn hash(data: &[u8]) -> Vec<u8> {
+                utils::sha512(data).to_vec()
+            }
+        }
+    }
 }
 
 /// Secret key
 // TODO: zeroize
 #[derive(Debug, PartialEq)]
-pub struct Secret<P: AffineRepr> {
+pub struct Secret<S: Suite> {
     // Secret scalar.
-    scalar: P::ScalarField,
+    scalar: ScalarField<S>,
     // Cached public point.
-    public: Public<P>,
+    public: Public<S>,
 }
 
-impl<P: AffineRepr> CanonicalSerialize for Secret<P> {
+impl<S: Suite> CanonicalSerialize for Secret<S> {
     fn serialize_with_mode<W: ark_std::io::prelude::Write>(
         &self,
         writer: W,
@@ -79,35 +116,35 @@ impl<P: AffineRepr> CanonicalSerialize for Secret<P> {
     }
 }
 
-impl<P: AffineRepr> CanonicalDeserialize for Secret<P> {
+impl<S: Suite> CanonicalDeserialize for Secret<S> {
     fn deserialize_with_mode<R: ark_std::io::prelude::Read>(
         reader: R,
         compress: ark_serialize::Compress,
         validate: ark_serialize::Validate,
     ) -> Result<Self, ark_serialize::SerializationError> {
-        let scalar = <P::ScalarField as CanonicalDeserialize>::deserialize_with_mode(
+        let scalar = <ScalarField<S> as CanonicalDeserialize>::deserialize_with_mode(
             reader, compress, validate,
         )?;
         Ok(Self::from_scalar(scalar))
     }
 }
 
-impl<P: AffineRepr> Valid for Secret<P> {
+impl<S: Suite> Valid for Secret<S> {
     fn check(&self) -> Result<(), ark_serialize::SerializationError> {
         self.scalar.check()
     }
 }
 
-impl<P: AffineRepr> Secret<P> {
-    pub fn from_scalar(scalar: <P as AffineRepr>::ScalarField) -> Self {
-        let public = P::generator() * scalar;
+impl<S: Suite> Secret<S> {
+    pub fn from_scalar(scalar: ScalarField<S>) -> Self {
+        let public = S::Affine::generator() * scalar;
         let public = Public(public.into_affine());
         Self { scalar, public }
     }
 
     pub fn from_seed(seed: [u8; 32]) -> Self {
-        let bytes = sha512(&seed);
-        let scalar = <P::ScalarField as PrimeField>::from_le_bytes_mod_order(&bytes);
+        let bytes = S::hash(&seed);
+        let scalar = <ScalarField<S> as PrimeField>::from_le_bytes_mod_order(&bytes);
         Self::from_scalar(scalar)
     }
 
@@ -119,112 +156,101 @@ impl<P: AffineRepr> Secret<P> {
         Self::from_seed(seed)
     }
 
-    pub fn public(&self) -> Public<P> {
+    pub fn public(&self) -> Public<S> {
         self.public
     }
 
-    pub fn vrf_output(&self, input: Input<P>) -> Output<P> {
+    pub fn output(&self, input: Input<S>) -> Output<S> {
         Output((input.0 * self.scalar).into_affine())
     }
 
-    pub fn sign(&self, input: Input<P>, ad: impl AsRef<[u8]>) -> Signature<P> {
-        let output = self.vrf_output(input);
-        let k = nonce_gen(self, input);
-        let k_b = (<P as AffineRepr>::generator() * k).into_affine();
+    pub fn sign(&self, input: Input<S>, ad: impl AsRef<[u8]>) -> Signature<S> {
+        let gamma = self.output(input);
+        let k = S::nonce(&self.scalar, input);
+        let k_b = (S::Affine::generator() * k).into_affine();
         let k_h = (input.0 * k).into_affine();
-        let c = challenge_gen(
-            &[&self.public.0, &input.0, &output.0, &k_b, &k_h],
+        let c = S::challenge(
+            &[&self.public.0, &input.0, &gamma.0, &k_b, &k_h],
             ad.as_ref(),
         );
         let s = k + c * self.scalar;
-        Signature {
-            output,
-            proof: (c, s),
-        }
+        Signature { gamma, c, s }
     }
 }
 
 /// Public key
 #[derive(Debug, Copy, Clone, PartialEq, CanonicalSerialize, CanonicalDeserialize)]
-pub struct Public<P: AffineRepr>(pub P);
+pub struct Public<S: Suite>(pub AffinePoint<S>);
 
-impl<P: AffineRepr> Public<P> {
+impl<S: Suite> Public<S> {
     pub fn verify(
         &self,
-        input: Input<P>,
+        input: Input<S>,
         ad: impl AsRef<[u8]>,
-        signature: &Signature<P>,
+        signature: &Signature<S>,
     ) -> Result<(), ()> {
-        let Signature {
-            output,
-            proof: (c, s),
-        } = signature;
+        let Signature { gamma, c, s } = signature;
 
-        let s_b = P::generator() * s;
+        let s_b = S::Affine::generator() * s;
         let c_y = self.0 * c;
         let u = (s_b - c_y).into_affine();
 
         let s_h = input.0 * s;
-        let c_o = signature.output.0 * c;
+        let c_o = gamma.0 * c;
         let v = (s_h - c_o).into_affine();
 
-        let c_exp = challenge_gen(&[&self.0, &input.0, &output.0, &u, &v], ad.as_ref());
-
+        let c_exp = S::challenge(&[&self.0, &input.0, &gamma.0, &u, &v], ad.as_ref());
         (&c_exp == c).then(|| ()).ok_or(())
     }
 }
 
-// TODO macro for point newtypes
-
 /// VRF input point.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
-pub struct Input<P: AffineRepr>(P);
-
-impl<P: AffineRepr> From<P> for Input<P> {
-    fn from(value: P) -> Self {
-        Input(value)
-    }
-}
+pub struct Input<S: Suite>(pub S::Affine);
 
 /// VRF output point.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
-pub struct Output<P: AffineRepr>(P);
-
-impl<P: AffineRepr> From<P> for Output<P> {
-    fn from(value: P) -> Self {
-        Output(value)
-    }
-}
+pub struct Output<S: Suite>(pub S::Affine);
 
 /// VRF signature.
 ///
 /// An output point which can be used to derive the actual output together
 /// with the actual signature of the input point and the associated data.
-pub struct Signature<P: AffineRepr> {
-    #[allow(dead_code)]
-    output: Output<P>,
-    #[allow(dead_code)]
-    proof: (
-        // Well. This can be optimized as it is 16 bytes
-        <P as AffineRepr>::ScalarField,
-        <P as AffineRepr>::ScalarField,
-    ),
+pub struct Signature<S: Suite> {
+    gamma: Output<S>,
+    c: ScalarField<S>,
+    s: ScalarField<S>,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ark_ed25519 as curve;
+    use ark_std::UniformRand;
 
     const TEST_SEED: [u8; 32] = [0u8; 32];
 
-    type P = curve::EdwardsAffine;
-    type Secret = super::Secret<P>;
-    type Public = super::Public<P>;
+    #[derive(Debug, Copy, Clone, PartialEq)]
+    struct TestSuite;
+    impl Suite for TestSuite {
+        const SUITE_ID: u8 = 0xFF;
+        type Affine = ark_ed25519::EdwardsAffine;
 
-    fn make_dummy_point(s: u32) -> P {
-        let s = <P as AffineRepr>::ScalarField::from_be_bytes_mod_order(&s.to_be_bytes()[..]);
-        (P::generator() * s).into_affine()
+        fn nonce(_sk: &ScalarField<Self>, _pt: Input<Self>) -> ScalarField<Self> {
+            let mut rng = ark_std::test_rng();
+            <ScalarField<Self>>::rand(&mut rng)
+        }
+
+        fn hash(data: &[u8]) -> Vec<u8> {
+            utils::sha512(data).to_vec()
+        }
+    }
+    type Secret = super::Secret<TestSuite>;
+    type Public = super::Public<TestSuite>;
+
+    fn make_dummy_point(s: u32) -> AffinePoint<TestSuite> {
+        // TODO: use test_rng
+        let s = ScalarField::<TestSuite>::from_be_bytes_mod_order(&s.to_be_bytes()[..]);
+        (AffinePoint::<TestSuite>::generator() * s).into_affine()
     }
 
     #[test]
@@ -247,10 +273,10 @@ mod tests {
     fn sign_verify_works() {
         let secret = Secret::from_seed(TEST_SEED);
         let public = secret.public();
-        let input = make_dummy_point(123).into();
+        let input = Input(make_dummy_point(123));
 
         let signature = secret.sign(input, b"foo");
-        assert_eq!(signature.output, secret.vrf_output(input));
+        assert_eq!(signature.gamma, secret.output(input));
 
         let result = public.verify(input, b"foo", &signature);
         assert!(result.is_ok());
