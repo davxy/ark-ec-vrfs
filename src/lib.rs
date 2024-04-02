@@ -18,6 +18,11 @@ mod utils;
 pub type ScalarField<S> = <<S as Suite>::Affine as AffineRepr>::ScalarField;
 pub type AffinePoint<S> = <S as Suite>::Affine;
 
+/// Verification error(s)
+pub enum Error {
+    VerificationFailure,
+}
+
 pub trait Suite: Copy + Clone {
     /// See RFC9381 Section 7.10
     const SUITE_ID: u8;
@@ -59,7 +64,7 @@ pub trait Suite: Copy + Clone {
         const DOM_SEP_START: u8 = 0x02;
         const DOM_SEP_END: u8 = 0x00;
         let mut buf = vec![Self::SUITE_ID, DOM_SEP_START];
-        pts.into_iter().for_each(|p| {
+        pts.iter().for_each(|p| {
             p.serialize_compressed(&mut buf).unwrap();
         });
         buf.extend_from_slice(ad);
@@ -126,8 +131,9 @@ impl<S: Suite> Secret<S> {
     }
 
     /// Generate an ephemeral `Secret` with system randomness
-    #[cfg(features = "getrandom")]
+    #[cfg(feature = "getrandom")]
     pub fn ephemeral() -> Self {
+        use rand_core::RngCore;
         let mut seed = [0u8; 32];
         rand_core::OsRng.fill_bytes(&mut seed);
         Self::from_seed(seed)
@@ -165,7 +171,7 @@ impl<S: Suite> Public<S> {
         input: Input<S>,
         ad: impl AsRef<[u8]>,
         signature: &Signature<S>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), Error> {
         let Signature { gamma, c, s } = signature;
 
         let s_b = S::Affine::generator() * s;
@@ -177,7 +183,9 @@ impl<S: Suite> Public<S> {
         let v = (s_h - c_o).into_affine();
 
         let c_exp = S::challenge(&[&self.0, &input.0, &gamma.0, &u, &v], ad.as_ref());
-        (&c_exp == c).then(|| ()).ok_or(())
+        (&c_exp == c)
+            .then_some(())
+            .ok_or(Error::VerificationFailure)
     }
 }
 
