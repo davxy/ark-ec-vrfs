@@ -73,13 +73,12 @@ pub fn hash_to_curve_tai<S: Suite>(data: &[u8]) -> Option<AffinePoint<S>> {
 
     let mod_size = <<<S::Affine as AffineRepr>::BaseField as Field>::BasePrimeField as PrimeField>::MODULUS_BIT_SIZE as usize / 8;
 
+    let mut buf = [&[S::SUITE_ID, DOM_SEP_FRONT], data, &[0x00, DOM_SEP_BACK]].concat();
+    let ctr_pos = buf.len() - 2;
+
     for ctr in 0..256 {
-        let buf = [
-            &[S::SUITE_ID, DOM_SEP_FRONT],
-            data,
-            &[ctr as u8, DOM_SEP_BACK],
-        ]
-        .concat();
+        // Modify ctr value
+        buf[ctr_pos] = ctr as u8;
         let hash = &S::hash(&buf)[..];
         if hash.len() < mod_size {
             return None;
