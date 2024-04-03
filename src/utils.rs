@@ -20,6 +20,18 @@ macro_rules! suite_types {
     };
 }
 
+/// SHA-256 hasher
+#[inline(always)]
+pub(crate) fn sha256(input: &[u8]) -> [u8; 32] {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(input);
+    let result = hasher.finalize();
+    let mut h = [0u8; 32];
+    h.copy_from_slice(&result);
+    h
+}
+
 /// SHA-512 hasher
 #[inline(always)]
 pub(crate) fn sha512(input: &[u8]) -> [u8; 64] {
@@ -49,6 +61,8 @@ pub(crate) fn blake2(input: &[u8]) -> [u8; 64] {
 /// The running time of this algorithm depends on input string. For the
 /// ciphersuites specified in Section 5.5, this algorithm is expected to
 /// find a valid curve point after approximately two attempts on average.
+///
+/// The input `data` is defined to be `salt || alpha` according to the spec.
 pub fn hash_to_curve_tai<S: Suite>(data: &[u8]) -> Option<AffinePoint<S>> {
     use ark_ec::AffineRepr;
     use ark_ff::Field;

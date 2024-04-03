@@ -13,6 +13,7 @@ ark-std = { version = "0.4.0", default-features = false }
 ark-serialize = { version = "0.4.2", default-features = false }
 rand_core = { version = "0.6.4", default-features = false, optional = true }
 # Curves
+ark-secp256r1 = { version = "0.4.0", default-features = false, optional = true }
 ark-ed25519 = { version = "0.4.0", default-features = false, optional = true }
 ark-ed-on-bls12-381-bandersnatch = { version = "0.4.0", default-features = false, optional = true }
 # Hashing
@@ -37,8 +38,13 @@ getrandom = [
   "rand_core"
 ]
 curves = [
+  "secp256r1",
   "ed25519",
   "bandersnatch",
+]
+secp256r1 = [
+  "ark-secp256r1",
+  "sha2",
 ]
 ed25519 = [
   "ark-ed25519",
