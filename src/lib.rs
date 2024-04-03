@@ -86,7 +86,7 @@ pub trait Suite: Copy + Clone {
         buf.extend_from_slice(ad);
         buf.push(DOM_SEP_END);
         let hash = &Self::hash(&buf)[..Self::CHALLENGE_LEN];
-        ScalarField::<Self>::from_be_bytes_mod_order(hash)
+        ScalarField::<Self>::from_le_bytes_mod_order(hash)
     }
 }
 
