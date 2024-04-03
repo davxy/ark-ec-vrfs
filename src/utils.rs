@@ -83,6 +83,13 @@ pub fn hash_to_curve_tai<S: Suite>(data: &[u8]) -> Option<AffinePoint<S>> {
         if hash.len() < mod_size {
             return None;
         }
+        // TODO This is specific for P256 (maybe we should add a method in Suite? Maybe another trait?)
+        // E.g. TaiSuite: Suite { fn point_decode }
+        // The differences are on the flags, the length of the data and endianess (e.g. secp decodes from big endian)
+        let mut hash = hash.to_vec();
+        hash.reverse();
+        hash.push(0x00);
+
         if let Ok(pt) = AffinePoint::<S>::deserialize_compressed_unchecked(&hash[..]) {
             let pt = pt.clear_cofactor();
             if !pt.is_zero() {
