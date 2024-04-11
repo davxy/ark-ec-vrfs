@@ -111,7 +111,7 @@ where
     }
 }
 
-pub struct RingContext<S: Suite, P: Pairing<S>>
+pub struct RingContext<S: PedersenSuite, P: Pairing<S>>
 where
     <BaseAffine<S> as AffineRepr>::Config: SWCurveConfig,
     CurveConfig<S>: SWCurveConfig<BaseField = BaseField<S>>,
@@ -124,13 +124,35 @@ where
     _phantom: PhantomData<S>,
 }
 
-impl<S: Suite, P: Pairing<S>> RingContext<S, P>
+impl<S: PedersenSuite, P: Pairing<S>> RingContext<S, P>
 where
     <BaseAffine<S> as AffineRepr>::Config: SWCurveConfig,
     CurveConfig<S>: SWCurveConfig<BaseField = BaseField<S>>,
     BaseField<S>: PrimeField,
     PiopParams<S>: Clone,
 {
+    #[cfg(feature = "getrandom")]
+    pub fn rand<R: ark_std::rand::Rng>(rng: &mut R, domain_size: usize) -> Self {
+        use fflonk::pcs::PCS;
+        use ring_proof::Domain;
+        let setup_degree = 3 * domain_size;
+        let pcs_params = KZG::setup(setup_degree, rng);
+
+        let domain = Domain::new(domain_size, true);
+        let h = S::BLINDING_BASE;
+        let (x, y) = h.xy().unwrap();
+        let h = BaseAffine::<S>::new_unchecked(*x, *y);
+        let seed = ring_proof::find_complement_point::<CurveConfig<S>>();
+        let piop_params = PiopParams::<S>::setup(domain, h, seed);
+
+        Self {
+            pcs_params,
+            piop_params,
+            domain_size,
+            _phantom: PhantomData,
+        }
+    }
+
     pub fn prover_key(&self, pks: Vec<BaseAffine<S>>) -> ProverKey<S, P> {
         ring_proof::index(self.pcs_params.clone(), &self.piop_params, pks).0
     }
@@ -160,53 +182,28 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::suites::bandersnatch::{ring::RingContext, Input, Secret};
     use crate::utils::testing::{random_value, TEST_SEED};
 
-    use ark_bls12_381::Bls12_381;
-    use ark_ed_on_bls12_381_bandersnatch::{BandersnatchConfig, Fq, SWAffine};
+    use ark_ed_on_bls12_381_bandersnatch::SWAffine;
     use ark_std::rand::Rng;
     use ark_std::UniformRand;
-    use fflonk::pcs::PCS;
-    use ring_proof::{Domain, PiopParams};
 
-    use crate::suites::bandersnatch::{BandersnatchBlake2, Input, Secret};
-
-    type KZG = super::KZG<Bls12_381>;
-    impl Pairing<BandersnatchBlake2> for Bls12_381 {}
-
-    fn setup<R: Rng>(
-        rng: &mut R,
-        domain_size: usize,
-    ) -> (<KZG as PCS<Fq>>::Params, PiopParams<Fq, BandersnatchConfig>) {
-        let setup_degree = 3 * domain_size;
-        let pcs_params = KZG::setup(setup_degree, rng);
-
-        let domain = Domain::new(domain_size, true);
-        let h = BandersnatchBlake2::BLINDING_BASE;
-        let seed = ring_proof::find_complement_point::<BandersnatchConfig>();
-        let piop_params = PiopParams::setup(domain, h, seed);
-
-        (pcs_params, piop_params)
+    fn random_vec<X: UniformRand, R: Rng>(n: usize, rng: &mut R) -> Vec<X> {
+        (0..n).map(|_| X::rand(rng)).collect()
     }
 
     #[test]
     fn sign_verify_works() {
         let rng = &mut ark_std::test_rng();
         let domain_size = 1024;
-        let (pcs_params, piop_params) = setup(rng, domain_size);
+        let ring_ctx = RingContext::rand(rng, domain_size);
 
         let secret = Secret::from_seed(TEST_SEED);
         let public = secret.public();
         let input = Input::from(random_value());
 
-        let keyset_size = piop_params.keyset_part_size;
-
-        let ring_ctx = RingContext {
-            pcs_params,
-            piop_params,
-            domain_size,
-            _phantom: PhantomData,
-        };
+        let keyset_size = ring_ctx.piop_params.keyset_part_size;
 
         let prover_idx = 3;
         let mut pks = random_vec::<SWAffine, _>(keyset_size, rng);
@@ -220,9 +217,5 @@ mod tests {
         let verifier = ring_ctx.verifier(verifier_key);
         let result = Public::ring_verify(input, b"foo", &signature, &verifier);
         assert!(result.is_ok());
-    }
-
-    pub fn random_vec<X: UniformRand, R: Rng>(n: usize, rng: &mut R) -> Vec<X> {
-        (0..n).map(|_| X::rand(rng)).collect()
     }
 }

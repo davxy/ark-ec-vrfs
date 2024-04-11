@@ -85,6 +85,17 @@ impl PedersenSuite for BandersnatchBlake2 {
     };
 }
 
+#[cfg(feature = "ring")]
+pub mod ring {
+    use super::BandersnatchBlake2;
+    use crate::ring;
+    use ark_bls12_381::Bls12_381;
+
+    impl ring::Pairing<BandersnatchBlake2> for Bls12_381 {}
+
+    pub type RingContext = ring::RingContext<BandersnatchBlake2, Bls12_381>;
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
