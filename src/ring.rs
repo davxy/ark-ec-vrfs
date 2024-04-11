@@ -1,34 +1,32 @@
 use std::marker::PhantomData;
 
 use crate::*;
-use ark_ec::pairing::Pairing;
 use ark_ec::short_weierstrass::SWCurveConfig;
-use ark_ec::CurveConfig;
-// use fflonk::pcs::PcsParams;
-use pedersen::{PedersenSigner, PedersenVerifier, Signature as PedersenSignature};
+use pedersen::{PedersenSigner, PedersenSuite, PedersenVerifier, Signature as PedersenSignature};
 
 pub use fflonk::pcs::kzg::urs::URS;
 pub use fflonk::pcs::kzg::KZG;
 
-pub type BaseField<S> = <<S as Suite>::Affine as AffineRepr>::BaseField;
+pub type ProverKey<S, P> = ring_proof::ProverKey<BaseField<S>, KZG<P>, BaseAffine<S>>;
 
-pub trait MyPairing<S: Suite>: Pairing<ScalarField = BaseField<S>> {}
-
-type CurveConfigFor<S> = <AffinePoint<S> as AffineRepr>::Config;
-type CurveAffine<S> = ark_ec::short_weierstrass::Affine<CurveConfigFor<S>>;
-
-pub type ProverKey<S, P> = ring_proof::ProverKey<BaseField<S>, KZG<P>, CurveAffine<S>>;
 pub type VerifierKey<S, P> = ring_proof::VerifierKey<BaseField<S>, KZG<P>>;
-pub type RingProver<S, P> =
-    ring_proof::ring_prover::RingProver<BaseField<S>, KZG<P>, CurveConfigFor<S>>;
+
+pub type Prover<S, P> = ring_proof::ring_prover::RingProver<BaseField<S>, KZG<P>, CurveConfig<S>>;
+
 pub type Verifier<S, P> =
-    ring_proof::ring_verifier::RingVerifier<BaseField<S>, KZG<P>, CurveConfigFor<S>>;
+    ring_proof::ring_verifier::RingVerifier<BaseField<S>, KZG<P>, CurveConfig<S>>;
+
 pub type RingProof<S, P> = ring_proof::RingProof<BaseField<S>, KZG<P>>;
 
 pub type PiopParams<S> =
-    ring_proof::PiopParams<BaseField<S>, <CurveAffine<S> as AffineRepr>::Config>;
+    ring_proof::PiopParams<BaseField<S>, <BaseAffine<S> as AffineRepr>::Config>;
 
-pub struct Signature<S: Suite, P: MyPairing<S>>
+// Ring proof library works over the whole curve group (not just the prime subgroup).
+type BaseAffine<S> = ark_ec::short_weierstrass::Affine<CurveConfig<S>>;
+
+pub trait Pairing<S: Suite>: ark_ec::pairing::Pairing<ScalarField = BaseField<S>> {}
+
+pub struct Signature<S: PedersenSuite, P: Pairing<S>>
 where
     BaseField<S>: PrimeField,
 {
@@ -36,9 +34,9 @@ where
     ring_proof: RingProof<S, P>,
 }
 
-pub trait RingSigner<S: Suite, P: MyPairing<S>>
+pub trait RingSigner<S: PedersenSuite, P: Pairing<S>>
 where
-    CurveConfigFor<S>: SWCurveConfig,
+    CurveConfig<S>: SWCurveConfig,
     BaseField<S>: PrimeField,
 {
     /// Sign the input and the user additional data `ad`.
@@ -46,13 +44,13 @@ where
         &self,
         input: Input<S>,
         ad: impl AsRef<[u8]>,
-        prover: &RingProver<S, P>,
+        prover: &Prover<S, P>,
     ) -> Signature<S, P>;
 }
 
-pub trait RingVerifier<S: Suite, P: MyPairing<S>>
+pub trait RingVerifier<S: PedersenSuite, P: Pairing<S>>
 where
-    CurveConfigFor<S>: SWCurveConfig,
+    CurveConfig<S>: SWCurveConfig,
     BaseField<S>: PrimeField,
 {
     /// Verify a signature.
@@ -64,17 +62,17 @@ where
     ) -> Result<(), Error>;
 }
 
-impl<S: Suite, P: MyPairing<S>> RingSigner<S, P> for Secret<S>
+impl<S: PedersenSuite, P: Pairing<S>> RingSigner<S, P> for Secret<S>
 where
     Self: PedersenSigner<S>,
-    CurveConfigFor<S>: SWCurveConfig,
+    CurveConfig<S>: SWCurveConfig,
     BaseField<S>: PrimeField,
 {
     fn ring_sign(
         &self,
         input: Input<S>,
         ad: impl AsRef<[u8]>,
-        ring_prover: &RingProver<S, P>,
+        ring_prover: &Prover<S, P>,
     ) -> Signature<S, P> {
         let (vrf_signature, secret_blinding) = <Self as PedersenSigner<S>>::sign(self, input, ad);
         let ring_proof = ring_prover.prove(secret_blinding);
@@ -85,10 +83,10 @@ where
     }
 }
 
-impl<S: Suite, P: MyPairing<S>> RingVerifier<S, P> for Public<S>
+impl<S: PedersenSuite, P: Pairing<S>> RingVerifier<S, P> for Public<S>
 where
     Self: PedersenVerifier<S>,
-    CurveConfigFor<S>: SWCurveConfig,
+    CurveConfig<S>: SWCurveConfig,
     BaseField<S>: PrimeField,
 {
     /// Verify the VRF signature.
@@ -99,11 +97,12 @@ where
         verifier: &Verifier<S, P>,
     ) -> Result<(), Error> {
         <Self as PedersenVerifier<S>>::verify(input, ad, &sig.vrf_signature)?;
-        let compk = *sig.vrf_signature.key_commitment();
-        let mut key_commitment = CurveAffine::<S>::zero();
-        key_commitment.x = *compk.x().unwrap();
-        key_commitment.y = *compk.y().unwrap();
-        key_commitment.infinity = false;
+        let key_commitment = sig.vrf_signature.key_commitment();
+        let (x, y) = key_commitment
+            .xy()
+            .map(|(x, y)| (*x, *y))
+            .ok_or(Error::VerificationFailure)?;
+        let key_commitment = BaseAffine::<S>::new_unchecked(x, y);
 
         if !verifier.verify_ring_proof(sig.ring_proof.clone(), key_commitment) {
             return Err(Error::VerificationFailure);
@@ -112,10 +111,10 @@ where
     }
 }
 
-pub struct RingContext<S: Suite, P: MyPairing<S>>
+pub struct RingContext<S: Suite, P: Pairing<S>>
 where
-    <CurveAffine<S> as AffineRepr>::Config: SWCurveConfig,
-    CurveConfigFor<S>: SWCurveConfig<BaseField = BaseField<S>>,
+    <BaseAffine<S> as AffineRepr>::Config: SWCurveConfig,
+    CurveConfig<S>: SWCurveConfig<BaseField = BaseField<S>>,
     BaseField<S>: PrimeField,
     PiopParams<S>: Clone,
 {
@@ -125,23 +124,23 @@ where
     _phantom: PhantomData<S>,
 }
 
-impl<S: Suite, P: MyPairing<S>> RingContext<S, P>
+impl<S: Suite, P: Pairing<S>> RingContext<S, P>
 where
-    <CurveAffine<S> as AffineRepr>::Config: SWCurveConfig,
-    CurveConfigFor<S>: SWCurveConfig<BaseField = BaseField<S>>,
+    <BaseAffine<S> as AffineRepr>::Config: SWCurveConfig,
+    CurveConfig<S>: SWCurveConfig<BaseField = BaseField<S>>,
     BaseField<S>: PrimeField,
     PiopParams<S>: Clone,
 {
-    pub fn prover_key(&self, pks: Vec<CurveAffine<S>>) -> ProverKey<S, P> {
+    pub fn prover_key(&self, pks: Vec<BaseAffine<S>>) -> ProverKey<S, P> {
         ring_proof::index(self.pcs_params.clone(), &self.piop_params, pks).0
     }
 
-    pub fn verifier_key(&self, pks: Vec<CurveAffine<S>>) -> VerifierKey<S, P> {
+    pub fn verifier_key(&self, pks: Vec<BaseAffine<S>>) -> VerifierKey<S, P> {
         ring_proof::index(self.pcs_params.clone(), &self.piop_params, pks).1
     }
 
-    pub fn prover(&self, prover_key: ProverKey<S, P>, key_index: usize) -> RingProver<S, P> {
-        <RingProver<S, P>>::init(
+    pub fn prover(&self, prover_key: ProverKey<S, P>, key_index: usize) -> Prover<S, P> {
+        <Prover<S, P>>::init(
             prover_key,
             self.piop_params.clone(),
             key_index,
@@ -173,7 +172,7 @@ mod tests {
     use crate::suites::bandersnatch::{BandersnatchBlake2, Input, Secret};
 
     type KZG = super::KZG<Bls12_381>;
-    impl MyPairing<BandersnatchBlake2> for Bls12_381 {}
+    impl Pairing<BandersnatchBlake2> for Bls12_381 {}
 
     fn setup<R: Rng>(
         rng: &mut R,
@@ -183,7 +182,7 @@ mod tests {
         let pcs_params = KZG::setup(setup_degree, rng);
 
         let domain = Domain::new(domain_size, true);
-        let h = SWAffine::rand(rng);
+        let h = BandersnatchBlake2::BLINDING_BASE;
         let seed = ring_proof::find_complement_point::<BandersnatchConfig>();
         let piop_params = PiopParams::setup(domain, h, seed);
 
@@ -197,6 +196,7 @@ mod tests {
         let (pcs_params, piop_params) = setup(rng, domain_size);
 
         let secret = Secret::from_seed(TEST_SEED);
+        let public = secret.public();
         let input = Input::from(random_value());
 
         let keyset_size = piop_params.keyset_part_size;
@@ -208,10 +208,12 @@ mod tests {
             _phantom: PhantomData,
         };
 
-        let pks = random_vec::<SWAffine, _>(keyset_size, rng);
+        let prover_idx = 3;
+        let mut pks = random_vec::<SWAffine, _>(keyset_size, rng);
+        pks[prover_idx] = public.0;
 
         let prover_key = ring_ctx.prover_key(pks.clone());
-        let prover = ring_ctx.prover(prover_key, 0);
+        let prover = ring_ctx.prover(prover_key, prover_idx);
         let signature = secret.ring_sign(input, b"foo", &prover);
 
         let verifier_key = ring_ctx.verifier_key(pks);

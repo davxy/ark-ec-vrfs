@@ -15,8 +15,12 @@ pub struct Signature<S: PedersenSuite> {
 }
 
 impl<S: PedersenSuite> Signature<S> {
-    pub fn key_commitment(&self) -> &AffinePoint<S> {
-        &self.pk_blind
+    pub fn key_commitment(&self) -> AffinePoint<S> {
+        self.pk_blind
+    }
+
+    pub fn output(&self) -> Output<S> {
+        self.gamma
     }
 }
 

@@ -51,6 +51,9 @@
 //     GENERATOR_X = 18886178867200960497001835917649091219057080094937609519140440539760939937304
 //     GENERATOR_Y = 19188667384257783945677642223292697773471335439753913231509108946878080696678
 
+use ark_ff::MontFp;
+
+use crate::pedersen::PedersenSuite;
 use crate::*;
 
 #[derive(Debug, Copy, Clone)]
@@ -68,5 +71,41 @@ impl Suite for BandersnatchBlake2 {
 
     fn hash(data: &[u8]) -> Self::Hash {
         utils::sha512(data)
+    }
+}
+
+impl PedersenSuite for BandersnatchBlake2 {
+    const BLINDING_BASE: AffinePoint = {
+        const X: BaseField =
+            MontFp!("4956610287995045830459834427365747411162584416641336688940534788579455781570");
+        const Y: BaseField = MontFp!(
+            "52360910621642801549936840538960627498114783432181489929217988668068368626761"
+        );
+        AffinePoint::new_unchecked(X, Y)
+    };
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use utils::testing::{random_value, TEST_SEED};
+
+    #[test]
+    fn sign_verify_works() {
+        use crate::pedersen::{PedersenSigner, PedersenVerifier};
+
+        let secret = Secret::from_seed(TEST_SEED);
+        let input = Input::from(random_value());
+
+        let (signature, blinding) = secret.sign(input, b"foo");
+        assert_eq!(signature.output().0, secret.output(input).0);
+
+        let result = Public::verify(input, b"foo", &signature);
+        assert!(result.is_ok());
+
+        assert_eq!(
+            signature.key_commitment(),
+            secret.public().0 + BandersnatchBlake2::BLINDING_BASE * blinding
+        );
     }
 }

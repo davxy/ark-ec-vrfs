@@ -17,10 +17,10 @@ pub mod pedersen;
 pub mod suites;
 pub mod utils;
 
-// #[cfg(feature = "ring")]
-// pub mod ring;
+#[cfg(feature = "ring")]
+pub mod ring;
 
-pub type CurveConfigFor<S> = <<S as Suite>::Affine as AffineRepr>::Config;
+pub type CurveConfig<S> = <<S as Suite>::Affine as AffineRepr>::Config;
 pub type ScalarField<S> = <<S as Suite>::Affine as AffineRepr>::ScalarField;
 pub type BaseField<S> = <<S as Suite>::Affine as AffineRepr>::BaseField;
 pub type AffinePoint<S> = <S as Suite>::Affine;
