@@ -13,6 +13,7 @@ use ark_std::{vec, vec::Vec};
 use core::ops::{Index, RangeFrom, RangeFull, RangeTo};
 
 pub mod ietf;
+pub mod pedersen;
 pub mod suites;
 pub mod utils;
 
