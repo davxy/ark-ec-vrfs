@@ -10,6 +10,8 @@ macro_rules! suite_types {
         #[allow(dead_code)]
         pub type Public = crate::Public<$suite>;
         #[allow(dead_code)]
+        pub type Signature = crate::Signature<$suite>;
+        #[allow(dead_code)]
         pub type Input = crate::Input<$suite>;
         #[allow(dead_code)]
         pub type Output = crate::Output<$suite>;
@@ -42,13 +44,6 @@ pub(crate) fn sha512(input: &[u8]) -> [u8; 64] {
     let mut h = [0u8; 64];
     h.copy_from_slice(&result);
     h
-}
-
-/// Blake2b
-#[inline(always)]
-pub(crate) fn blake2(input: &[u8]) -> [u8; 64] {
-    use blake2b_simd::blake2b;
-    *blake2b(input).as_array()
 }
 
 /// Try-And-Increment (TAI) method as defined by RFC9381 section 5.4.1.1.

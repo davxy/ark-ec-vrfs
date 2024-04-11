@@ -179,8 +179,10 @@ impl<S: Suite> Secret<S> {
     pub fn sign(&self, input: Input<S>, ad: impl AsRef<[u8]>) -> Signature<S> {
         let gamma = self.output(input);
         let k = S::nonce(&self.scalar, input);
+
         let k_b = (S::Affine::generator() * k).into_affine();
         let k_h = (input.0 * k).into_affine();
+
         let c = S::challenge(
             &[&self.public.0, &input.0, &gamma.0, &k_b, &k_h],
             ad.as_ref(),
@@ -249,6 +251,7 @@ impl<S: Suite> Output<S> {
 ///
 /// An output point which can be used to derive the actual output together
 /// with the actual signature of the input point and the associated data.
+#[derive(Debug, Clone, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Signature<S: Suite> {
     gamma: Output<S>,
     c: ScalarField<S>,
