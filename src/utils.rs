@@ -17,6 +17,8 @@ macro_rules! suite_types {
         #[allow(dead_code)]
         pub type ScalarField = crate::ScalarField<$suite>;
         #[allow(dead_code)]
+        pub type BaseField = crate::BaseField<$suite>;
+        #[allow(dead_code)]
         pub type Signature = crate::ietf::Signature<$suite>;
     };
 }
@@ -97,7 +99,9 @@ pub fn hash_to_curve_tai<S: Suite>(data: &[u8]) -> Option<AffinePoint<S>> {
 #[cfg(test)]
 pub(crate) mod testing {
     use super::*;
+    use crate::pedersen::PedersenSuite;
     use crate::*;
+    use ark_ff::MontFp;
     use ark_std::UniformRand;
 
     pub const TEST_SEED: &[u8] = b"test seed";
@@ -115,6 +119,18 @@ pub(crate) mod testing {
         fn hash(data: &[u8]) -> Self::Hash {
             utils::sha512(data)
         }
+    }
+
+    impl PedersenSuite for TestSuite {
+        const BLINDING_BASE: AffinePoint = {
+            const X: BaseField = MontFp!(
+                "1181072390894490040170698195029164902368238760122173135634802939739986120753"
+            );
+            const Y: BaseField = MontFp!(
+                "16819438535150625131748701663066892288775529055803151482550035706857354997714"
+            );
+            AffinePoint::new_unchecked(X, Y)
+        };
     }
 
     suite_types!(TestSuite);
