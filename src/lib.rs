@@ -17,6 +17,9 @@ pub mod pedersen;
 pub mod suites;
 pub mod utils;
 
+#[cfg(feature = "ring")]
+pub mod ring;
+
 pub type ScalarField<S> = <<S as Suite>::Affine as AffineRepr>::ScalarField;
 pub type AffinePoint<S> = <S as Suite>::Affine;
 
