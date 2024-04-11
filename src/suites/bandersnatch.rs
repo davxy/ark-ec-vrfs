@@ -53,7 +53,7 @@
 
 use crate::*;
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct BandersnatchBlake2;
 
 suite_types!(BandersnatchBlake2);

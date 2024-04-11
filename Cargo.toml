@@ -3,7 +3,7 @@ name = "ark-ec-vrfs"
 version = "0.1.0"
 edition = "2021"
 authors = [ "Davide Galassi" ]
-description = "EC VRF as specified by RFC-9381"
+description = "EC VRFs with arkworks"
 repository = "https://github.com/davxy/ark-ecvrf"
 
 [dependencies]
@@ -17,42 +17,29 @@ ark-secp256r1 = { version = "0.4.0", default-features = false, optional = true }
 ark-ed25519 = { version = "0.4.0", default-features = false, optional = true }
 ark-ed-on-bls12-381-bandersnatch = { version = "0.4.0", default-features = false, optional = true }
 # Hashing
-sha2 = { version = "0.10.8", default-features = false, optional = true }
+sha2 = { version = "0.10.8", default-features = false }
 
 [dev-dependencies]
 hex = "0.4.3"
+ark-ed25519 = "0.4.0"
 
 [features]
-default = [
-  "std",
-  "curves",
-]
+default = [ "std" ]
 std = [
   "getrandom",
   "ark-std/std",
   "ark-ec/std",
   "rand_core/std",
 ]
-getrandom = [
-  "rand_core"
-]
+getrandom = [ "rand_core" ]
 curves = [
   "secp256r1",
   "ed25519",
   "bandersnatch",
 ]
-secp256r1 = [
-  "ark-secp256r1",
-  "sha2",
-]
-ed25519 = [
-  "ark-ed25519",
-  "sha2",
-]
-bandersnatch = [
-  "ark-ed-on-bls12-381-bandersnatch",
-  "sha2",
-]
+secp256r1 = [ "ark-secp256r1" ]
+ed25519 = [ "ark-ed25519" ]
+bandersnatch = [ "ark-ed-on-bls12-381-bandersnatch" ]
 parallel = [
   "ark-ec/parallel",
   "ark-ff/parallel",

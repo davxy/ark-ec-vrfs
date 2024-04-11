@@ -24,7 +24,7 @@ macro_rules! suite_types {
 
 /// SHA-256 hasher
 #[inline(always)]
-pub(crate) fn sha256(input: &[u8]) -> [u8; 32] {
+pub fn sha256(input: &[u8]) -> [u8; 32] {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(input);
@@ -36,7 +36,7 @@ pub(crate) fn sha256(input: &[u8]) -> [u8; 32] {
 
 /// SHA-512 hasher
 #[inline(always)]
-pub(crate) fn sha512(input: &[u8]) -> [u8; 64] {
+pub fn sha512(input: &[u8]) -> [u8; 64] {
     use sha2::{Digest, Sha512};
     let mut hasher = Sha512::new();
     hasher.update(input);

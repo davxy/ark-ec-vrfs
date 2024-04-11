@@ -226,6 +226,7 @@ impl<S: Suite> Public<S> {
 pub struct Input<S: Suite>(pub S::Affine);
 
 impl<S: Suite> Input<S> {
+    /// Construct from inner affine point.
     pub fn from(value: <S as Suite>::Affine) -> Self {
         Input(value)
     }
@@ -236,6 +237,11 @@ impl<S: Suite> Input<S> {
 pub struct Output<S: Suite>(pub S::Affine);
 
 impl<S: Suite> Output<S> {
+    /// Construct from inner affine point.
+    pub fn from(value: <S as Suite>::Affine) -> Self {
+        Output(value)
+    }
+
     /// Proof to hash as defined by RFC9381 section 5.2
     pub fn hash(&self) -> S::Hash {
         const DOM_SEP_START: u8 = 0x03;
