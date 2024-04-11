@@ -1,4 +1,4 @@
-//! EC-VRF as specified by [RFC-9381](https://datatracker.ietf.org/doc/rfc9381).
+//! Elliptic Curve VRFs with optional additional data.
 //!
 //! The implementation is built using Arkworks and is generic over the curve.
 
@@ -12,6 +12,7 @@ use ark_std::{vec, vec::Vec};
 
 use core::ops::{Index, RangeFrom, RangeFull, RangeTo};
 
+pub mod ietf;
 pub mod suites;
 pub mod utils;
 
@@ -171,55 +172,11 @@ impl<S: Suite> Secret<S> {
     pub fn output(&self, input: Input<S>) -> Output<S> {
         Output((input.0 * self.scalar).into_affine())
     }
-
-    /// Sign the input and the user additional data `ad`.
-    ///
-    /// RFC extension: implementation allows to hash some user additional data
-    /// `ad` after the points and before the domain separation end.
-    pub fn sign(&self, input: Input<S>, ad: impl AsRef<[u8]>) -> Signature<S> {
-        let gamma = self.output(input);
-        let k = S::nonce(&self.scalar, input);
-
-        let k_b = (S::Affine::generator() * k).into_affine();
-        let k_h = (input.0 * k).into_affine();
-
-        let c = S::challenge(
-            &[&self.public.0, &input.0, &gamma.0, &k_b, &k_h],
-            ad.as_ref(),
-        );
-        let s = k + c * self.scalar;
-        Signature { gamma, c, s }
-    }
 }
 
 /// Public key generic over the cipher suite.
 #[derive(Debug, Copy, Clone, PartialEq, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Public<S: Suite>(pub AffinePoint<S>);
-
-impl<S: Suite> Public<S> {
-    /// Verify the VRF signature.
-    pub fn verify(
-        &self,
-        input: Input<S>,
-        ad: impl AsRef<[u8]>,
-        signature: &Signature<S>,
-    ) -> Result<(), Error> {
-        let Signature { gamma, c, s } = signature;
-
-        let s_b = S::Affine::generator() * s;
-        let c_y = self.0 * c;
-        let u = (s_b - c_y).into_affine();
-
-        let s_h = input.0 * s;
-        let c_o = gamma.0 * c;
-        let v = (s_h - c_o).into_affine();
-
-        let c_exp = S::challenge(&[&self.0, &input.0, &gamma.0, &u, &v], ad.as_ref());
-        (&c_exp == c)
-            .then_some(())
-            .ok_or(Error::VerificationFailure)
-    }
-}
 
 /// VRF input point generic over the cipher suite.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
@@ -253,34 +210,10 @@ impl<S: Suite> Output<S> {
     }
 }
 
-/// VRF signature generic over the cipher suite.
-///
-/// An output point which can be used to derive the actual output together
-/// with the actual signature of the input point and the associated data.
-#[derive(Debug, Clone, CanonicalSerialize, CanonicalDeserialize)]
-pub struct Signature<S: Suite> {
-    gamma: Output<S>,
-    c: ScalarField<S>,
-    s: ScalarField<S>,
-}
-
-impl<S: Suite> Signature<S> {
-    /// Proof to hash as defined by RFC9381 section 5.2
-    pub fn hash(&self) -> S::Hash {
-        self.gamma.hash()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::utils::testing::*;
     use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-    use ark_std::UniformRand;
-
-    fn rand_point() -> AffinePoint {
-        let mut rng = ark_std::test_rng();
-        AffinePoint::rand(&mut rng)
-    }
 
     #[test]
     fn codec_works() {
@@ -299,22 +232,9 @@ mod tests {
     }
 
     #[test]
-    fn sign_verify_works() {
-        let secret = Secret::from_seed(TEST_SEED);
-        let public = secret.public();
-        let input = Input::from(rand_point());
-
-        let signature = secret.sign(input, b"foo");
-        assert_eq!(signature.gamma, secret.output(input));
-
-        let result = public.verify(input, b"foo", &signature);
-        assert!(result.is_ok());
-    }
-
-    #[test]
     fn proof_to_hash_works() {
         let secret = Secret::from_seed(TEST_SEED);
-        let input = Input::from(rand_point());
+        let input = Input::from(random_value());
         let output = secret.output(input);
 
         let hash = output.hash();

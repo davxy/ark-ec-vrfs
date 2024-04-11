@@ -1,6 +1,5 @@
-use ark_ff::PrimeField;
-
 use crate::{AffinePoint, Suite};
+use ark_ff::PrimeField;
 
 #[macro_export]
 macro_rules! suite_types {
@@ -10,8 +9,6 @@ macro_rules! suite_types {
         #[allow(dead_code)]
         pub type Public = crate::Public<$suite>;
         #[allow(dead_code)]
-        pub type Signature = crate::Signature<$suite>;
-        #[allow(dead_code)]
         pub type Input = crate::Input<$suite>;
         #[allow(dead_code)]
         pub type Output = crate::Output<$suite>;
@@ -19,6 +16,8 @@ macro_rules! suite_types {
         pub type AffinePoint = crate::AffinePoint<$suite>;
         #[allow(dead_code)]
         pub type ScalarField = crate::ScalarField<$suite>;
+        #[allow(dead_code)]
+        pub type Signature = crate::ietf::Signature<$suite>;
     };
 }
 
@@ -97,7 +96,9 @@ pub fn hash_to_curve_tai<S: Suite>(data: &[u8]) -> Option<AffinePoint<S>> {
 
 #[cfg(test)]
 pub(crate) mod testing {
+    use super::*;
     use crate::*;
+    use ark_std::UniformRand;
 
     pub const TEST_SEED: &[u8] = b"test seed";
 
@@ -117,6 +118,11 @@ pub(crate) mod testing {
     }
 
     suite_types!(TestSuite);
+
+    pub fn random_value<T: UniformRand>() -> T {
+        let mut rng = ark_std::test_rng();
+        T::rand(&mut rng)
+    }
 }
 
 #[cfg(test)]
