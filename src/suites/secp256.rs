@@ -69,6 +69,7 @@ impl Suite for P256Sha256Tai {
 
 #[cfg(test)]
 mod tests {
+    use crate::ietf::IetfSigner;
     use ark_serialize::CanonicalSerialize;
 
     fn encode_value<T: CanonicalSerialize>(value: &T) -> Vec<u8> {
@@ -112,7 +113,7 @@ mod tests {
         let input = Input::from(h);
         let signature = sk.sign(input, []);
 
-        let gamma_bytes = encode_value(&signature.gamma);
+        let gamma_bytes = encode_value(&signature.hash());
         assert_eq!(
             "005b5c726e8c0e2c488a107c600578ee75cb702343c153cb1eb8dec77f4b5071b4",
             hex::encode(&gamma_bytes)

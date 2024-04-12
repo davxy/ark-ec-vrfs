@@ -111,7 +111,22 @@ impl<S: PedersenSuite> PedersenVerifier<S> for Public<S> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::testing::{random_value, Input, Secret, TestSuite, TEST_SEED};
+    use crate::utils::testing::{
+        random_value, AffinePoint, BaseField, Input, Secret, TestSuite, TEST_SEED,
+    };
+    use ark_ff::MontFp;
+
+    impl PedersenSuite for TestSuite {
+        const BLINDING_BASE: AffinePoint = {
+            const X: BaseField = MontFp!(
+                "1181072390894490040170698195029164902368238760122173135634802939739986120753"
+            );
+            const Y: BaseField = MontFp!(
+                "16819438535150625131748701663066892288775529055803151482550035706857354997714"
+            );
+            AffinePoint::new_unchecked(X, Y)
+        };
+    }
 
     #[test]
     fn sign_verify_works() {

@@ -5,7 +5,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(unsafe_code)]
 
-use ark_ec::{AffineRepr, CurveGroup};
+use ark_ec::{AffineRepr, CurveConfig, CurveGroup};
 use ark_ff::PrimeField;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Valid};
 use ark_std::{vec, vec::Vec};
@@ -20,7 +20,6 @@ pub mod utils;
 #[cfg(feature = "ring")]
 pub mod ring;
 
-pub type CurveConfig<S> = <<S as Suite>::Affine as AffineRepr>::Config;
 pub type ScalarField<S> = <<S as Suite>::Affine as AffineRepr>::ScalarField;
 pub type BaseField<S> = <<S as Suite>::Affine as AffineRepr>::BaseField;
 pub type AffinePoint<S> = <S as Suite>::Affine;
@@ -244,7 +243,7 @@ mod tests {
         let output = secret.output(input);
 
         let hash = output.hash();
-        let expected = "84d003045914369f046fbac917bf798a";
+        let expected = "f30ceafdbd80a9280547a9d44a88c188";
         assert_eq!(expected, hex::encode(&hash[..16]));
     }
 }

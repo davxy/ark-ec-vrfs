@@ -65,7 +65,6 @@ impl Suite for BandersnatchBlake2 {
     const SUITE_ID: u8 = 0x33;
     const CHALLENGE_LEN: usize = 32;
 
-    // type Affine = ark_ed_on_bls12_381_bandersnatch::EdwardsAffine;
     type Affine = ark_ed_on_bls12_381_bandersnatch::SWAffine;
     type Hash = [u8; 64];
 
@@ -93,10 +92,15 @@ pub mod ring {
 
     impl ring::Pairing<BandersnatchBlake2> for Bls12_381 {}
 
-    pub type RingContext = ring::RingContext<BandersnatchBlake2, Bls12_381>;
-    pub type VerifierKey = ring::VerifierKey<BandersnatchBlake2, Bls12_381>;
-    pub type Prover = ring::Prover<BandersnatchBlake2, Bls12_381>;
-    pub type Verifier = ring::Verifier<BandersnatchBlake2, Bls12_381>;
+    impl ring::RingSuite for BandersnatchBlake2 {
+        type Config = ark_ed_on_bls12_381_bandersnatch::SWConfig;
+        type Pairing = Bls12_381;
+    }
+
+    pub type RingContext = ring::RingContext<BandersnatchBlake2>;
+    pub type VerifierKey = ring::VerifierKey<BandersnatchBlake2>;
+    pub type Prover = ring::Prover<BandersnatchBlake2>;
+    pub type Verifier = ring::Verifier<BandersnatchBlake2>;
 }
 
 #[cfg(test)]
