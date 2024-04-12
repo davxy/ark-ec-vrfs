@@ -112,7 +112,7 @@ impl<S: PedersenSuite> PedersenVerifier<S> for Public<S> {
 mod tests {
     use super::*;
     use crate::utils::testing::{
-        random_value, AffinePoint, BaseField, Input, Secret, TestSuite, TEST_SEED,
+        random_val, AffinePoint, BaseField, Input, Secret, TestSuite, TEST_SEED,
     };
     use ark_ff::MontFp;
 
@@ -131,7 +131,7 @@ mod tests {
     #[test]
     fn sign_verify_works() {
         let secret = Secret::from_seed(TEST_SEED);
-        let input = Input::from(random_value());
+        let input = Input::from(random_val(None));
 
         let (signature, blinding) = secret.sign(input, b"foo");
         assert_eq!(signature.gamma, secret.output(input));

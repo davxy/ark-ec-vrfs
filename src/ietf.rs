@@ -83,13 +83,13 @@ impl<S: Suite> IetfVerifier<S> for Public<S> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::testing::{random_value, Input, Secret, TEST_SEED};
+    use crate::utils::testing::{random_val, AffinePoint, Input, Secret, TEST_SEED};
 
     #[test]
     fn sign_verify_works() {
         let secret = Secret::from_seed(TEST_SEED);
         let public = secret.public();
-        let input = Input::from(random_value());
+        let input = Input::from(random_val::<AffinePoint>(None));
 
         let signature = secret.sign(input, b"foo");
         assert_eq!(signature.gamma, secret.output(input));

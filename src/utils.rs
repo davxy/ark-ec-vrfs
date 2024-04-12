@@ -100,7 +100,7 @@ pub fn hash_to_curve_tai<S: Suite>(data: &[u8]) -> Option<AffinePoint<S>> {
 pub(crate) mod testing {
     use super::*;
     use crate::*;
-    use ark_std::UniformRand;
+    use ark_std::{rand::RngCore, UniformRand};
 
     pub const TEST_SEED: &[u8] = b"seed";
 
@@ -121,9 +121,18 @@ pub(crate) mod testing {
 
     suite_types!(TestSuite);
 
-    pub fn random_value<T: UniformRand>() -> T {
-        let mut rng = ark_std::test_rng();
-        T::rand(&mut rng)
+    #[inline(always)]
+    pub fn random_vec<T: UniformRand>(n: usize, rng: Option<&mut dyn RngCore>) -> Vec<T> {
+        let mut local_rng = ark_std::test_rng();
+        let rng = rng.unwrap_or(&mut local_rng);
+        (0..n).map(|_| T::rand(rng)).collect()
+    }
+
+    #[inline(always)]
+    pub fn random_val<T: UniformRand>(rng: Option<&mut dyn RngCore>) -> T {
+        let mut local_rng = ark_std::test_rng();
+        let rng = rng.unwrap_or(&mut local_rng);
+        T::rand(rng)
     }
 }
 
@@ -135,7 +144,7 @@ mod tests {
     #[test]
     fn hash_to_curve_tai_works() {
         let pt = hash_to_curve_tai::<TestSuite>(b"hello world").unwrap();
-        // Check that pt is in the prime subgroup
+        // Check that `pt` is in the prime subgroup
         assert!(pt.is_on_curve());
         assert!(pt.is_in_correct_subgroup_assuming_on_curve())
     }

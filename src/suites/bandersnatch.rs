@@ -106,14 +106,14 @@ pub mod ring {
 #[cfg(test)]
 mod test {
     use super::*;
-    use utils::testing::{random_value, TEST_SEED};
+    use utils::testing::{random_val, TEST_SEED};
 
     #[test]
     fn sign_verify_works() {
         use crate::pedersen::{PedersenSigner, PedersenVerifier};
 
         let secret = Secret::from_seed(TEST_SEED);
-        let input = Input::from(random_value());
+        let input = Input::from(random_val(None));
 
         let (signature, blinding) = secret.sign(input, b"foo");
         assert_eq!(signature.output().0, secret.output(input).0);

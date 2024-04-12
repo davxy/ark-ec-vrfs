@@ -239,7 +239,7 @@ mod tests {
     #[test]
     fn proof_to_hash_works() {
         let secret = Secret::from_seed(TEST_SEED);
-        let input = Input::from(random_value());
+        let input = Input::from(random_val(None));
         let output = secret.output(input);
 
         let hash = output.hash();
