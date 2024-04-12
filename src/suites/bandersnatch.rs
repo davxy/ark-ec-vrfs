@@ -57,11 +57,11 @@ use crate::pedersen::PedersenSuite;
 use crate::*;
 
 #[derive(Debug, Copy, Clone)]
-pub struct BandersnatchBlake2;
+pub struct BandersnatchSha512;
 
-suite_types!(BandersnatchBlake2);
+suite_types!(BandersnatchSha512);
 
-impl Suite for BandersnatchBlake2 {
+impl Suite for BandersnatchSha512 {
     const SUITE_ID: u8 = 0x33;
     const CHALLENGE_LEN: usize = 32;
 
@@ -73,7 +73,7 @@ impl Suite for BandersnatchBlake2 {
     }
 }
 
-impl PedersenSuite for BandersnatchBlake2 {
+impl PedersenSuite for BandersnatchSha512 {
     const BLINDING_BASE: AffinePoint = {
         const X: BaseField =
             MontFp!("4956610287995045830459834427365747411162584416641336688940534788579455781570");
@@ -86,22 +86,22 @@ impl PedersenSuite for BandersnatchBlake2 {
 
 #[cfg(feature = "ring")]
 pub mod ring {
-    use super::BandersnatchBlake2;
+    use super::BandersnatchSha512;
     use crate::ring;
     use ark_bls12_381::Bls12_381;
 
-    impl ring::Pairing<BandersnatchBlake2> for Bls12_381 {}
+    impl ring::Pairing<BandersnatchSha512> for Bls12_381 {}
 
-    impl ring::RingSuite for BandersnatchBlake2 {
+    impl ring::RingSuite for BandersnatchSha512 {
         type Config = ark_ed_on_bls12_381_bandersnatch::SWConfig;
         type Pairing = Bls12_381;
     }
 
-    pub type RingContext = ring::RingContext<BandersnatchBlake2>;
-    pub type VerifierKey = ring::VerifierKey<BandersnatchBlake2>;
-    pub type Prover = ring::Prover<BandersnatchBlake2>;
-    pub type Verifier = ring::Verifier<BandersnatchBlake2>;
-    pub type Signature = ring::Signature<BandersnatchBlake2>;
+    pub type RingContext = ring::RingContext<BandersnatchSha512>;
+    pub type VerifierKey = ring::VerifierKey<BandersnatchSha512>;
+    pub type Prover = ring::Prover<BandersnatchSha512>;
+    pub type Verifier = ring::Verifier<BandersnatchSha512>;
+    pub type Signature = ring::Signature<BandersnatchSha512>;
 }
 
 #[cfg(test)]
@@ -124,7 +124,7 @@ mod test {
 
         assert_eq!(
             signature.key_commitment(),
-            secret.public().0 + BandersnatchBlake2::BLINDING_BASE * blinding
+            secret.public().0 + BandersnatchSha512::BLINDING_BASE * blinding
         );
     }
 }
