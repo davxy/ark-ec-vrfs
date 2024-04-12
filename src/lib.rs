@@ -6,6 +6,7 @@
 #![deny(unsafe_code)]
 
 use ark_ec::{AffineRepr, CurveConfig, CurveGroup};
+use zeroize::Zeroize;
 use ark_ff::PrimeField;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Valid};
 use ark_std::{vec, vec::Vec};
@@ -102,13 +103,24 @@ pub trait Suite: Copy + Clone {
 }
 
 /// Secret key generic over the cipher suite.
-// TODO: zeroize
 #[derive(Debug, Clone, PartialEq)]
 pub struct Secret<S: Suite> {
     // Secret scalar.
     scalar: ScalarField<S>,
     // Cached public point.
     public: Public<S>,
+}
+
+impl<S: Suite> Drop for Secret<S> {
+    fn drop(&mut self) {
+        self.zeroize()
+    }
+}
+
+impl<S: Suite> Zeroize for Secret<S> {
+    fn zeroize(&mut self) {
+        self.scalar.zeroize();
+    }
 }
 
 impl<S: Suite> CanonicalSerialize for Secret<S> {
