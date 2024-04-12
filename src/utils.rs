@@ -5,21 +5,21 @@ use ark_ff::PrimeField;
 macro_rules! suite_types {
     ($suite:ident) => {
         #[allow(dead_code)]
-        pub type Secret = crate::Secret<$suite>;
+        pub type Secret = $crate::Secret<$suite>;
         #[allow(dead_code)]
-        pub type Public = crate::Public<$suite>;
+        pub type Public = $crate::Public<$suite>;
         #[allow(dead_code)]
-        pub type Input = crate::Input<$suite>;
+        pub type Input = $crate::Input<$suite>;
         #[allow(dead_code)]
-        pub type Output = crate::Output<$suite>;
+        pub type Output = $crate::Output<$suite>;
         #[allow(dead_code)]
-        pub type AffinePoint = crate::AffinePoint<$suite>;
+        pub type AffinePoint = $crate::AffinePoint<$suite>;
         #[allow(dead_code)]
-        pub type ScalarField = crate::ScalarField<$suite>;
+        pub type ScalarField = $crate::ScalarField<$suite>;
         #[allow(dead_code)]
-        pub type BaseField = crate::BaseField<$suite>;
+        pub type BaseField = $crate::BaseField<$suite>;
         #[allow(dead_code)]
-        pub type Signature = crate::ietf::Signature<$suite>;
+        pub type Signature = $crate::ietf::Signature<$suite>;
     };
 }
 

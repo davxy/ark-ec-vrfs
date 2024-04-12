@@ -1,5 +1,5 @@
 use crate::*;
-use ark_ec::short_weierstrass::SWCurveConfig;
+use ark_ec::{short_weierstrass::SWCurveConfig, CurveConfig};
 use pedersen::{PedersenSigner, PedersenSuite, PedersenVerifier, Signature as PedersenSignature};
 
 // Ring proof assumes:
@@ -14,21 +14,21 @@ pub trait RingSuite:
 
 type Curve<S> = <S as RingSuite>::Config;
 
-type KZG<S> = fflonk::pcs::kzg::KZG<<S as RingSuite>::Pairing>;
+type Pcs<S> = fflonk::pcs::kzg::KZG<<S as RingSuite>::Pairing>;
 type PcsParams<S> = fflonk::pcs::kzg::urs::URS<<S as RingSuite>::Pairing>;
 
 type PairingScalarField<S> = <<S as RingSuite>::Pairing as ark_ec::pairing::Pairing>::ScalarField;
 
-pub type ProverKey<S> = ring_proof::ProverKey<PairingScalarField<S>, KZG<S>, AffinePoint<S>>;
+pub type ProverKey<S> = ring_proof::ProverKey<PairingScalarField<S>, Pcs<S>, AffinePoint<S>>;
 
-pub type VerifierKey<S> = ring_proof::VerifierKey<PairingScalarField<S>, KZG<S>>;
+pub type VerifierKey<S> = ring_proof::VerifierKey<PairingScalarField<S>, Pcs<S>>;
 
-pub type Prover<S> = ring_proof::ring_prover::RingProver<PairingScalarField<S>, KZG<S>, Curve<S>>;
+pub type Prover<S> = ring_proof::ring_prover::RingProver<PairingScalarField<S>, Pcs<S>, Curve<S>>;
 
 pub type Verifier<S> =
-    ring_proof::ring_verifier::RingVerifier<PairingScalarField<S>, KZG<S>, Curve<S>>;
+    ring_proof::ring_verifier::RingVerifier<PairingScalarField<S>, Pcs<S>, Curve<S>>;
 
-pub type RingProof<S> = ring_proof::RingProof<PairingScalarField<S>, KZG<S>>;
+pub type RingProof<S> = ring_proof::RingProof<PairingScalarField<S>, Pcs<S>>;
 
 pub type PiopParams<S> = ring_proof::PiopParams<PairingScalarField<S>, Curve<S>>;
 
@@ -136,7 +136,7 @@ where
         use ring_proof::Domain;
 
         let setup_degree = 3 * domain_size;
-        let pcs_params = <KZG<S>>::setup(setup_degree as usize, rng);
+        let pcs_params = <Pcs<S>>::setup(setup_degree as usize, rng);
 
         let domain = Domain::new(domain_size as usize, true);
         let seed = ring_proof::find_complement_point::<Curve<S>>();

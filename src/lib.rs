@@ -5,8 +5,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(unsafe_code)]
 
-use ark_ec::{AffineRepr, CurveConfig, CurveGroup};
 use zeroize::Zeroize;
+
+use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::PrimeField;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Valid};
 use ark_std::{vec, vec::Vec};
@@ -168,7 +169,7 @@ impl<S: Suite> Secret<S> {
     ///
     /// The `seed` is hashed using the `Suite::hash` to construct the secret scalar.
     pub fn from_seed(seed: &[u8]) -> Self {
-        let bytes = S::hash(&seed);
+        let bytes = S::hash(seed);
         let scalar = ScalarField::<S>::from_le_bytes_mod_order(&bytes[..]);
         Self::from_scalar(scalar)
     }
