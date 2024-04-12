@@ -38,19 +38,15 @@ impl<S: PedersenSuite> PedersenSigner<S> for Secret<S> {
     fn sign(&self, input: Input<S>, ad: impl AsRef<[u8]>) -> (Signature<S>, ScalarField<S>) {
         let gamma = self.output(input);
 
+        // Construct the three nonces (order matters).
         let k = S::nonce(&self.scalar, input);
-        // Secret blinding factor
-        // TODO: use something else
-        let b = S::nonce(&self.scalar, input);
-        // TODO: use something else
-        let kb = S::nonce(&self.scalar, input);
+        let b = S::nonce(&k, input);
+        let kb = S::nonce(&b, input);
 
-        // Yb = k*G + b*B
+        // Yb = x*G + b*B
         let pk_blind = (S::Affine::generator() * self.scalar + S::BLINDING_BASE * b).into_affine();
-
         // R = k*G + kb*B
-        let r = (S::Affine::generator() * kb + S::BLINDING_BASE * kb).into_affine();
-
+        let r = (S::Affine::generator() * k + S::BLINDING_BASE * kb).into_affine();
         // Ok = k*I
         let ok = (input.0 * k).into_affine();
 
@@ -59,7 +55,6 @@ impl<S: PedersenSuite> PedersenSigner<S> for Secret<S> {
 
         // s = k + c*x
         let s = k + c * self.scalar;
-
         // sb = kb + c*b
         let sb = kb + c * b;
 
