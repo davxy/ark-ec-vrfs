@@ -101,6 +101,7 @@ pub mod ring {
     pub type VerifierKey = ring::VerifierKey<BandersnatchBlake2>;
     pub type Prover = ring::Prover<BandersnatchBlake2>;
     pub type Verifier = ring::Verifier<BandersnatchBlake2>;
+    pub type Signature = ring::Signature<BandersnatchBlake2>;
 }
 
 #[cfg(test)]

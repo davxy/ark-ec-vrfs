@@ -34,6 +34,7 @@ pub type PiopParams<S> = ring_proof::PiopParams<PairingScalarField<S>, Curve<S>>
 
 pub trait Pairing<S: RingSuite>: ark_ec::pairing::Pairing<ScalarField = BaseField<S>> {}
 
+#[derive(Clone, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Signature<S: RingSuite>
 where
     <S::Config as CurveConfig>::BaseField: ark_ff::PrimeField,
@@ -124,14 +125,18 @@ where
     Curve<S>: SWCurveConfig + Clone,
     <Curve<S> as CurveConfig>::BaseField: ark_ff::PrimeField,
 {
-    #[cfg(feature = "getrandom")]
-    pub fn rand(domain_size: u32) -> Self {
+    pub fn from_seed(domain_size: u32, seed: [u8; 32]) -> Self {
+        use ark_std::rand::SeedableRng;
+        let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
+        Self::new_random(domain_size, &mut rng)
+    }
+
+    pub fn new_random<R: ark_std::rand::RngCore>(domain_size: u32, rng: &mut R) -> Self {
         use fflonk::pcs::PCS;
         use ring_proof::Domain;
 
-        let mut rng = ark_std::rand::thread_rng();
         let setup_degree = 3 * domain_size;
-        let pcs_params = <KZG<S>>::setup(setup_degree as usize, &mut rng);
+        let pcs_params = <KZG<S>>::setup(setup_degree as usize, rng);
 
         let domain = Domain::new(domain_size as usize, true);
         let seed = ring_proof::find_complement_point::<Curve<S>>();
@@ -234,6 +239,22 @@ where
     PiopParams::<S>::setup(domain, S::BLINDING_BASE, S::BLINDING_BASE)
 }
 
+pub fn make_ring_verifier<S: RingSuite>(
+    verifier_key: VerifierKey<S>,
+    domain_size: usize,
+) -> Verifier<S>
+where
+    Curve<S>: SWCurveConfig,
+    <Curve<S> as CurveConfig>::BaseField: ark_ff::PrimeField,
+{
+    let piop_params = make_piop_params::<S>(domain_size);
+    <Verifier<S>>::init(
+        verifier_key,
+        piop_params,
+        merlin::Transcript::new(b"ring-vrf"),
+    )
+}
+
 impl<S: RingSuite + Sync> Valid for RingContext<S>
 where
     Curve<S>: SWCurveConfig + Clone,
@@ -254,7 +275,7 @@ mod tests {
     fn sign_verify_works() {
         let rng = &mut ark_std::test_rng();
         let domain_size = 1024;
-        let ring_ctx = RingContext::rand(domain_size);
+        let ring_ctx = RingContext::new_random(domain_size, rng);
 
         let secret = Secret::from_seed(TEST_SEED);
         let public = secret.public();

@@ -20,6 +20,11 @@ pub mod utils;
 #[cfg(feature = "ring")]
 pub mod ring;
 
+pub mod prelude {
+    pub use ark_serialize;
+    pub use ark_std;
+}
+
 pub type ScalarField<S> = <<S as Suite>::Affine as AffineRepr>::ScalarField;
 pub type BaseField<S> = <<S as Suite>::Affine as AffineRepr>::BaseField;
 pub type AffinePoint<S> = <S as Suite>::Affine;
@@ -98,7 +103,7 @@ pub trait Suite: Copy + Clone {
 
 /// Secret key generic over the cipher suite.
 // TODO: zeroize
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Secret<S: Suite> {
     // Secret scalar.
     scalar: ScalarField<S>,
