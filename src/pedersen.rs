@@ -1,6 +1,7 @@
+use crate::ietf::IetfSuite;
 use crate::*;
 
-pub trait PedersenSuite: Suite {
+pub trait PedersenSuite: IetfSuite {
     const BLINDING_BASE: AffinePoint<Self>;
 }
 

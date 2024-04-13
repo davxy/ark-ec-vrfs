@@ -18,7 +18,7 @@ use zeroize::Zeroize;
 
 use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::PrimeField;
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Valid};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::{vec, vec::Vec};
 
 use core::ops::{Index, RangeFrom, RangeFull, RangeTo};
@@ -90,10 +90,10 @@ pub trait Suite: Copy + Clone {
     /// This function panics if `Hash` is less than 32 bytes.
     fn nonce(sk: &ScalarField<Self>, pt: Input<Self>) -> ScalarField<Self> {
         let mut buf = Vec::new();
-        sk.serialize_compressed(&mut buf).unwrap();
+        Self::scalar_encode(sk, &mut buf);
         let sk_hash = &Self::hash(&buf)[32..];
         buf.clear();
-        pt.0.serialize_compressed(&mut buf).unwrap();
+        Self::point_encode(&pt.0, &mut buf);
         let v = [sk_hash, &buf[..]].concat();
         let h = &Self::hash(&v)[..];
         ScalarField::<Self>::from_le_bytes_mod_order(h)
@@ -110,12 +110,33 @@ pub trait Suite: Copy + Clone {
         const DOM_SEP_END: u8 = 0x00;
         let mut buf = vec![Self::SUITE_ID, DOM_SEP_START];
         pts.iter().for_each(|p| {
-            p.serialize_compressed(&mut buf).unwrap();
+            Self::point_encode(p, &mut buf);
         });
         buf.extend_from_slice(ad);
         buf.push(DOM_SEP_END);
         let hash = &Self::hash(&buf)[..Self::CHALLENGE_LEN];
         ScalarField::<Self>::from_le_bytes_mod_order(hash)
+    }
+
+    fn data_to_point(data: &[u8]) -> Option<AffinePoint<Self>> {
+        utils::hash_to_curve_tai::<Self>(data)
+    }
+
+    fn point_to_hash(pt: &AffinePoint<Self>) -> Self::Hash {
+        const DOM_SEP_START: u8 = 0x03;
+        const DOM_SEP_END: u8 = 0x00;
+        let mut buf = vec![Self::SUITE_ID, DOM_SEP_START];
+        Self::point_encode(pt, &mut buf);
+        buf.push(DOM_SEP_END);
+        Self::hash(&buf)
+    }
+
+    fn point_encode(pt: &AffinePoint<Self>, buf: &mut Vec<u8>) {
+        pt.serialize_compressed(buf).unwrap();
+    }
+
+    fn scalar_encode(sc: &ScalarField<Self>, buf: &mut Vec<u8>) {
+        sc.serialize_compressed(buf).unwrap();
     }
 }
 
@@ -167,7 +188,7 @@ impl<S: Suite> CanonicalDeserialize for Secret<S> {
     }
 }
 
-impl<S: Suite> Valid for Secret<S> {
+impl<S: Suite> ark_serialize::Valid for Secret<S> {
     fn check(&self) -> Result<(), ark_serialize::SerializationError> {
         self.scalar.check()
     }
@@ -222,6 +243,11 @@ pub struct Public<S: Suite>(pub AffinePoint<S>);
 pub struct Input<S: Suite>(pub S::Affine);
 
 impl<S: Suite> Input<S> {
+    /// Construct from [`Suite::data_to_point`].
+    pub fn new(data: &[u8]) -> Option<Self> {
+        S::data_to_point(data).map(Input)
+    }
+
     /// Construct from inner affine point.
     pub fn from(value: <S as Suite>::Affine) -> Self {
         Input(value)
@@ -238,14 +264,9 @@ impl<S: Suite> Output<S> {
         Output(value)
     }
 
-    /// Proof to hash as defined by RFC9381 section 5.2
+    /// Hash using `[Suite::point_to_hash]`.
     pub fn hash(&self) -> S::Hash {
-        const DOM_SEP_START: u8 = 0x03;
-        const DOM_SEP_END: u8 = 0x00;
-        let mut buf = vec![S::SUITE_ID, DOM_SEP_START];
-        self.0.serialize_compressed(&mut buf).unwrap();
-        buf.push(DOM_SEP_END);
-        S::hash(&buf)
+        S::point_to_hash(&self.0)
     }
 }
 

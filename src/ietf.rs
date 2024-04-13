@@ -6,6 +6,10 @@
 
 use super::*;
 
+pub trait IetfSuite: Suite {}
+
+impl<T> IetfSuite for T where T: Suite {}
+
 /// VRF signature generic over the cipher suite.
 ///
 /// An output point which can be used to derive the actual output together
