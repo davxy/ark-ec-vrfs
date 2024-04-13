@@ -26,6 +26,8 @@ impl<S: PedersenSuite> Signature<S> {
 
 pub trait PedersenSigner<S: PedersenSuite> {
     /// Sign the input and the user additional data `ad`.
+    ///
+    /// Returns the signature together with the blinding factor.
     fn sign(&self, input: Input<S>, ad: impl AsRef<[u8]>) -> (Signature<S>, ScalarField<S>);
 }
 
@@ -38,7 +40,7 @@ impl<S: PedersenSuite> PedersenSigner<S> for Secret<S> {
     fn sign(&self, input: Input<S>, ad: impl AsRef<[u8]>) -> (Signature<S>, ScalarField<S>) {
         let gamma = self.output(input);
 
-        // Construct the three nonces (order matters).
+        // Construct the nonces
         let k = S::nonce(&self.scalar, input);
         let b = S::nonce(&k, input);
         let kb = S::nonce(&b, input);

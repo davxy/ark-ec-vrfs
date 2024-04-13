@@ -1,6 +1,15 @@
-//! Elliptic Curve VRFs with optional additional data.
+//! # Elliptic Curve VRFs.
 //!
-//! The implementation is built using Arkworks and is generic over the curve.
+//! Provides:
+//! - IETF VRF as described by [RFC 9381](https://datatracker.ietf.org/doc/rfc9381).
+//! - Pedersen VRF as described by [Burdges](https://eprint.iacr.org/2023/002).
+//! - Ring VRF as described by [Vasilyev](https://eprint.iacr.org/2023/002).
+//!
+//! Primitives description is further elaborated in the
+//! [technical spec](https://github.com/davxy/bandersnatch-vrfs-spec).
+//!
+//! The implementation is built using Arkworks and is quite flexible to further
+//! customization.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(unsafe_code)]
@@ -36,9 +45,12 @@ pub enum Error {
     VerificationFailure,
 }
 
-/// Defines a cipher suite as defined by RFC-9381 Section 5.5.
+/// Defines a cipher suite.
+///
+/// This trait can be used to implement a VRF which follows the guidelines
+/// given by RFC-9381 section 5.5 for cipher-suite implementation.
 pub trait Suite: Copy + Clone {
-    /// Suite identifier (aka `suite_string`)
+    /// Suite identifier (aka `suite_string` in RFC-9381)
     const SUITE_ID: u8;
 
     /// Challenge length.
@@ -46,7 +58,7 @@ pub trait Suite: Copy + Clone {
     /// Must be at least equal to the Hash length.
     const CHALLENGE_LEN: usize;
 
-    /// Affine point.
+    /// Curve point in affine representation.
     ///
     /// The point is guaranteed to be in the correct prime order subgroup
     /// by the `AffineRepr` bound.
@@ -58,16 +70,20 @@ pub trait Suite: Copy + Clone {
         + Index<RangeFrom<usize>, Output = [u8]>
         + Index<RangeFull, Output = [u8]>;
 
-    /// Hasher
+    /// Hasher.
     fn hash(data: &[u8]) -> Self::Hash;
 
-    /// Nonce generation as described by [RFC9381] section 5.4.2.
+    /// Nonce generation as described by RFC-9381 section 5.4.2.
     ///
-    /// In particular the default implementation provides the variant described
-    /// by section 5.4.2.2 which is a derived from steps 2 and 3 in section 5.1.6
-    /// of [RFC8032](https://tools.ietf.org/html/rfc8032).
+    /// The default implementation provides the variant described
+    /// by section 5.4.2.2 of RFC-9381 which in turn is a derived
+    /// from steps 2 and 3 in section 5.1.6 of
+    /// [RFC8032](https://tools.ietf.org/html/rfc8032).
     ///
-    /// `Hash` MUST be be at least 64 bytes.
+    /// The algorithm generate the nonce value in a deterministic
+    /// pseudorandom fashion.
+    ///
+    /// `Hash` **MUST** be be at least 64 bytes.
     ///
     /// # Panics
     ///
@@ -83,12 +99,12 @@ pub trait Suite: Copy + Clone {
         ScalarField::<Self>::from_le_bytes_mod_order(h)
     }
 
-    /// Challenge generation as described by [RCF9381] section 5.4.3.
+    /// Challenge generation as described by RCF-9381 section 5.4.3.
     ///
     /// Hashes several points on the curve.
     ///
-    /// RFC extension: implementation allows to hash some user additional data
-    /// `ad` after the points and before the domain separation end.
+    /// This implementation extends the RFC procedure to allow adding
+    /// some optional additional data too the hashing procedure.
     fn challenge(pts: &[&AffinePoint<Self>], ad: &[u8]) -> ScalarField<Self> {
         const DOM_SEP_START: u8 = 0x02;
         const DOM_SEP_END: u8 = 0x00;
@@ -103,7 +119,7 @@ pub trait Suite: Copy + Clone {
     }
 }
 
-/// Secret key generic over the cipher suite.
+/// Secret key.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Secret<S: Suite> {
     // Secret scalar.
