@@ -127,37 +127,34 @@ mod tests {
     }
 
     fn test_vector(v: &TestVector) {
-        let encode_point = |p| utils::encode_point::<S>(p);
-        let encode_scalar = |s| utils::encode_scalar::<S>(s);
-
         let mut sk_bytes = hex::decode(v.sk).unwrap();
         sk_bytes.reverse();
         let sk = Secret::deserialize_compressed(&mut sk_bytes.as_slice()).unwrap();
 
-        let pk_bytes = encode_point(&sk.public.0);
+        let pk_bytes = utils::encode_point::<S>(&sk.public.0);
         assert_eq!(v.pk, hex::encode(&pk_bytes));
 
         // Prepare hash_to_curve data = salt || alpha
         // Salt is defined to be pk (adjust it to make the encoding to match)
         let h2c_data = [&pk_bytes[..], v.alpha].concat();
         let h = S::data_to_point(&h2c_data).unwrap();
-        let h_bytes = encode_point(&h);
+        let h_bytes = utils::encode_point::<S>(&h);
         assert_eq!(v.h, hex::encode(h_bytes));
 
         let input = Input::from(h);
         let signature = sk.sign(input, []);
 
-        let gamma_bytes = encode_point(&signature.output().0);
-        assert_eq!(v.gamma, hex::encode(&gamma_bytes));
+        let gamma_bytes = utils::encode_point::<S>(&signature.output().0);
+        assert_eq!(v.gamma, hex::encode(gamma_bytes));
 
         if v.skip_sign_check {
             return;
         }
 
-        let c_bytes = encode_scalar(&signature.c);
+        let c_bytes = utils::encode_scalar::<S>(&signature.c);
         assert_eq!(v.c, hex::encode(c_bytes));
 
-        let s_bytes = encode_scalar(&signature.s);
+        let s_bytes = utils::encode_scalar::<S>(&signature.s);
         assert_eq!(v.s, hex::encode(s_bytes));
 
         let beta = signature.gamma.hash();
