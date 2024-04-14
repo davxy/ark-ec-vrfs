@@ -170,7 +170,7 @@ mod tests {
 
     #[test]
     fn signature_encode_decode() {
-        let gamma = utils::hash_to_curve_tai::<TestSuite>(b"foobar").unwrap();
+        let gamma = utils::hash_to_curve_tai::<TestSuite>(b"foobar", false).unwrap();
         let c = hex::decode("d091c00b0f5c3619d10ecea44363b5a5").unwrap();
         let c = ScalarField::from_be_bytes_mod_order(&c[..]);
         let s = hex::decode("99cadc5b2957e223fec62e81f7b4825fc799a771a3d7334b9186bdbee87316b1")

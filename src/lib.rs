@@ -111,8 +111,11 @@ pub trait Suite: Copy + Clone {
         ScalarField::<Self>::from_be_bytes_mod_order(hash)
     }
 
+    /// Hash data to a curve point.
+    ///
+    /// By default uses try and increment method.
     fn data_to_point(data: &[u8]) -> Option<AffinePoint<Self>> {
-        utils::hash_to_curve_tai::<Self>(data)
+        utils::hash_to_curve_tai::<Self>(data, false)
     }
 
     fn point_to_hash(pt: &AffinePoint<Self>) -> Self::Hash {

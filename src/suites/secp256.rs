@@ -70,6 +70,10 @@ impl Suite for P256Sha256Tai {
         utils::nonce_rfc_6979::<Self>(sk, &pt.0)
     }
 
+    fn data_to_point(data: &[u8]) -> Option<AffinePoint> {
+        utils::hash_to_curve_tai::<Self>(data, true)
+    }
+
     /// Encode point according to Section 2.3.3 "SEC 1: Elliptic Curve Cryptography",
     /// (https://www.secg.org/sec1-v2.pdf) with point compression on.
     #[inline(always)]

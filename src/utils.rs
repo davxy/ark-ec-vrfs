@@ -71,7 +71,7 @@ pub fn hmac(sk: &[u8], data: &[u8]) -> Vec<u8> {
 /// find a valid curve point after approximately two attempts on average.
 ///
 /// The input `data` is defined to be `salt || alpha` according to the spec.
-pub fn hash_to_curve_tai<S: Suite>(data: &[u8]) -> Option<AffinePoint<S>> {
+pub fn hash_to_curve_tai<S: Suite>(data: &[u8], point_be_encoding: bool) -> Option<AffinePoint<S>> {
     use ark_ec::AffineRepr;
     use ark_ff::Field;
     use ark_serialize::CanonicalDeserialize;
@@ -91,11 +91,10 @@ pub fn hash_to_curve_tai<S: Suite>(data: &[u8]) -> Option<AffinePoint<S>> {
         if hash.len() < mod_size {
             return None;
         }
-        // TODO This is specific for P256 (maybe we should add a method in Suite? Maybe another trait?)
-        // E.g. TaiSuite: Suite { fn point_decode }
-        // The differences are on the flags, the length of the data and endianess (e.g. secp decodes from big endian)
         let mut hash = hash.to_vec();
-        hash.reverse();
+        if point_be_encoding {
+            hash.reverse();
+        }
         hash.push(0x00);
 
         if let Ok(pt) = AffinePoint::<S>::deserialize_compressed_unchecked(&hash[..]) {
@@ -239,7 +238,7 @@ mod tests {
 
     #[test]
     fn hash_to_curve_tai_works() {
-        let pt = hash_to_curve_tai::<TestSuite>(b"hello world").unwrap();
+        let pt = hash_to_curve_tai::<TestSuite>(b"hello world", false).unwrap();
         // Check that `pt` is in the prime subgroup
         assert!(pt.is_on_curve());
         assert!(pt.is_in_correct_subgroup_assuming_on_curve())
