@@ -33,7 +33,7 @@ hex = "0.4.3"
 ark-ed25519 = "0.4.0"
 
 [features]
-default = [ "std", "secp256r1" ]
+default = [ "std" ]
 std = [
   "getrandom",
   "ark-std/std",

@@ -1,6 +1,9 @@
 use crate::{AffinePoint, ScalarField, Suite};
 use ark_ff::PrimeField;
 
+#[cfg(not(feature = "std"))]
+use ark_std::vec::Vec;
+
 #[macro_export]
 macro_rules! suite_types {
     ($suite:ident) => {
@@ -140,14 +143,14 @@ pub fn nonce_rfc_8032<S: Suite>(sk: &ScalarField<S>, input: &AffinePoint<S>) -> 
 /// The algorithm generate the nonce value in a deterministic
 /// pseudorandom fashion.
 pub fn nonce_rfc_6979<S: Suite>(sk: &ScalarField<S>, input: &AffinePoint<S>) -> ScalarField<S> {
-    let raw = encode_point::<S>(&input);
+    let raw = encode_point::<S>(input);
     let h1 = S::hash(&raw);
 
     let v = [1; 32];
     let k = [0; 32];
 
     // K = HMAC_K(V || 0x00 || int2octets(x) || bits2octets(h1))
-    let x = encode_scalar::<S>(&sk);
+    let x = encode_scalar::<S>(sk);
     let raw = [&v[..], &[0x00], &x[..], &h1[..]].concat();
     let k = hmac(&k, &raw);
 
@@ -177,16 +180,6 @@ pub fn encode_scalar<S: Suite>(sc: &ScalarField<S>) -> Vec<u8> {
     let mut buf = Vec::new();
     S::scalar_encode(sc, &mut buf);
     buf
-}
-
-pub fn print_point<S: Suite>(pt: &AffinePoint<S>, prefix: &str) {
-    let buf = encode_point::<S>(pt);
-    println!("{}: {}", prefix, hex::encode(buf));
-}
-
-pub fn print_scalar<S: Suite>(sc: &ScalarField<S>, prefix: &str) {
-    let buf = encode_scalar::<S>(sc);
-    println!("{}: {}", prefix, hex::encode(buf));
 }
 
 #[cfg(test)]
