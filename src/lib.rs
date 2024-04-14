@@ -133,6 +133,11 @@ pub trait Suite: Copy + Clone {
     fn scalar_encode(sc: &ScalarField<Self>, buf: &mut Vec<u8>) {
         sc.serialize_compressed(buf).unwrap();
     }
+
+    #[inline(always)]
+    fn scalar_decode(buf: &[u8]) -> ScalarField<Self> {
+        <ScalarField<Self>>::from_le_bytes_mod_order(buf)
+    }
 }
 
 /// Secret key.

@@ -56,8 +56,7 @@ pub fn hmac(sk: &[u8], data: &[u8]) -> Vec<u8> {
     let mut mac = HmacSha256::new_from_slice(sk).expect("HMAC can take key of any size");
     mac.update(data);
     let result = mac.finalize();
-    let bytes = result.into_bytes();
-    bytes.to_vec()
+    result.into_bytes().to_vec()
 }
 
 /// Try-And-Increment (TAI) method as defined by RFC9381 section 5.4.1.1.
@@ -130,8 +129,7 @@ pub fn nonce_rfc_8032<S: Suite>(sk: &ScalarField<S>, input: &AffinePoint<S>) -> 
     let v = [sk_hash, &raw[..]].concat();
     let h = &S::hash(&v)[..];
 
-    // TODO implement S::scalar_from_bytes
-    ScalarField::<S>::from_le_bytes_mod_order(h)
+    S::scalar_decode(h)
 }
 
 /// Nonce generation according to RFC 9381 section 5.4.2.1.
@@ -167,12 +165,7 @@ pub fn nonce_rfc_6979<S: Suite>(sk: &ScalarField<S>, input: &AffinePoint<S>) -> 
     // TODO: loop until 1 < k < q
     let v = hmac(&k, &v);
 
-    // NOTE: construct from BE byte order
-    // TODO: construct using the byte order used by `S`
-    // e.g. BE is valid for secp but not ed
-    let k = <ScalarField<S>>::from_be_bytes_mod_order(&v[..]);
-
-    k
+    S::scalar_decode(&v)
 }
 
 pub fn encode_point<S: Suite>(pt: &AffinePoint<S>) -> Vec<u8> {

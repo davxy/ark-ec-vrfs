@@ -96,6 +96,11 @@ impl Suite for P256Sha256Tai {
         tmp.reverse();
         buf.extend_from_slice(&tmp[..]);
     }
+
+    #[inline(always)]
+    fn scalar_decode(buf: &[u8]) -> ScalarField {
+        ScalarField::from_be_bytes_mod_order(buf)
+    }
 }
 
 #[cfg(test)]

@@ -15,11 +15,71 @@ impl<T> IetfSuite for T where T: Suite {}
 /// An output point which can be used to derive the actual output together
 /// with the actual signature of the input point and the associated data.
 // TODO: manually implement serialization to respect S::CHALLENGE_LEN value.
-#[derive(Debug, Clone, CanonicalSerialize, CanonicalDeserialize)]
-pub struct Signature<S: Suite> {
+#[derive(Debug, Clone)]
+pub struct Signature<S: IetfSuite> {
     pub gamma: Output<S>,
     pub c: ScalarField<S>,
     pub s: ScalarField<S>,
+}
+
+impl<S: IetfSuite + Sync> CanonicalSerialize for Signature<S> {
+    fn serialize_with_mode<W: ark_serialize::Write>(
+        &self,
+        mut writer: W,
+        compress: ark_serialize::Compress,
+    ) -> Result<(), ark_serialize::SerializationError> {
+        self.gamma.serialize_with_mode(&mut writer, compress)?;
+        let buf = utils::encode_scalar::<S>(&self.c);
+        if buf.len() < S::CHALLENGE_LEN {
+            // Encoded scalar length must be at least S::CHALLENGE_LEN
+            return Err(ark_serialize::SerializationError::NotEnoughSpace);
+        }
+        writer.write_all(&buf[..S::CHALLENGE_LEN])?;
+        self.s.serialize_compressed(&mut writer)?;
+        Ok(())
+    }
+
+    fn serialized_size(&self, compress: ark_serialize::Compress) -> usize {
+        self.gamma.serialized_size(compress) + S::CHALLENGE_LEN + self.s.compressed_size()
+    }
+}
+
+impl<S: IetfSuite + Sync> CanonicalDeserialize for Signature<S> {
+    fn deserialize_with_mode<R: ark_serialize::Read>(
+        mut reader: R,
+        compress: ark_serialize::Compress,
+        validate: ark_serialize::Validate,
+    ) -> Result<Self, ark_serialize::SerializationError> {
+        let gamma = <AffinePoint<S> as CanonicalDeserialize>::deserialize_with_mode(
+            &mut reader,
+            compress,
+            validate,
+        )?;
+        let c = <ScalarField<S> as CanonicalDeserialize>::deserialize_with_mode(
+            &mut reader,
+            ark_serialize::Compress::No,
+            ark_serialize::Validate::Yes,
+        )?;
+        let s = <ScalarField<S> as CanonicalDeserialize>::deserialize_with_mode(
+            &mut reader,
+            ark_serialize::Compress::No,
+            ark_serialize::Validate::Yes,
+        )?;
+        Ok(Signature {
+            gamma: Output(gamma),
+            c,
+            s,
+        })
+    }
+}
+
+impl<S: IetfSuite + Sync> ark_serialize::Valid for Signature<S> {
+    fn check(&self) -> Result<(), ark_serialize::SerializationError> {
+        self.gamma.check()?;
+        self.c.check()?;
+        self.s.check()?;
+        Ok(())
+    }
 }
 
 impl<S: Suite> Signature<S> {
@@ -91,7 +151,9 @@ impl<S: Suite> IetfVerifier<S> for Public<S> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::testing::{random_val, AffinePoint, Input, Secret, TEST_SEED};
+    use crate::utils::testing::{
+        random_val, AffinePoint, Input, ScalarField, Secret, TestSuite, TEST_SEED,
+    };
 
     #[test]
     fn sign_verify_works() {
@@ -104,5 +166,25 @@ mod tests {
 
         let result = public.verify(input, b"foo", &signature);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn signature_encode_decode() {
+        let gamma = utils::hash_to_curve_tai::<TestSuite>(b"foobar").unwrap();
+        let c = hex::decode("d091c00b0f5c3619d10ecea44363b5a5").unwrap();
+        let c = ScalarField::from_be_bytes_mod_order(&c[..]);
+        let s = hex::decode("99cadc5b2957e223fec62e81f7b4825fc799a771a3d7334b9186bdbee87316b1")
+            .unwrap();
+        let s = ScalarField::from_be_bytes_mod_order(&s[..]);
+
+        let signature = Signature::<TestSuite> {
+            gamma: Output(gamma),
+            c,
+            s,
+        };
+
+        let mut buf = Vec::new();
+        signature.serialize_compressed(&mut buf).unwrap();
+        assert_eq!(buf.len(), TestSuite::CHALLENGE_LEN + 64);
     }
 }
