@@ -16,15 +16,19 @@ impl<T> IetfSuite for T where T: Suite {}
 /// with the actual signature of the input point and the associated data.
 #[derive(Debug, Clone, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Signature<S: Suite> {
-    gamma: Output<S>,
-    c: ScalarField<S>,
-    s: ScalarField<S>,
+    pub gamma: Output<S>,
+    pub c: ScalarField<S>,
+    pub s: ScalarField<S>,
 }
 
 impl<S: Suite> Signature<S> {
     /// Proof to hash as defined by RFC9381 section 5.2
     pub fn hash(&self) -> S::Hash {
         self.gamma.hash()
+    }
+
+    pub fn output(&self) -> Output<S> {
+        self.gamma
     }
 }
 
@@ -48,7 +52,14 @@ impl<S: Suite> IetfSigner<S> for Secret<S> {
         let gamma = self.output(input);
         let k = S::nonce(&self.scalar, input);
 
+        println!(">>> {:?}", k);
+
         let k_b = (S::Affine::generator() * k).into_affine();
+        let mut buf = Vec::new();
+        S::point_encode(&k_b, &mut buf);
+        println!("KB: {}", k_b);
+        println!("KB: {}", hex::encode(buf));
+
         let k_h = (input.0 * k).into_affine();
 
         let c = S::challenge(

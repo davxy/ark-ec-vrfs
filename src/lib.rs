@@ -111,11 +111,13 @@ pub trait Suite: Copy + Clone {
         let mut buf = vec![Self::SUITE_ID, DOM_SEP_START];
         pts.iter().for_each(|p| {
             Self::point_encode(p, &mut buf);
+            println!("L: {}", buf.len());
         });
         buf.extend_from_slice(ad);
+        println!("L: {}", buf.len());
         buf.push(DOM_SEP_END);
         let hash = &Self::hash(&buf)[..Self::CHALLENGE_LEN];
-        ScalarField::<Self>::from_le_bytes_mod_order(hash)
+        ScalarField::<Self>::from_be_bytes_mod_order(hash)
     }
 
     fn data_to_point(data: &[u8]) -> Option<AffinePoint<Self>> {
@@ -131,10 +133,12 @@ pub trait Suite: Copy + Clone {
         Self::hash(&buf)
     }
 
+    #[inline(always)]
     fn point_encode(pt: &AffinePoint<Self>, buf: &mut Vec<u8>) {
         pt.serialize_compressed(buf).unwrap();
     }
 
+    #[inline(always)]
     fn scalar_encode(sc: &ScalarField<Self>, buf: &mut Vec<u8>) {
         sc.serialize_compressed(buf).unwrap();
     }

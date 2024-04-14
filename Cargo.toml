@@ -26,12 +26,14 @@ fflonk = { git = "https://github.com/w3f/fflonk", default-features = false, opti
 ring-proof = { package = "ring", git = "https://github.com/w3f/ring-proof", default-features = false, optional = true }
 merlin = { version = "3.0.0", default-features = false, optional = true }
 
-[dev-dependencies]
+hmac = "0.12.1"
 hex = "0.4.3"
+
+[dev-dependencies]
 ark-ed25519 = "0.4.0"
 
 [features]
-default = [ "std", "ring" ]
+default = [ "std", "secp256r1" ]
 std = [
   "getrandom",
   "ark-std/std",

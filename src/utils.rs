@@ -122,6 +122,7 @@ pub(crate) mod testing {
     suite_types!(TestSuite);
 
     #[inline(always)]
+    #[allow(unused)]
     pub fn random_vec<T: UniformRand>(n: usize, rng: Option<&mut dyn RngCore>) -> Vec<T> {
         let mut local_rng = ark_std::test_rng();
         let rng = rng.unwrap_or(&mut local_rng);
@@ -129,6 +130,7 @@ pub(crate) mod testing {
     }
 
     #[inline(always)]
+    #[allow(unused)]
     pub fn random_val<T: UniformRand>(rng: Option<&mut dyn RngCore>) -> T {
         let mut local_rng = ark_std::test_rng();
         let rng = rng.unwrap_or(&mut local_rng);
