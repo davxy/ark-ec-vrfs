@@ -186,7 +186,6 @@ where
     Curve<S>: SWCurveConfig + Clone,
     <Curve<S> as CurveConfig>::BaseField: ark_ff::PrimeField,
 {
-    // Required methods
     fn serialize_with_mode<W: Write>(
         &self,
         mut writer: W,
@@ -204,9 +203,6 @@ where
 
 impl<S: RingSuite + Sync> CanonicalDeserialize for RingContext<S>
 where
-    // <SWAffine<S> as AffineRepr>::Config: SWCurveConfig,
-    // CurveConfig<S>: SWCurveConfig<BaseField = BaseField<S>>,
-    // BaseField<S>: PrimeField,
     Curve<S>: SWCurveConfig + Clone,
     <Curve<S> as CurveConfig>::BaseField: ark_ff::PrimeField,
 {

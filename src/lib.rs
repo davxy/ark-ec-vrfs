@@ -89,14 +89,7 @@ pub trait Suite: Copy + Clone {
     ///
     /// This function panics if `Hash` is less than 32 bytes.
     fn nonce(sk: &ScalarField<Self>, pt: Input<Self>) -> ScalarField<Self> {
-        let mut buf = Vec::new();
-        Self::scalar_encode(sk, &mut buf);
-        let sk_hash = &Self::hash(&buf)[32..];
-        buf.clear();
-        Self::point_encode(&pt.0, &mut buf);
-        let v = [sk_hash, &buf[..]].concat();
-        let h = &Self::hash(&v)[..];
-        ScalarField::<Self>::from_le_bytes_mod_order(h)
+        utils::nonce_rfc_8032::<Self>(sk, &pt.0)
     }
 
     /// Challenge generation as described by RCF-9381 section 5.4.3.
@@ -115,11 +108,14 @@ pub trait Suite: Copy + Clone {
         buf.extend_from_slice(ad);
         buf.push(DOM_SEP_END);
         let hash = &Self::hash(&buf)[..Self::CHALLENGE_LEN];
-        ScalarField::<Self>::from_le_bytes_mod_order(hash)
+        ScalarField::<Self>::from_be_bytes_mod_order(hash)
     }
 
+    /// Hash data to a curve point.
+    ///
+    /// By default uses try and increment method.
     fn data_to_point(data: &[u8]) -> Option<AffinePoint<Self>> {
-        utils::hash_to_curve_tai::<Self>(data)
+        utils::hash_to_curve_tai::<Self>(data, false)
     }
 
     fn point_to_hash(pt: &AffinePoint<Self>) -> Self::Hash {
@@ -131,12 +127,19 @@ pub trait Suite: Copy + Clone {
         Self::hash(&buf)
     }
 
+    #[inline(always)]
     fn point_encode(pt: &AffinePoint<Self>, buf: &mut Vec<u8>) {
         pt.serialize_compressed(buf).unwrap();
     }
 
+    #[inline(always)]
     fn scalar_encode(sc: &ScalarField<Self>, buf: &mut Vec<u8>) {
         sc.serialize_compressed(buf).unwrap();
+    }
+
+    #[inline(always)]
+    fn scalar_decode(buf: &[u8]) -> ScalarField<Self> {
+        <ScalarField<Self>>::from_le_bytes_mod_order(buf)
     }
 }
 
