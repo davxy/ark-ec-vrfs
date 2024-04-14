@@ -48,7 +48,7 @@ jobs:
           profile: minimal
           toolchain: stable
       - name: Build
-        run: cargo build --verbose
+        run: cargo build --verbose --all-features
 
   build-wasm32:
     runs-on: ubuntu-latest
@@ -73,5 +73,5 @@ jobs:
           profile: minimal
           toolchain: stable
       - name: Run tests
-        run: cargo test --release
+        run: cargo test --release --all-features
 
