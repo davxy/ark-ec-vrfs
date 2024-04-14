@@ -89,14 +89,7 @@ pub trait Suite: Copy + Clone {
     ///
     /// This function panics if `Hash` is less than 32 bytes.
     fn nonce(sk: &ScalarField<Self>, pt: Input<Self>) -> ScalarField<Self> {
-        let mut buf = Vec::new();
-        Self::scalar_encode(sk, &mut buf);
-        let sk_hash = &Self::hash(&buf)[32..];
-        buf.clear();
-        Self::point_encode(&pt.0, &mut buf);
-        let v = [sk_hash, &buf[..]].concat();
-        let h = &Self::hash(&v)[..];
-        ScalarField::<Self>::from_le_bytes_mod_order(h)
+        utils::nonce_rfc_8032::<Self>(sk, &pt.0)
     }
 
     /// Challenge generation as described by RCF-9381 section 5.4.3.
@@ -111,10 +104,8 @@ pub trait Suite: Copy + Clone {
         let mut buf = vec![Self::SUITE_ID, DOM_SEP_START];
         pts.iter().for_each(|p| {
             Self::point_encode(p, &mut buf);
-            println!("L: {}", buf.len());
         });
         buf.extend_from_slice(ad);
-        println!("L: {}", buf.len());
         buf.push(DOM_SEP_END);
         let hash = &Self::hash(&buf)[..Self::CHALLENGE_LEN];
         ScalarField::<Self>::from_be_bytes_mod_order(hash)

@@ -1,4 +1,4 @@
-use crate::{AffinePoint, Suite};
+use crate::{AffinePoint, ScalarField, Suite};
 use ark_ff::PrimeField;
 
 #[macro_export]
@@ -45,6 +45,19 @@ pub fn sha512(input: &[u8]) -> [u8; 64] {
     let mut h = [0u8; 64];
     h.copy_from_slice(&result);
     h
+}
+
+/// HMAC
+pub fn hmac(sk: &[u8], data: &[u8]) -> Vec<u8> {
+    use hmac::{Hmac, Mac};
+    use sha2::Sha256;
+    // Create alias for HMAC-SHA256
+    type HmacSha256 = Hmac<Sha256>;
+    let mut mac = HmacSha256::new_from_slice(sk).expect("HMAC can take key of any size");
+    mac.update(data);
+    let result = mac.finalize();
+    let bytes = result.into_bytes();
+    bytes.to_vec()
 }
 
 /// Try-And-Increment (TAI) method as defined by RFC9381 section 5.4.1.1.
@@ -94,6 +107,94 @@ pub fn hash_to_curve_tai<S: Suite>(data: &[u8]) -> Option<AffinePoint<S>> {
         }
     }
     None
+}
+
+/// Nonce generation according to RFC 9381 section 5.4.2.2.
+///
+/// This procedure is based on section 5.1.6 of RFC 8032: "Edwards-Curve Digital
+/// Signature Algorithm (EdDSA)".
+///
+/// The algorithm generate the nonce value in a deterministic
+/// pseudorandom fashion.
+///
+/// `Suite::Hash` is recommended to be be at least 64 bytes.
+///
+/// # Panics
+///
+/// This function panics if `Hash` is less than 32 bytes.
+pub fn nonce_rfc_8032<S: Suite>(sk: &ScalarField<S>, input: &AffinePoint<S>) -> ScalarField<S> {
+    let raw = encode_scalar::<S>(sk);
+    let sk_hash = &S::hash(&raw)[32..];
+
+    let raw = encode_point::<S>(input);
+    let v = [sk_hash, &raw[..]].concat();
+    let h = &S::hash(&v)[..];
+
+    // TODO implement S::scalar_from_bytes
+    ScalarField::<S>::from_le_bytes_mod_order(h)
+}
+
+/// Nonce generation according to RFC 9381 section 5.4.2.1.
+///
+/// This procedure is based on section 3.2 of RFC 6979: "Deterministic Usage of
+/// the Digital Signature Algorithm (DSA) and Elliptic Curve Digital Signature
+/// Algorithm (ECDSA)".
+///
+/// The algorithm generate the nonce value in a deterministic
+/// pseudorandom fashion.
+pub fn nonce_rfc_6979<S: Suite>(sk: &ScalarField<S>, input: &AffinePoint<S>) -> ScalarField<S> {
+    let raw = encode_point::<S>(&input);
+    let h1 = S::hash(&raw);
+
+    let v = [1; 32];
+    let k = [0; 32];
+
+    // K = HMAC_K(V || 0x00 || int2octets(x) || bits2octets(h1))
+    let x = encode_scalar::<S>(&sk);
+    let raw = [&v[..], &[0x00], &x[..], &h1[..]].concat();
+    let k = hmac(&k, &raw);
+
+    // V = HMAC_K(V)
+    let v = hmac(&k, &v);
+
+    // K = HMAC_K(V || 0x01 || int2octets(x) || bits2octets(h1))
+    let raw = [&v[..], &[0x01], &x[..], &h1[..]].concat();
+    let k = hmac(&k, &raw);
+
+    // V = HMAC_K(V)
+    let v = hmac(&k, &v);
+
+    // TODO: loop until 1 < k < q
+    let v = hmac(&k, &v);
+
+    // NOTE: construct from BE byte order
+    // TODO: construct using the byte order used by `S`
+    // e.g. BE is valid for secp but not ed
+    let k = <ScalarField<S>>::from_be_bytes_mod_order(&v[..]);
+
+    k
+}
+
+pub fn encode_point<S: Suite>(pt: &AffinePoint<S>) -> Vec<u8> {
+    let mut buf = Vec::new();
+    S::point_encode(pt, &mut buf);
+    buf
+}
+
+pub fn encode_scalar<S: Suite>(sc: &ScalarField<S>) -> Vec<u8> {
+    let mut buf = Vec::new();
+    S::scalar_encode(sc, &mut buf);
+    buf
+}
+
+pub fn print_point<S: Suite>(pt: &AffinePoint<S>, prefix: &str) {
+    let buf = encode_point::<S>(pt);
+    println!("{}: {}", prefix, hex::encode(buf));
+}
+
+pub fn print_scalar<S: Suite>(sc: &ScalarField<S>, prefix: &str) {
+    let buf = encode_scalar::<S>(sc);
+    println!("{}: {}", prefix, hex::encode(buf));
 }
 
 #[cfg(test)]

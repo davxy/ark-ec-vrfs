@@ -14,6 +14,7 @@ impl<T> IetfSuite for T where T: Suite {}
 ///
 /// An output point which can be used to derive the actual output together
 /// with the actual signature of the input point and the associated data.
+// TODO: manually implement serialization to respect S::CHALLENGE_LEN value.
 #[derive(Debug, Clone, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Signature<S: Suite> {
     pub gamma: Output<S>,
@@ -51,15 +52,7 @@ impl<S: Suite> IetfSigner<S> for Secret<S> {
     fn sign(&self, input: Input<S>, ad: impl AsRef<[u8]>) -> Signature<S> {
         let gamma = self.output(input);
         let k = S::nonce(&self.scalar, input);
-
-        println!(">>> {:?}", k);
-
         let k_b = (S::Affine::generator() * k).into_affine();
-        let mut buf = Vec::new();
-        S::point_encode(&k_b, &mut buf);
-        println!("KB: {}", k_b);
-        println!("KB: {}", hex::encode(buf));
-
         let k_h = (input.0 * k).into_affine();
 
         let c = S::challenge(
