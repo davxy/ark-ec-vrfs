@@ -66,11 +66,7 @@ impl Suite for BandersnatchSha512 {
     const CHALLENGE_LEN: usize = 32;
 
     type Affine = ark_ed_on_bls12_381_bandersnatch::SWAffine;
-    type Hash = [u8; 64];
-
-    fn hash(data: &[u8]) -> Self::Hash {
-        utils::sha512(data)
-    }
+    type Hasher = sha2::Sha512;
 }
 
 impl PedersenSuite for BandersnatchSha512 {

@@ -1,5 +1,6 @@
 use crate::{AffinePoint, ScalarField, Suite};
 use ark_ff::PrimeField;
+use digest::{core_api::BlockSizeUser, Digest};
 
 #[cfg(not(feature = "std"))]
 use ark_std::vec::Vec;
@@ -26,40 +27,22 @@ macro_rules! suite_types {
     };
 }
 
-/// SHA-256 hasher
+// Generic hash wrapper.
 #[inline(always)]
-pub fn sha256(input: &[u8]) -> [u8; 32] {
-    use sha2::{Digest, Sha256};
-    let mut hasher = Sha256::new();
-    hasher.update(input);
-    let result = hasher.finalize();
-    let mut h = [0u8; 32];
-    h.copy_from_slice(&result);
-    h
+pub(crate) fn hash<H: Digest>(data: &[u8]) -> digest::Output<H> {
+    H::new().chain_update(data).finalize()
 }
 
-/// SHA-512 hasher
+/// Generic HMAC wrapper.
 #[inline(always)]
-pub fn sha512(input: &[u8]) -> [u8; 64] {
-    use sha2::{Digest, Sha512};
-    let mut hasher = Sha512::new();
-    hasher.update(input);
-    let result = hasher.finalize();
-    let mut h = [0u8; 64];
-    h.copy_from_slice(&result);
-    h
-}
-
-/// HMAC
-pub fn hmac(sk: &[u8], data: &[u8]) -> Vec<u8> {
-    use hmac::{Hmac, Mac};
-    use sha2::Sha256;
-    // Create alias for HMAC-SHA256
-    type HmacSha256 = Hmac<Sha256>;
-    let mut mac = HmacSha256::new_from_slice(sk).expect("HMAC can take key of any size");
-    mac.update(data);
-    let result = mac.finalize();
-    result.into_bytes().to_vec()
+pub(crate) fn hmac<H: Digest + BlockSizeUser>(sk: &[u8], data: &[u8]) -> Vec<u8> {
+    use hmac::{Mac, SimpleHmac};
+    SimpleHmac::<H>::new_from_slice(sk)
+        .expect("HMAC can take key of any size")
+        .chain_update(data)
+        .finalize()
+        .into_bytes()
+        .to_vec()
 }
 
 /// Try-And-Increment (TAI) method as defined by RFC9381 section 5.4.1.1.
@@ -83,6 +66,9 @@ pub fn hash_to_curve_tai<S: Suite>(data: &[u8], point_be_encoding: bool) -> Opti
     const DOM_SEP_BACK: u8 = 0x00;
 
     let mod_size = <<<S::Affine as AffineRepr>::BaseField as Field>::BasePrimeField as PrimeField>::MODULUS_BIT_SIZE as usize / 8;
+    if S::Hasher::output_size() < mod_size {
+        return None;
+    }
 
     let mut buf = [&[S::SUITE_ID, DOM_SEP_FRONT], data, &[0x00, DOM_SEP_BACK]].concat();
     let ctr_pos = buf.len() - 2;
@@ -90,7 +76,7 @@ pub fn hash_to_curve_tai<S: Suite>(data: &[u8], point_be_encoding: bool) -> Opti
     for ctr in 0..256 {
         // Modify ctr value
         buf[ctr_pos] = ctr as u8;
-        let hash = &S::hash(&buf)[..];
+        let hash = &hash::<S::Hasher>(&buf)[..];
         if hash.len() < mod_size {
             return None;
         }
@@ -125,11 +111,11 @@ pub fn hash_to_curve_tai<S: Suite>(data: &[u8], point_be_encoding: bool) -> Opti
 /// This function panics if `Hash` is less than 32 bytes.
 pub fn nonce_rfc_8032<S: Suite>(sk: &ScalarField<S>, input: &AffinePoint<S>) -> ScalarField<S> {
     let raw = encode_scalar::<S>(sk);
-    let sk_hash = &S::hash(&raw)[32..];
+    let sk_hash = &hash::<S::Hasher>(&raw)[32..];
 
     let raw = encode_point::<S>(input);
     let v = [sk_hash, &raw[..]].concat();
-    let h = &S::hash(&v)[..];
+    let h = &hash::<S::Hasher>(&v)[..];
 
     S::scalar_decode(h)
 }
@@ -142,9 +128,12 @@ pub fn nonce_rfc_8032<S: Suite>(sk: &ScalarField<S>, input: &AffinePoint<S>) -> 
 ///
 /// The algorithm generate the nonce value in a deterministic
 /// pseudorandom fashion.
-pub fn nonce_rfc_6979<S: Suite>(sk: &ScalarField<S>, input: &AffinePoint<S>) -> ScalarField<S> {
+pub fn nonce_rfc_6979<S: Suite>(sk: &ScalarField<S>, input: &AffinePoint<S>) -> ScalarField<S>
+where
+    S::Hasher: BlockSizeUser,
+{
     let raw = encode_point::<S>(input);
-    let h1 = S::hash(&raw);
+    let h1 = hash::<S::Hasher>(&raw);
 
     let v = [1; 32];
     let k = [0; 32];
@@ -152,20 +141,20 @@ pub fn nonce_rfc_6979<S: Suite>(sk: &ScalarField<S>, input: &AffinePoint<S>) -> 
     // K = HMAC_K(V || 0x00 || int2octets(x) || bits2octets(h1))
     let x = encode_scalar::<S>(sk);
     let raw = [&v[..], &[0x00], &x[..], &h1[..]].concat();
-    let k = hmac(&k, &raw);
+    let k = hmac::<S::Hasher>(&k, &raw);
 
     // V = HMAC_K(V)
-    let v = hmac(&k, &v);
+    let v = hmac::<S::Hasher>(&k, &v);
 
     // K = HMAC_K(V || 0x01 || int2octets(x) || bits2octets(h1))
     let raw = [&v[..], &[0x01], &x[..], &h1[..]].concat();
-    let k = hmac(&k, &raw);
+    let k = hmac::<S::Hasher>(&k, &raw);
 
     // V = HMAC_K(V)
-    let v = hmac(&k, &v);
+    let v = hmac::<S::Hasher>(&k, &v);
 
     // TODO: loop until 1 < k < q
-    let v = hmac(&k, &v);
+    let v = hmac::<S::Hasher>(&k, &v);
 
     S::scalar_decode(&v)
 }
@@ -198,11 +187,7 @@ pub(crate) mod testing {
         const CHALLENGE_LEN: usize = 16;
 
         type Affine = ark_ed25519::EdwardsAffine;
-        type Hash = [u8; 64];
-
-        fn hash(data: &[u8]) -> Self::Hash {
-            utils::sha512(data)
-        }
+        type Hasher = sha2::Sha256;
     }
 
     suite_types!(TestSuite);

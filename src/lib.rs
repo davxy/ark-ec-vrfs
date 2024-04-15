@@ -21,7 +21,7 @@ use ark_ff::PrimeField;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::{vec, vec::Vec};
 
-use core::ops::{Index, RangeFrom, RangeFull, RangeTo};
+use digest::Digest;
 
 pub mod ietf;
 pub mod pedersen;
@@ -39,6 +39,8 @@ pub mod prelude {
 pub type ScalarField<S> = <<S as Suite>::Affine as AffineRepr>::ScalarField;
 pub type BaseField<S> = <<S as Suite>::Affine as AffineRepr>::BaseField;
 pub type AffinePoint<S> = <S as Suite>::Affine;
+
+pub type HashOutput<S> = digest::Output<<S as Suite>::Hasher>;
 
 /// Verification error(s)
 pub enum Error {
@@ -64,14 +66,8 @@ pub trait Suite: Copy + Clone {
     /// by the `AffineRepr` bound.
     type Affine: AffineRepr;
 
-    /// Hash output.
-    type Hash: Index<usize, Output = u8>
-        + Index<RangeTo<usize>, Output = [u8]>
-        + Index<RangeFrom<usize>, Output = [u8]>
-        + Index<RangeFull, Output = [u8]>;
-
-    /// Hasher.
-    fn hash(data: &[u8]) -> Self::Hash;
+    /// Hasher output.
+    type Hasher: Digest;
 
     /// Nonce generation as described by RFC-9381 section 5.4.2.
     ///
@@ -107,7 +103,7 @@ pub trait Suite: Copy + Clone {
         });
         buf.extend_from_slice(ad);
         buf.push(DOM_SEP_END);
-        let hash = &Self::hash(&buf)[..Self::CHALLENGE_LEN];
+        let hash = &utils::hash::<Self::Hasher>(&buf)[..Self::CHALLENGE_LEN];
         ScalarField::<Self>::from_be_bytes_mod_order(hash)
     }
 
@@ -118,13 +114,13 @@ pub trait Suite: Copy + Clone {
         utils::hash_to_curve_tai::<Self>(data, false)
     }
 
-    fn point_to_hash(pt: &AffinePoint<Self>) -> Self::Hash {
+    fn point_to_hash(pt: &AffinePoint<Self>) -> HashOutput<Self> {
         const DOM_SEP_START: u8 = 0x03;
         const DOM_SEP_END: u8 = 0x00;
         let mut buf = vec![Self::SUITE_ID, DOM_SEP_START];
         Self::point_encode(pt, &mut buf);
         buf.push(DOM_SEP_END);
-        Self::hash(&buf)
+        utils::hash::<Self::Hasher>(&buf)
     }
 
     #[inline(always)]
@@ -209,7 +205,7 @@ impl<S: Suite> Secret<S> {
     ///
     /// The `seed` is hashed using the `Suite::hash` to construct the secret scalar.
     pub fn from_seed(seed: &[u8]) -> Self {
-        let bytes = S::hash(seed);
+        let bytes = utils::hash::<S::Hasher>(seed);
         let scalar = ScalarField::<S>::from_le_bytes_mod_order(&bytes[..]);
         Self::from_scalar(scalar)
     }
@@ -268,7 +264,7 @@ impl<S: Suite> Output<S> {
     }
 
     /// Hash using `[Suite::point_to_hash]`.
-    pub fn hash(&self) -> S::Hash {
+    pub fn hash(&self) -> HashOutput<S> {
         S::point_to_hash(&self.0)
     }
 }
@@ -300,8 +296,7 @@ mod tests {
         let input = Input::from(random_val(None));
         let output = secret.output(input);
 
-        let hash = output.hash();
-        let expected = "f30ceafdbd80a9280547a9d44a88c188";
-        assert_eq!(expected, hex::encode(&hash[..16]));
+        let expected = "08ffdc9d48f6553c0352b92a233a8101a69ac9f4dcb7f9e2c9c43d46a441c331";
+        assert_eq!(expected, hex::encode(output.hash()));
     }
 }

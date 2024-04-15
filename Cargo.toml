@@ -14,6 +14,8 @@ ark-serialize = { version = "0.4.2", default-features = false }
 rand_core = { version = "0.6.4", default-features = false, optional = true }
 rand_chacha = { version = "0.3.1", default-features = false }
 zeroize = { version = "1.7.0", default-features = false }
+hmac = {version = "0.12.1", default-features = false }
+digest = { version = "0.10.7", default-features = false }
 # Curves
 ark-secp256r1 = { version = "0.4.0", default-features = false, optional = true }
 ark-ed25519 = { version = "0.4.0", default-features = false, optional = true }
@@ -26,11 +28,9 @@ fflonk = { git = "https://github.com/w3f/fflonk", default-features = false, opti
 ring-proof = { package = "ring", git = "https://github.com/w3f/ring-proof", default-features = false, optional = true }
 merlin = { version = "3.0.0", default-features = false, optional = true }
 
-hmac = "0.12.1"
-hex = "0.4.3"
-
 [dev-dependencies]
 ark-ed25519 = "0.4.0"
+hex = "0.4.3"
 
 [features]
 default = [ "std" ]

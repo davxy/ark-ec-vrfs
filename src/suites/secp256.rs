@@ -60,11 +60,7 @@ impl Suite for P256Sha256Tai {
     const CHALLENGE_LEN: usize = 16;
 
     type Affine = ark_secp256r1::Affine;
-    type Hash = [u8; 32];
-
-    fn hash(data: &[u8]) -> Self::Hash {
-        utils::sha256(data)
-    }
+    type Hasher = sha2::Sha256;
 
     fn nonce(sk: &ScalarField, pt: Input) -> ScalarField {
         utils::nonce_rfc_6979::<Self>(sk, &pt.0)

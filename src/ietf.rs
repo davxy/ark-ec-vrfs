@@ -84,7 +84,7 @@ impl<S: IetfSuite + Sync> ark_serialize::Valid for Signature<S> {
 
 impl<S: Suite> Signature<S> {
     /// Proof to hash as defined by RFC9381 section 5.2
-    pub fn hash(&self) -> S::Hash {
+    pub fn hash(&self) -> HashOutput<S> {
         self.gamma.hash()
     }
 
