@@ -66,7 +66,9 @@ pub trait Suite: Copy + Clone {
     /// by the `AffineRepr` bound.
     type Affine: AffineRepr;
 
-    /// Hasher output.
+    /// Overarching hasher.
+    ///
+    /// Used wherever an hash is required: nonce, challenge, MAC, etc.
     type Hasher: Digest;
 
     /// Nonce generation as described by RFC-9381 section 5.4.2.
@@ -79,11 +81,11 @@ pub trait Suite: Copy + Clone {
     /// The algorithm generate the nonce value in a deterministic
     /// pseudorandom fashion.
     ///
-    /// `Hash` **MUST** be be at least 64 bytes.
+    /// `Hasher` output **MUST** be be at least 64 bytes.
     ///
     /// # Panics
     ///
-    /// This function panics if `Hash` is less than 32 bytes.
+    /// This function panics if `Hasher` output is less than 32 bytes.
     fn nonce(sk: &ScalarField<Self>, pt: Input<Self>) -> ScalarField<Self> {
         utils::nonce_rfc_8032::<Self>(sk, &pt.0)
     }
@@ -150,13 +152,7 @@ pub struct Secret<S: Suite> {
 
 impl<S: Suite> Drop for Secret<S> {
     fn drop(&mut self) {
-        self.zeroize()
-    }
-}
-
-impl<S: Suite> Zeroize for Secret<S> {
-    fn zeroize(&mut self) {
-        self.scalar.zeroize();
+        self.scalar.zeroize()
     }
 }
 
