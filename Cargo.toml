@@ -14,7 +14,7 @@ ark-serialize = { version = "0.4.2", default-features = false }
 rand_core = { version = "0.6.4", default-features = false, optional = true }
 rand_chacha = { version = "0.3.1", default-features = false }
 zeroize = { version = "1.7.0", default-features = false }
-hmac = {version = "0.12.1", default-features = false }
+hmac = {version = "0.12.1", default-features = false, optional = true }
 digest = { version = "0.10.7", default-features = false }
 # Curves
 ark-secp256r1 = { version = "0.4.0", default-features = false, optional = true }
@@ -48,7 +48,10 @@ curves = [
   "ed25519",
   "bandersnatch",
 ]
-secp256r1 = [ "ark-secp256r1" ]
+secp256r1 = [
+  "ark-secp256r1",
+  "rfc-6979",
+]
 ed25519 = [ "ark-ed25519" ]
 bandersnatch = [ "ark-ed-on-bls12-381-bandersnatch" ]
 parallel = [
@@ -63,3 +66,4 @@ ring = [
   "ark-bls12-381/curve",
   "merlin",
 ]
+rfc-6979 = [ "hmac" ]
