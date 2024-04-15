@@ -62,7 +62,7 @@ pub struct BandersnatchSha512;
 suite_types!(BandersnatchSha512);
 
 impl Suite for BandersnatchSha512 {
-    const SUITE_ID: u8 = 0x33;
+    const SUITE_ID: u8 = CUSTOM_SUITE_ID_FLAG | 0x03;
     const CHALLENGE_LEN: usize = 32;
 
     type Affine = ark_ed_on_bls12_381_bandersnatch::SWAffine;

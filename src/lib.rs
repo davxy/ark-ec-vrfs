@@ -47,6 +47,9 @@ pub enum Error {
     VerificationFailure,
 }
 
+/// Flag to identify custom suites (i.e. not specified by RFC-9381).
+pub const CUSTOM_SUITE_ID_FLAG: u8 = 0x80;
+
 /// Defines a cipher suite.
 ///
 /// This trait can be used to implement a VRF which follows the guidelines
