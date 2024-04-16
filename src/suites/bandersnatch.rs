@@ -82,15 +82,25 @@ impl PedersenSuite for BandersnatchSha512 {
 
 #[cfg(feature = "ring")]
 pub mod ring {
-    use super::BandersnatchSha512;
+    use super::*;
     use crate::ring;
-    use ark_bls12_381::Bls12_381;
 
-    impl ring::Pairing<BandersnatchSha512> for Bls12_381 {}
+    impl ring::Pairing<BandersnatchSha512> for ark_bls12_381::Bls12_381 {}
 
     impl ring::RingSuite for BandersnatchSha512 {
         type Config = ark_ed_on_bls12_381_bandersnatch::SWConfig;
-        type Pairing = Bls12_381;
+        type Pairing = ark_bls12_381::Bls12_381;
+
+        /// A point on the curve not belonging to the prime order subgroup.
+        ///
+        /// Found using `ring_proof::find_complement_point::<Self::Config>()` function.
+        const COMPLEMENT_POINT: AffinePoint = {
+            const X: BaseField = MontFp!("0");
+            const Y: BaseField = MontFp!(
+                "11982629110561008531870698410380659621661946968466267969586599013782997959645"
+            );
+            AffinePoint::new_unchecked(X, Y)
+        };
     }
 
     pub type RingContext = ring::RingContext<BandersnatchSha512>;

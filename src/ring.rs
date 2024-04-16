@@ -1,5 +1,6 @@
 use crate::*;
 use ark_ec::{short_weierstrass::SWCurveConfig, CurveConfig};
+use ark_serialize::{Compress, Read, SerializationError, Valid, Validate, Write};
 use pedersen::{PedersenSigner, PedersenSuite, PedersenVerifier, Signature as PedersenSignature};
 
 // Ring proof assumes:
@@ -10,6 +11,8 @@ pub trait RingSuite:
 {
     type Config: SWCurveConfig;
     type Pairing: ark_ec::pairing::Pairing<ScalarField = BaseField<Self>>;
+
+    const COMPLEMENT_POINT: AffinePoint<Self>;
 }
 
 type Curve<S> = <S as RingSuite>::Config;
@@ -117,7 +120,7 @@ where
 {
     pub pcs_params: PcsParams<S>,
     pub piop_params: PiopParams<S>,
-    pub domain_size: u32,
+    pub domain_size: usize,
 }
 
 impl<S: RingSuite> RingContext<S>
@@ -125,23 +128,17 @@ where
     Curve<S>: SWCurveConfig + Clone,
     <Curve<S> as CurveConfig>::BaseField: ark_ff::PrimeField,
 {
-    pub fn from_seed(domain_size: u32, seed: [u8; 32]) -> Self {
+    pub fn from_seed(domain_size: usize, seed: [u8; 32]) -> Self {
         use ark_std::rand::SeedableRng;
         let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
         Self::new_random(domain_size, &mut rng)
     }
 
-    pub fn new_random<R: ark_std::rand::RngCore>(domain_size: u32, rng: &mut R) -> Self {
+    pub fn new_random<R: ark_std::rand::RngCore>(domain_size: usize, rng: &mut R) -> Self {
         use fflonk::pcs::PCS;
-        use ring_proof::Domain;
 
-        let setup_degree = 3 * domain_size;
-        let pcs_params = <Pcs<S>>::setup(setup_degree as usize, rng);
-
-        let domain = Domain::new(domain_size as usize, true);
-        let seed = ring_proof::find_complement_point::<Curve<S>>();
-        let piop_params = PiopParams::<S>::setup(domain, S::BLINDING_BASE, seed);
-
+        let pcs_params = <Pcs<S>>::setup(3 * domain_size, rng);
+        let piop_params = make_piop_params::<S>(domain_size);
         Self {
             pcs_params,
             piop_params,
@@ -149,7 +146,11 @@ where
         }
     }
 
-    pub fn max_keyset_size(&self) -> usize {
+    pub fn domain_size(&self) -> usize {
+        self.domain_size
+    }
+
+    pub fn keyset_max_size(&self) -> usize {
         self.piop_params.keyset_part_size
     }
 
@@ -178,8 +179,6 @@ where
         )
     }
 }
-
-use ark_serialize::{Compress, Read, SerializationError, Valid, Validate, Write};
 
 impl<S: RingSuite + Sync> CanonicalSerialize for RingContext<S>
 where
@@ -211,7 +210,7 @@ where
         compress: Compress,
         validate: Validate,
     ) -> Result<Self, SerializationError> {
-        let domain_size = <u32 as CanonicalDeserialize>::deserialize_compressed(&mut reader)?;
+        let domain_size = <usize as CanonicalDeserialize>::deserialize_compressed(&mut reader)?;
         let piop_params = make_piop_params::<S>(domain_size as usize);
         let pcs_params = <PcsParams<S> as CanonicalDeserialize>::deserialize_with_mode(
             &mut reader,
@@ -219,20 +218,20 @@ where
             validate,
         )?;
         Ok(RingContext {
-            domain_size,
             piop_params,
             pcs_params,
+            domain_size,
         })
     }
 }
 
-pub fn make_piop_params<S: RingSuite>(domain_size: usize) -> PiopParams<S>
+fn make_piop_params<S: RingSuite>(domain_size: usize) -> PiopParams<S>
 where
     Curve<S>: SWCurveConfig,
     <Curve<S> as CurveConfig>::BaseField: ark_ff::PrimeField,
 {
     let domain = ring_proof::Domain::new(domain_size, true);
-    PiopParams::<S>::setup(domain, S::BLINDING_BASE, S::BLINDING_BASE)
+    PiopParams::<S>::setup(domain, S::BLINDING_BASE, S::COMPLEMENT_POINT)
 }
 
 pub fn make_ring_verifier<S: RingSuite>(
