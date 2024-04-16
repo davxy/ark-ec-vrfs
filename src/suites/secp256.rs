@@ -1,6 +1,6 @@
 //! `ECVRF-P256-SHA256-TAI` suite.
 //!
-//! Configuration (RFC9381):
+//! Configuration (RFC-9381):
 //!
 //! *  suite_string = 0x01.
 //!
@@ -81,7 +81,7 @@ impl Suite for P256Sha256Tai {
             buf.push(0x00);
             return;
         }
-        let is_odd = pt.y().map(|s| s.into_bigint().is_odd()).unwrap_or_default();
+        let is_odd = pt.y.into_bigint().is_odd();
         buf.push(if is_odd { 0x03 } else { 0x02 });
 
         pt.x.serialize_compressed(&mut tmp).unwrap();
@@ -106,108 +106,59 @@ impl Suite for P256Sha256Tai {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ietf::IetfSigner;
-
-    use super::P256Sha256Tai as S;
-
-    struct TestVector {
-        alpha: &'static [u8],
-        beta: &'static str,
-        sk: &'static str,
-        pk: &'static str,
-        h: &'static str,
-        gamma: &'static str,
-        c: &'static str,
-        s: &'static str,
-        skip_sign_check: bool,
-    }
-
-    fn test_vector(v: &TestVector) {
-        let mut sk_bytes = hex::decode(v.sk).unwrap();
-        sk_bytes.reverse();
-        let sk = Secret::deserialize_compressed(&mut sk_bytes.as_slice()).unwrap();
-
-        let pk_bytes = utils::encode_point::<S>(&sk.public.0);
-        assert_eq!(v.pk, hex::encode(&pk_bytes));
-
-        // Prepare hash_to_curve data = salt || alpha
-        // Salt is defined to be pk (adjust it to make the encoding to match)
-        let h2c_data = [&pk_bytes[..], v.alpha].concat();
-        let h = S::data_to_point(&h2c_data).unwrap();
-        let h_bytes = utils::encode_point::<S>(&h);
-        assert_eq!(v.h, hex::encode(h_bytes));
-
-        let input = Input::from(h);
-        let signature = sk.sign(input, []);
-
-        let gamma_bytes = utils::encode_point::<S>(&signature.output().0);
-        assert_eq!(v.gamma, hex::encode(gamma_bytes));
-
-        if v.skip_sign_check {
-            return;
-        }
-
-        let c_bytes = utils::encode_scalar::<S>(&signature.c);
-        assert_eq!(v.c, hex::encode(c_bytes));
-
-        let s_bytes = utils::encode_scalar::<S>(&signature.s);
-        assert_eq!(v.s, hex::encode(s_bytes));
-
-        let beta = signature.gamma.hash();
-        assert_eq!(v.beta, hex::encode(beta));
-    }
+    use crate::ietf::testing::*;
 
     #[test]
     fn secp256_rfc_9381_test_vector_10() {
         let v = TestVector {
-            alpha: b"sample",
-            beta: "a3ad7b0ef73d8fc6655053ea22f9bede8c743f08bbed3d38821f0e16474b505e",
+            flags: TEST_FLAG_SKIP_SIGN_CHECK,
             sk: "c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721",
             pk: "0360fed4ba255a9d31c961eb74c6356d68c049b8923b61fa6ce669622e60f29fb6",
+            alpha: b"sample",
+            beta: "a3ad7b0ef73d8fc6655053ea22f9bede8c743f08bbed3d38821f0e16474b505e",
             // RFC sets sign byte to 0x02, but it is not correct as y is odd
             h: "0372a877532e9ac193aff4401234266f59900a4a9e3fc3cfc6a4b7e467a15d06d4",
             // RFC sets sign byte to 0x03, but it is not correct as y is even
             gamma: "025b5c726e8c0e2c488a107c600578ee75cb702343c153cb1eb8dec77f4b5071b4",
-            // Skip these checks as test vector looks not correct
-            c: "-",
-            s: "-",
-            skip_sign_check: true,
+            // Skip these checks as test vector looks like is not correct
+            c: "",
+            s: "",
         };
 
-        test_vector(&v);
+        run_test_vector::<P256Sha256Tai>(&v);
     }
 
     #[test]
     fn secp256_rfc_9381_test_vector_11() {
         let v = TestVector {
-            alpha: b"test",
-            beta: "a284f94ceec2ff4b3794629da7cbafa49121972671b466cab4ce170aa365f26d",
+            flags: 0,
             sk: "c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721",
             pk: "0360fed4ba255a9d31c961eb74c6356d68c049b8923b61fa6ce669622e60f29fb6",
+            alpha: b"test",
+            beta: "a284f94ceec2ff4b3794629da7cbafa49121972671b466cab4ce170aa365f26d",
             h: "02173119b4fff5e6f8afed4868a29fe8920f1b54c2cf89cc7b301d0d473de6b974",
             gamma: "034dac60aba508ba0c01aa9be80377ebd7562c4a52d74722e0abae7dc3080ddb56",
             c: "00000000000000000000000000000000c19e067b15a8a8174905b13617804534",
             s: "214f935b94c2287f797e393eb0816969d864f37625b443f30f1a5a33f2b3c854",
-            skip_sign_check: false,
         };
 
-        test_vector(&v);
+        run_test_vector::<P256Sha256Tai>(&v);
     }
 
     #[test]
     fn secp256_rfc_9381_test_vector_12() {
         let v = TestVector {
-            alpha: b"Example using ECDSA key from Appendix L.4.2 of ANSI.X9-62-2005",
-            beta: "90871e06da5caa39a3c61578ebb844de8635e27ac0b13e829997d0d95dd98c19",
+            flags: 0,
             sk: "2ca1411a41b17b24cc8c3b089cfd033f1920202a6c0de8abb97df1498d50d2c8",
             pk: "03596375e6ce57e0f20294fc46bdfcfd19a39f8161b58695b3ec5b3d16427c274d",
+            alpha: b"Example using ECDSA key from Appendix L.4.2 of ANSI.X9-62-2005",
+            beta: "90871e06da5caa39a3c61578ebb844de8635e27ac0b13e829997d0d95dd98c19",
             h: "0258055c26c4b01d01c00fb57567955f7d39cd6f6e85fd37c58f696cc6b7aa761d",
             gamma: "03d03398bf53aa23831d7d1b2937e005fb0062cbefa06796579f2a1fc7e7b8c667",
             c: "00000000000000000000000000000000d091c00b0f5c3619d10ecea44363b5a5",
             s: "99cadc5b2957e223fec62e81f7b4825fc799a771a3d7334b9186bdbee87316b1",
-            skip_sign_check: false,
         };
 
-        test_vector(&v);
+        run_test_vector::<P256Sha256Tai>(&v);
     }
 }

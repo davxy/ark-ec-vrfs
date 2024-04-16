@@ -113,6 +113,7 @@ impl<S: Suite> IetfSigner<S> for Secret<S> {
         let gamma = self.output(input);
         let k = S::nonce(&self.scalar, input);
         let k_b = (S::Affine::generator() * k).into_affine();
+
         let k_h = (input.0 * k).into_affine();
 
         let c = S::challenge(
@@ -145,6 +146,61 @@ impl<S: Suite> IetfVerifier<S> for Public<S> {
         (&c_exp == c)
             .then_some(())
             .ok_or(Error::VerificationFailure)
+    }
+}
+
+#[cfg(test)]
+pub mod testing {
+    use crate::*;
+    use ietf::IetfSigner;
+
+    pub const TEST_FLAG_SKIP_SIGN_CHECK: u8 = 1 << 0;
+
+    pub struct TestVector {
+        pub flags: u8,
+        pub sk: &'static str,
+        pub pk: &'static str,
+        pub alpha: &'static [u8],
+        pub beta: &'static str,
+        pub h: &'static str,
+        pub gamma: &'static str,
+        pub c: &'static str,
+        pub s: &'static str,
+    }
+
+    pub fn run_test_vector<S: Suite>(v: &TestVector) {
+        let sk_bytes = hex::decode(v.sk).unwrap();
+        let s = S::scalar_decode(&sk_bytes);
+        let sk = Secret::<S>::from_scalar(s);
+
+        let pk_bytes = utils::encode_point::<S>(&sk.public.0);
+        assert_eq!(v.pk, hex::encode(&pk_bytes));
+
+        // Prepare hash_to_curve data = salt || alpha
+        // Salt is defined to be pk (adjust it to make the encoding to match)
+        let h2c_data = [&pk_bytes[..], v.alpha].concat();
+        let h = S::data_to_point(&h2c_data).unwrap();
+        let h_bytes = utils::encode_point::<S>(&h);
+        assert_eq!(v.h, hex::encode(h_bytes));
+
+        let input = Input::from(h);
+        let signature = sk.sign(input, []);
+
+        let gamma_bytes = utils::encode_point::<S>(&signature.output().0);
+        assert_eq!(v.gamma, hex::encode(gamma_bytes));
+
+        if v.flags & TEST_FLAG_SKIP_SIGN_CHECK != 0 {
+            return;
+        }
+
+        let c_bytes = utils::encode_scalar::<S>(&signature.c);
+        assert_eq!(v.c, hex::encode(c_bytes));
+
+        let s_bytes = utils::encode_scalar::<S>(&signature.s);
+        assert_eq!(v.s, hex::encode(s_bytes));
+
+        let beta = signature.gamma.hash();
+        assert_eq!(v.beta, hex::encode(beta));
     }
 }
 

@@ -1,8 +1,8 @@
 //! `ECVRF-EDWARDS25519-SHA512-TAI` suite.
 //!
-//! Configuration (RFC9381):
+//! Configuration (RFC-9381 with some compromises):
 //!
-//! *  suite_string = 0x03.
+//! *  suite_string = 0x83.
 //!
 //! *  The EC group G is the edwards25519 elliptic curve, with the finite
 //!    field and curve parameters as defined in Table 1 in Section 5.1 of
@@ -54,7 +54,7 @@ pub struct Ed25519Sha512;
 suite_types!(Ed25519Sha512);
 
 impl Suite for Ed25519Sha512 {
-    const SUITE_ID: u8 = 0x03;
+    const SUITE_ID: u8 = CUSTOM_SUITE_ID_FLAG | 0x03;
     const CHALLENGE_LEN: usize = 16;
 
     type Affine = ark_ed25519::EdwardsAffine;

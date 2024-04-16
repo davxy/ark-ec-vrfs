@@ -2,7 +2,7 @@
 //!
 //! Configuration:
 //!
-//! *  `suite_string` = 0x33.
+//! *  `suite_string` = 0x83.
 //!
 //! *  The EC group G is the Bandersnatch elliptic curve, in Twisted Edwards form,
 //!    with the finite field and curve parameters as specified [here](https://neuromancer.sk/std/bls/Bandersnatch)
