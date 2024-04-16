@@ -58,6 +58,8 @@ parallel = [
   "ark-ec/parallel",
   "ark-ff/parallel",
   "ark-std/parallel",
+  "ring-proof?/parallel",
+  "fflonk?/parallel",
 ]
 ring = [
   "bandersnatch",
