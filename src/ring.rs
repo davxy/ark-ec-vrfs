@@ -211,7 +211,7 @@ where
         validate: Validate,
     ) -> Result<Self, SerializationError> {
         let domain_size = <usize as CanonicalDeserialize>::deserialize_compressed(&mut reader)?;
-        let piop_params = make_piop_params::<S>(domain_size as usize);
+        let piop_params = make_piop_params::<S>(domain_size);
         let pcs_params = <PcsParams<S> as CanonicalDeserialize>::deserialize_with_mode(
             &mut reader,
             compress,
