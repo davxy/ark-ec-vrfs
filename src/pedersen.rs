@@ -20,6 +20,11 @@ impl<S: PedersenSuite> Signature<S> {
         self.pk_blind
     }
 
+    /// Proof to hash as defined by RFC-9381 section 5.2
+    pub fn hash(&self) -> HashOutput<S> {
+        self.gamma.hash()
+    }
+
     pub fn output(&self) -> Output<S> {
         self.gamma
     }

@@ -42,8 +42,8 @@ pub struct Signature<S: RingSuite>
 where
     <S::Config as CurveConfig>::BaseField: ark_ff::PrimeField,
 {
-    vrf_signature: PedersenSignature<S>,
-    ring_proof: RingProof<S>,
+    pub vrf_signature: PedersenSignature<S>,
+    pub ring_proof: RingProof<S>,
 }
 
 pub trait RingSigner<S: RingSuite>
