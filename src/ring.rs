@@ -1,7 +1,7 @@
 use crate::*;
 use ark_ec::{short_weierstrass::SWCurveConfig, CurveConfig};
 use ark_serialize::{Compress, Read, SerializationError, Valid, Validate, Write};
-use pedersen::{PedersenSigner, PedersenSuite, PedersenVerifier, Signature as PedersenSignature};
+use pedersen::{PedersenSuite, Proof as PedersenProof};
 
 // Ring proof assumes:
 // 1. Points over the whole curve group (not just the prime subgroup).
@@ -43,27 +43,27 @@ pub type PiopParams<S> = ring_proof::PiopParams<PairingScalarField<S>, Curve<S>>
 pub trait Pairing<S: RingSuite>: ark_ec::pairing::Pairing<ScalarField = BaseField<S>> {}
 
 #[derive(Clone, CanonicalSerialize, CanonicalDeserialize)]
-pub struct Signature<S: RingSuite>
+pub struct Proof<S: RingSuite>
 where
     <S::Config as CurveConfig>::BaseField: ark_ff::PrimeField,
 {
-    pub vrf_signature: PedersenSignature<S>,
+    pub pedersen_proof: PedersenProof<S>,
     pub ring_proof: RingProof<S>,
 }
 
-pub trait RingSigner<S: RingSuite>
+pub trait RingProver<S: RingSuite>
 where
     Curve<S>: SWCurveConfig,
     <Curve<S> as CurveConfig>::BaseField: ark_ff::PrimeField,
 {
-    /// Sign the input and the user additional data `ad`.
-    fn ring_sign(
+    /// Generate a proof for the given input/output and user additional data.
+    fn prove(
         &self,
         input: Input<S>,
         output: Output<S>,
         ad: impl AsRef<[u8]>,
         prover: &Prover<S>,
-    ) -> Signature<S>;
+    ) -> Proof<S>;
 }
 
 pub trait RingVerifier<S: RingSuite>
@@ -71,34 +71,34 @@ where
     Curve<S>: SWCurveConfig,
     <Curve<S> as CurveConfig>::BaseField: ark_ff::PrimeField,
 {
-    /// Verify a signature.
-    fn ring_verify(
+    /// Verify a proof for the given input/output and user additional data.
+    fn verify(
         input: Input<S>,
         output: Output<S>,
         ad: impl AsRef<[u8]>,
-        sig: &Signature<S>,
+        sig: &Proof<S>,
         verifier: &Verifier<S>,
     ) -> Result<(), Error>;
 }
 
-impl<S: RingSuite> RingSigner<S> for Secret<S>
+impl<S: RingSuite> RingProver<S> for Secret<S>
 where
-    Self: PedersenSigner<S>,
     Curve<S>: SWCurveConfig,
     <Curve<S> as CurveConfig>::BaseField: ark_ff::PrimeField,
 {
-    fn ring_sign(
+    fn prove(
         &self,
         input: Input<S>,
         output: Output<S>,
         ad: impl AsRef<[u8]>,
         ring_prover: &Prover<S>,
-    ) -> Signature<S> {
-        let (vrf_signature, secret_blinding) =
-            <Self as PedersenSigner<S>>::sign(self, input, output, ad);
+    ) -> Proof<S> {
+        use crate::pedersen::PedersenProver;
+        let (pedersen_proof, secret_blinding) =
+            <Self as PedersenProver<S>>::prove(self, input, output, ad);
         let ring_proof = ring_prover.prove(secret_blinding);
-        Signature {
-            vrf_signature,
+        Proof {
+            pedersen_proof,
             ring_proof,
         }
     }
@@ -106,20 +106,19 @@ where
 
 impl<S: RingSuite> RingVerifier<S> for Public<S>
 where
-    Self: PedersenVerifier<S>,
     Curve<S>: SWCurveConfig,
     <Curve<S> as CurveConfig>::BaseField: ark_ff::PrimeField,
 {
-    /// Verify the VRF signature.
-    fn ring_verify(
+    fn verify(
         input: Input<S>,
         output: Output<S>,
         ad: impl AsRef<[u8]>,
-        sig: &Signature<S>,
+        sig: &Proof<S>,
         verifier: &Verifier<S>,
     ) -> Result<(), Error> {
-        <Self as PedersenVerifier<S>>::verify(input, output, ad, &sig.vrf_signature)?;
-        let key_commitment = sig.vrf_signature.key_commitment();
+        use crate::pedersen::PedersenVerifier;
+        <Self as PedersenVerifier<S>>::verify(input, output, ad, &sig.pedersen_proof)?;
+        let key_commitment = sig.pedersen_proof.key_commitment();
         if !verifier.verify_ring_proof(sig.ring_proof.clone(), key_commitment) {
             return Err(Error::VerificationFailure);
         }
@@ -282,7 +281,7 @@ mod tests {
     use crate::utils::testing::{random_val, random_vec, TEST_SEED};
 
     #[test]
-    fn sign_verify_works() {
+    fn prove_verify_works() {
         let rng = &mut ark_std::test_rng();
         let domain_size = 1024;
         let ring_ctx = RingContext::new_random(domain_size, rng);
@@ -300,11 +299,11 @@ mod tests {
 
         let prover_key = ring_ctx.prover_key(pks.clone());
         let prover = ring_ctx.prover(prover_key, prover_idx);
-        let signature = secret.ring_sign(input, output, b"foo", &prover);
+        let proof = secret.prove(input, output, b"foo", &prover);
 
         let verifier_key = ring_ctx.verifier_key(pks);
         let verifier = ring_ctx.verifier(verifier_key);
-        let result = Public::ring_verify(input, output, b"foo", &signature, &verifier);
+        let result = Public::verify(input, output, b"foo", &proof, &verifier);
         assert!(result.is_ok());
     }
 }

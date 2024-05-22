@@ -10,17 +10,17 @@ pub trait IetfSuite: Suite {}
 
 impl<T> IetfSuite for T where T: Suite {}
 
-/// VRF signature generic over the cipher suite.
+/// VRF proof generic over the cipher suite.
 ///
 /// An output point which can be used to derive the actual output together
-/// with the actual signature of the input point and the associated data.
+/// with the actual proof of the input point and the associated data.
 #[derive(Debug, Clone)]
-pub struct Signature<S: IetfSuite> {
+pub struct Proof<S: IetfSuite> {
     pub c: ScalarField<S>,
     pub s: ScalarField<S>,
 }
 
-impl<S: IetfSuite + Sync> CanonicalSerialize for Signature<S> {
+impl<S: IetfSuite + Sync> CanonicalSerialize for Proof<S> {
     fn serialize_with_mode<W: ark_serialize::Write>(
         &self,
         mut writer: W,
@@ -41,7 +41,7 @@ impl<S: IetfSuite + Sync> CanonicalSerialize for Signature<S> {
     }
 }
 
-impl<S: IetfSuite + Sync> CanonicalDeserialize for Signature<S> {
+impl<S: IetfSuite + Sync> CanonicalDeserialize for Proof<S> {
     fn deserialize_with_mode<R: ark_serialize::Read>(
         mut reader: R,
         _compress_always: ark_serialize::Compress,
@@ -57,11 +57,11 @@ impl<S: IetfSuite + Sync> CanonicalDeserialize for Signature<S> {
             ark_serialize::Compress::No,
             validate,
         )?;
-        Ok(Signature { c, s })
+        Ok(Proof { c, s })
     }
 }
 
-impl<S: IetfSuite + Sync> ark_serialize::Valid for Signature<S> {
+impl<S: IetfSuite + Sync> ark_serialize::Valid for Proof<S> {
     fn check(&self) -> Result<(), ark_serialize::SerializationError> {
         self.c.check()?;
         self.s.check()?;
@@ -69,24 +69,24 @@ impl<S: IetfSuite + Sync> ark_serialize::Valid for Signature<S> {
     }
 }
 
-pub trait IetfSigner<S: Suite> {
-    /// Sign the input and the user additional data `ad`.
-    fn sign(&self, input: Input<S>, output: Output<S>, ad: impl AsRef<[u8]>) -> Signature<S>;
+pub trait IetfProver<S: IetfSuite> {
+    /// Generate a proof for the given input/output and user additional data.
+    fn prove(&self, input: Input<S>, output: Output<S>, ad: impl AsRef<[u8]>) -> Proof<S>;
 }
 
-pub trait IetfVerifier<S: Suite> {
-    /// Verify the VRF signature.
+pub trait IetfVerifier<S: IetfSuite> {
+    /// Verify a proof for the given input/output and user additional data.
     fn verify(
         &self,
         input: Input<S>,
         output: Output<S>,
         ad: impl AsRef<[u8]>,
-        sig: &Signature<S>,
+        sig: &Proof<S>,
     ) -> Result<(), Error>;
 }
 
-impl<S: IetfSuite> IetfSigner<S> for Secret<S> {
-    fn sign(&self, input: Input<S>, output: Output<S>, ad: impl AsRef<[u8]>) -> Signature<S> {
+impl<S: IetfSuite> IetfProver<S> for Secret<S> {
+    fn prove(&self, input: Input<S>, output: Output<S>, ad: impl AsRef<[u8]>) -> Proof<S> {
         let k = S::nonce(&self.scalar, input);
         let k_b = (S::Affine::generator() * k).into_affine();
 
@@ -97,19 +97,19 @@ impl<S: IetfSuite> IetfSigner<S> for Secret<S> {
             ad.as_ref(),
         );
         let s = k + c * self.scalar;
-        Signature { c, s }
+        Proof { c, s }
     }
 }
 
-impl<S: Suite> IetfVerifier<S> for Public<S> {
+impl<S: IetfSuite> IetfVerifier<S> for Public<S> {
     fn verify(
         &self,
         input: Input<S>,
         output: Output<S>,
         ad: impl AsRef<[u8]>,
-        signature: &Signature<S>,
+        proof: &Proof<S>,
     ) -> Result<(), Error> {
-        let Signature { c, s } = signature;
+        let Proof { c, s } = proof;
 
         let s_b = S::Affine::generator() * s;
         let c_y = self.0 * c;
@@ -128,10 +128,9 @@ impl<S: Suite> IetfVerifier<S> for Public<S> {
 
 #[cfg(test)]
 pub mod testing {
-    use crate::*;
-    use ietf::IetfSigner;
+    use super::*;
 
-    pub const TEST_FLAG_SKIP_SIGN_CHECK: u8 = 1 << 0;
+    pub const TEST_FLAG_SKIP_PROOF_CHECK: u8 = 1 << 0;
 
     pub struct TestVector {
         pub flags: u8,
@@ -145,7 +144,7 @@ pub mod testing {
         pub s: &'static str,
     }
 
-    pub fn run_test_vector<S: Suite>(v: &TestVector) {
+    pub fn run_test_vector<S: IetfSuite>(v: &TestVector) {
         let sk_bytes = hex::decode(v.sk).unwrap();
         let s = S::scalar_decode(&sk_bytes);
         let sk = Secret::<S>::from_scalar(s);
@@ -162,19 +161,19 @@ pub mod testing {
 
         let input = Input::from(h);
         let output = sk.output(input);
-        let signature = sk.sign(input, output, []);
+        let proof = sk.prove(input, output, []);
 
         let gamma_bytes = utils::encode_point::<S>(&output.0);
         assert_eq!(v.gamma, hex::encode(gamma_bytes));
 
-        if v.flags & TEST_FLAG_SKIP_SIGN_CHECK != 0 {
+        if v.flags & TEST_FLAG_SKIP_PROOF_CHECK != 0 {
             return;
         }
 
-        let c_bytes = utils::encode_scalar::<S>(&signature.c);
+        let c_bytes = utils::encode_scalar::<S>(&proof.c);
         assert_eq!(v.c, hex::encode(c_bytes));
 
-        let s_bytes = utils::encode_scalar::<S>(&signature.s);
+        let s_bytes = utils::encode_scalar::<S>(&proof.s);
         assert_eq!(v.s, hex::encode(s_bytes));
 
         let beta = output.hash();
@@ -190,30 +189,30 @@ mod tests {
     };
 
     #[test]
-    fn sign_verify_works() {
+    fn prove_verify_works() {
         let secret = Secret::from_seed(TEST_SEED);
         let public = secret.public();
         let input = Input::from(random_val::<AffinePoint>(None));
         let output = secret.output(input);
 
-        let signature = secret.sign(input, output, b"foo");
+        let proof = secret.prove(input, output, b"foo");
 
-        let result = public.verify(input, output, b"foo", &signature);
+        let result = public.verify(input, output, b"foo", &proof);
         assert!(result.is_ok());
     }
 
     #[test]
-    fn signature_encode_decode() {
+    fn proof_encode_decode() {
         let c = hex::decode("d091c00b0f5c3619d10ecea44363b5a5").unwrap();
         let c = ScalarField::from_be_bytes_mod_order(&c[..]);
         let s = hex::decode("99cadc5b2957e223fec62e81f7b4825fc799a771a3d7334b9186bdbee87316b1")
             .unwrap();
         let s = ScalarField::from_be_bytes_mod_order(&s[..]);
 
-        let signature = Signature::<TestSuite> { c, s };
+        let proof = Proof::<TestSuite> { c, s };
 
         let mut buf = Vec::new();
-        signature.serialize_compressed(&mut buf).unwrap();
+        proof.serialize_compressed(&mut buf).unwrap();
         assert_eq!(buf.len(), TestSuite::CHALLENGE_LEN + 32);
     }
 }

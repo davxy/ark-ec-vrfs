@@ -108,7 +108,7 @@ mod tests {
     #[test]
     fn secp256_rfc_9381_test_vector_10() {
         let v = TestVector {
-            flags: TEST_FLAG_SKIP_SIGN_CHECK,
+            flags: TEST_FLAG_SKIP_PROOF_CHECK,
             sk: "c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721",
             pk: "0360fed4ba255a9d31c961eb74c6356d68c049b8923b61fa6ce669622e60f29fb6",
             alpha: b"sample",

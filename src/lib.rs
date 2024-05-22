@@ -218,11 +218,6 @@ impl<S: Suite> Secret<S> {
     pub fn output(&self, input: Input<S>) -> Output<S> {
         Output((input.0 * self.scalar).into_affine())
     }
-
-    /// Get the VRF `nonce`
-    pub fn nonce(&self, pt: Input<S>) -> ScalarField<S> {
-        S::nonce(&self.scalar, pt)
-    }
 }
 
 /// Public key generic over the cipher suite.

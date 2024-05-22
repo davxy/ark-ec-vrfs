@@ -107,7 +107,7 @@ pub mod ring {
     pub type VerifierKey = ring::VerifierKey<BandersnatchSha512>;
     pub type Prover = ring::Prover<BandersnatchSha512>;
     pub type Verifier = ring::Verifier<BandersnatchSha512>;
-    pub type Signature = ring::Signature<BandersnatchSha512>;
+    pub type Proof = ring::Proof<BandersnatchSha512>;
 }
 
 #[cfg(test)]
@@ -116,20 +116,20 @@ mod test {
     use utils::testing::{random_val, TEST_SEED};
 
     #[test]
-    fn sign_verify_works() {
-        use crate::pedersen::{PedersenSigner, PedersenVerifier};
+    fn prove_verify_works() {
+        use crate::pedersen::{PedersenProver, PedersenVerifier};
 
         let secret = Secret::from_seed(TEST_SEED);
         let input = Input::from(random_val(None));
         let output = secret.output(input);
 
-        let (signature, blinding) = secret.sign(input, output, b"foo");
+        let (proof, blinding) = secret.prove(input, output, b"foo");
 
-        let result = Public::verify(input, output, b"foo", &signature);
+        let result = Public::verify(input, output, b"foo", &proof);
         assert!(result.is_ok());
 
         assert_eq!(
-            signature.key_commitment(),
+            proof.key_commitment(),
             secret.public().0 + BandersnatchSha512::BLINDING_BASE * blinding
         );
     }

@@ -6,7 +6,7 @@ pub trait PedersenSuite: IetfSuite {
 }
 
 #[derive(Debug, Clone, CanonicalSerialize, CanonicalDeserialize)]
-pub struct Signature<S: PedersenSuite> {
+pub struct Proof<S: PedersenSuite> {
     pk_blind: AffinePoint<S>,
     r: AffinePoint<S>,
     ok: AffinePoint<S>,
@@ -14,41 +14,41 @@ pub struct Signature<S: PedersenSuite> {
     sb: ScalarField<S>,
 }
 
-impl<S: PedersenSuite> Signature<S> {
+impl<S: PedersenSuite> Proof<S> {
     pub fn key_commitment(&self) -> AffinePoint<S> {
         self.pk_blind
     }
 }
 
-pub trait PedersenSigner<S: PedersenSuite> {
-    /// Sign the input and the user additional data `ad`.
+pub trait PedersenProver<S: PedersenSuite> {
+    /// Generate a proof for the given input/output and user additional data.
     ///
-    /// Returns the signature together with the blinding factor.
-    fn sign(
+    /// Returns the proof together with the associated blinding factor.
+    fn prove(
         &self,
         input: Input<S>,
         output: Output<S>,
         ad: impl AsRef<[u8]>,
-    ) -> (Signature<S>, ScalarField<S>);
+    ) -> (Proof<S>, ScalarField<S>);
 }
 
 pub trait PedersenVerifier<S: PedersenSuite> {
-    /// Verify the VRF signature.
+    /// Verify a proof for the given input/output and user additional data.
     fn verify(
         input: Input<S>,
         output: Output<S>,
         ad: impl AsRef<[u8]>,
-        sig: &Signature<S>,
+        sig: &Proof<S>,
     ) -> Result<(), Error>;
 }
 
-impl<S: PedersenSuite> PedersenSigner<S> for Secret<S> {
-    fn sign(
+impl<S: PedersenSuite> PedersenProver<S> for Secret<S> {
+    fn prove(
         &self,
         input: Input<S>,
         output: Output<S>,
         ad: impl AsRef<[u8]>,
-    ) -> (Signature<S>, ScalarField<S>) {
+    ) -> (Proof<S>, ScalarField<S>) {
         // Construct the nonces
         let k = S::nonce(&self.scalar, input);
         let b = S::nonce(&k, input);
@@ -69,7 +69,7 @@ impl<S: PedersenSuite> PedersenSigner<S> for Secret<S> {
         // sb = kb + c*b
         let sb = kb + c * b;
 
-        let signature = Signature {
+        let proof = Proof {
             pk_blind,
             r,
             ok,
@@ -77,7 +77,7 @@ impl<S: PedersenSuite> PedersenSigner<S> for Secret<S> {
             sb,
         };
 
-        (signature, b)
+        (proof, b)
     }
 }
 
@@ -86,15 +86,15 @@ impl<S: PedersenSuite> PedersenVerifier<S> for Public<S> {
         input: Input<S>,
         output: Output<S>,
         ad: impl AsRef<[u8]>,
-        signature: &Signature<S>,
+        proof: &Proof<S>,
     ) -> Result<(), Error> {
-        let Signature {
+        let Proof {
             pk_blind,
             r,
             ok,
             s,
             sb,
-        } = signature;
+        } = proof;
 
         // c = Hash(Yb, I, O, R, Ok, ad)
         let c = S::challenge(&[pk_blind, &input.0, &output.0, r, ok], ad.as_ref());
@@ -134,18 +134,18 @@ mod tests {
     }
 
     #[test]
-    fn sign_verify_works() {
+    fn prove_verify_works() {
         let secret = Secret::from_seed(TEST_SEED);
         let input = Input::from(random_val(None));
         let output = secret.output(input);
 
-        let (signature, blinding) = secret.sign(input, output, b"foo");
+        let (proof, blinding) = secret.prove(input, output, b"foo");
 
-        let result = Public::verify(input, output, b"foo", &signature);
+        let result = Public::verify(input, output, b"foo", &proof);
         assert!(result.is_ok());
 
         assert_eq!(
-            signature.pk_blind,
+            proof.pk_blind,
             secret.public().0 + TestSuite::BLINDING_BASE * blinding
         );
     }

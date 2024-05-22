@@ -24,7 +24,12 @@ macro_rules! suite_types {
         #[allow(dead_code)]
         pub type BaseField = $crate::BaseField<$suite>;
         #[allow(dead_code)]
-        pub type Signature = $crate::ietf::Signature<$suite>;
+        pub type IetfProof = $crate::ietf::Proof<$suite>;
+        #[allow(dead_code)]
+        pub type PedersenProof = $crate::pedersen::Proof<$suite>;
+        #[cfg(feature = "ring")]
+        #[allow(dead_code)]
+        pub type RingProof = $crate::ring::Proof<$suite>;
     };
 }
 
