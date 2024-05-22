@@ -69,3 +69,7 @@ ring = [
   "merlin",
 ]
 rfc-6979 = [ "hmac" ]
+full = [
+  "curves",
+  "ring",
+]

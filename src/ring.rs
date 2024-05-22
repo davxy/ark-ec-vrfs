@@ -17,7 +17,12 @@ pub trait RingSuite:
 
 type Curve<S> = <S as RingSuite>::Config;
 
+/// KZG Polynomial Commitment Scheme.
 type Pcs<S> = fflonk::pcs::kzg::KZG<<S as RingSuite>::Pairing>;
+
+/// KZG Setup Parameters.
+///
+/// Basically the powers of tau URS.
 type PcsParams<S> = fflonk::pcs::kzg::urs::URS<<S as RingSuite>::Pairing>;
 
 type PairingScalarField<S> = <<S as RingSuite>::Pairing as ark_ec::pairing::Pairing>::ScalarField;
@@ -52,7 +57,13 @@ where
     <Curve<S> as CurveConfig>::BaseField: ark_ff::PrimeField,
 {
     /// Sign the input and the user additional data `ad`.
-    fn ring_sign(&self, input: Input<S>, ad: impl AsRef<[u8]>, prover: &Prover<S>) -> Signature<S>;
+    fn ring_sign(
+        &self,
+        input: Input<S>,
+        output: Output<S>,
+        ad: impl AsRef<[u8]>,
+        prover: &Prover<S>,
+    ) -> Signature<S>;
 }
 
 pub trait RingVerifier<S: RingSuite>
@@ -63,6 +74,7 @@ where
     /// Verify a signature.
     fn ring_verify(
         input: Input<S>,
+        output: Output<S>,
         ad: impl AsRef<[u8]>,
         sig: &Signature<S>,
         verifier: &Verifier<S>,
@@ -78,10 +90,12 @@ where
     fn ring_sign(
         &self,
         input: Input<S>,
+        output: Output<S>,
         ad: impl AsRef<[u8]>,
         ring_prover: &Prover<S>,
     ) -> Signature<S> {
-        let (vrf_signature, secret_blinding) = <Self as PedersenSigner<S>>::sign(self, input, ad);
+        let (vrf_signature, secret_blinding) =
+            <Self as PedersenSigner<S>>::sign(self, input, output, ad);
         let ring_proof = ring_prover.prove(secret_blinding);
         Signature {
             vrf_signature,
@@ -99,11 +113,12 @@ where
     /// Verify the VRF signature.
     fn ring_verify(
         input: Input<S>,
+        output: Output<S>,
         ad: impl AsRef<[u8]>,
         sig: &Signature<S>,
         verifier: &Verifier<S>,
     ) -> Result<(), Error> {
-        <Self as PedersenVerifier<S>>::verify(input, ad, &sig.vrf_signature)?;
+        <Self as PedersenVerifier<S>>::verify(input, output, ad, &sig.vrf_signature)?;
         let key_commitment = sig.vrf_signature.key_commitment();
         if !verifier.verify_ring_proof(sig.ring_proof.clone(), key_commitment) {
             return Err(Error::VerificationFailure);
@@ -275,6 +290,7 @@ mod tests {
         let secret = Secret::from_seed(TEST_SEED);
         let public = secret.public();
         let input = Input::from(random_val(Some(rng)));
+        let output = secret.output(input);
 
         let keyset_size = ring_ctx.piop_params.keyset_part_size;
 
@@ -284,11 +300,11 @@ mod tests {
 
         let prover_key = ring_ctx.prover_key(pks.clone());
         let prover = ring_ctx.prover(prover_key, prover_idx);
-        let signature = secret.ring_sign(input, b"foo", &prover);
+        let signature = secret.ring_sign(input, output, b"foo", &prover);
 
         let verifier_key = ring_ctx.verifier_key(pks);
         let verifier = ring_ctx.verifier(verifier_key);
-        let result = Public::ring_verify(input, b"foo", &signature, &verifier);
+        let result = Public::ring_verify(input, output, b"foo", &signature, &verifier);
         assert!(result.is_ok());
     }
 }

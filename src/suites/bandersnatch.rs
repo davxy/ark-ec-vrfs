@@ -121,11 +121,11 @@ mod test {
 
         let secret = Secret::from_seed(TEST_SEED);
         let input = Input::from(random_val(None));
+        let output = secret.output(input);
 
-        let (signature, blinding) = secret.sign(input, b"foo");
-        assert_eq!(signature.output().0, secret.output(input).0);
+        let (signature, blinding) = secret.sign(input, output, b"foo");
 
-        let result = Public::verify(input, b"foo", &signature);
+        let result = Public::verify(input, output, b"foo", &signature);
         assert!(result.is_ok());
 
         assert_eq!(

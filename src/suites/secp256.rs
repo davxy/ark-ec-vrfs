@@ -67,12 +67,11 @@ impl Suite for P256Sha256Tai {
     }
 
     fn data_to_point(data: &[u8]) -> Option<AffinePoint> {
-        utils::hash_to_curve_tai::<Self>(data, true)
+        utils::hash_to_curve_tai_rfc_9381::<Self>(data, true)
     }
 
     /// Encode point according to Section 2.3.3 "SEC 1: Elliptic Curve Cryptography",
     /// (https://www.secg.org/sec1-v2.pdf) with point compression on.
-    #[inline(always)]
     fn point_encode(pt: &AffinePoint, buf: &mut Vec<u8>) {
         use ark_ff::biginteger::BigInteger;
         let mut tmp = Vec::new();
@@ -89,7 +88,6 @@ impl Suite for P256Sha256Tai {
         buf.extend_from_slice(&tmp[..]);
     }
 
-    #[inline(always)]
     fn scalar_encode(sc: &ScalarField, buf: &mut Vec<u8>) {
         let mut tmp = Vec::new();
         sc.serialize_compressed(&mut tmp).unwrap();
@@ -97,7 +95,6 @@ impl Suite for P256Sha256Tai {
         buf.extend_from_slice(&tmp[..]);
     }
 
-    #[inline(always)]
     fn scalar_decode(buf: &[u8]) -> ScalarField {
         ScalarField::from_be_bytes_mod_order(buf)
     }

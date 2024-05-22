@@ -19,7 +19,7 @@ use zeroize::Zeroize;
 use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::PrimeField;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use ark_std::{vec, vec::Vec};
+use ark_std::vec::Vec;
 
 use digest::Digest;
 
@@ -32,6 +32,8 @@ pub mod utils;
 pub mod ring;
 
 pub mod prelude {
+    pub use ark_ec;
+    pub use ark_ff;
     pub use ark_serialize;
     pub use ark_std;
 }
@@ -52,13 +54,16 @@ pub const CUSTOM_SUITE_ID_FLAG: u8 = 0x80;
 
 /// Defines a cipher suite.
 ///
-/// This trait can be used to implement a VRF which follows the guidelines
-/// given by RFC-9381 section 5.5 for cipher-suite implementation.
+/// This trait can be used to easily implement a VRF which follows the guidelines
+/// given by RFC-9381 section 5.5.
+///
+/// Can be easily customized to implement more exotic VRF types by overwriting
+/// the default methods implementations.
 pub trait Suite: Copy + Clone {
     /// Suite identifier (aka `suite_string` in RFC-9381)
     const SUITE_ID: u8;
 
-    /// Challenge length.
+    /// Challenge encoded length.
     ///
     /// Must be at least equal to the Hash length.
     const CHALLENGE_LEN: usize;
@@ -100,45 +105,31 @@ pub trait Suite: Copy + Clone {
     /// This implementation extends the RFC procedure to allow adding
     /// some optional additional data too the hashing procedure.
     fn challenge(pts: &[&AffinePoint<Self>], ad: &[u8]) -> ScalarField<Self> {
-        const DOM_SEP_START: u8 = 0x02;
-        const DOM_SEP_END: u8 = 0x00;
-        let mut buf = vec![Self::SUITE_ID, DOM_SEP_START];
-        pts.iter().for_each(|p| {
-            Self::point_encode(p, &mut buf);
-        });
-        buf.extend_from_slice(ad);
-        buf.push(DOM_SEP_END);
-        let hash = &utils::hash::<Self::Hasher>(&buf)[..Self::CHALLENGE_LEN];
-        ScalarField::<Self>::from_be_bytes_mod_order(hash)
+        utils::challenge_rfc_9381::<Self>(pts, ad)
     }
 
     /// Hash data to a curve point.
     ///
-    /// By default uses try and increment method.
+    /// By default uses "try and increment" method described by RFC 9381.
     fn data_to_point(data: &[u8]) -> Option<AffinePoint<Self>> {
-        utils::hash_to_curve_tai::<Self>(data, false)
+        utils::hash_to_curve_tai_rfc_9381::<Self>(data, false)
     }
 
+    /// Map the point to a hash value using `Self::Hasher`.
+    ///
+    /// By default uses the algorithm described by RFC 9381.
     fn point_to_hash(pt: &AffinePoint<Self>) -> HashOutput<Self> {
-        const DOM_SEP_START: u8 = 0x03;
-        const DOM_SEP_END: u8 = 0x00;
-        let mut buf = vec![Self::SUITE_ID, DOM_SEP_START];
-        Self::point_encode(pt, &mut buf);
-        buf.push(DOM_SEP_END);
-        utils::hash::<Self::Hasher>(&buf)
+        utils::point_to_hash_rfc_9381::<Self>(pt)
     }
 
-    #[inline(always)]
     fn point_encode(pt: &AffinePoint<Self>, buf: &mut Vec<u8>) {
         pt.serialize_compressed(buf).unwrap();
     }
 
-    #[inline(always)]
     fn scalar_encode(sc: &ScalarField<Self>, buf: &mut Vec<u8>) {
         sc.serialize_compressed(buf).unwrap();
     }
 
-    #[inline(always)]
     fn scalar_decode(buf: &[u8]) -> ScalarField<Self> {
         <ScalarField<Self>>::from_le_bytes_mod_order(buf)
     }
@@ -148,9 +139,9 @@ pub trait Suite: Copy + Clone {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Secret<S: Suite> {
     // Secret scalar.
-    scalar: ScalarField<S>,
+    pub scalar: ScalarField<S>,
     // Cached public point.
-    public: Public<S>,
+    pub public: Public<S>,
 }
 
 impl<S: Suite> Drop for Secret<S> {
@@ -223,12 +214,14 @@ impl<S: Suite> Secret<S> {
         self.public
     }
 
-    /// Get the VRF `output` point relative to `input` without generating the signature.
-    ///
-    /// This is a relatively fast step that we may want to perform before generating
-    /// the signature.
+    /// Get the VRF output point relative to input.
     pub fn output(&self, input: Input<S>) -> Output<S> {
         Output((input.0 * self.scalar).into_affine())
+    }
+
+    /// Get the VRF `nonce`
+    pub fn nonce(&self, pt: Input<S>) -> ScalarField<S> {
+        S::nonce(&self.scalar, pt)
     }
 }
 
