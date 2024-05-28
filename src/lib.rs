@@ -31,6 +31,9 @@ pub mod utils;
 #[cfg(feature = "ring")]
 pub mod ring;
 
+#[cfg(test)]
+mod testing;
+
 pub mod prelude {
     pub use ark_ec;
     pub use ark_ff;
@@ -60,6 +63,7 @@ pub const CUSTOM_SUITE_ID_FLAG: u8 = 0x80;
 /// Can be easily customized to implement more exotic VRF types by overwriting
 /// the default methods implementations.
 pub trait Suite: Copy + Clone {
+    // TODO: make this a byte array
     /// Suite identifier (aka `suite_string` in RFC-9381)
     const SUITE_ID: u8;
 
@@ -258,7 +262,11 @@ impl<S: Suite> Output<S> {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::testing::*;
+    use crate::testing::{
+        random_val,
+        suite::{Input, Public, Secret},
+        TEST_SEED,
+    };
     use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 
     #[test]

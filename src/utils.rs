@@ -200,46 +200,63 @@ pub fn encode_scalar<S: Suite>(sc: &ScalarField<S>) -> Vec<u8> {
     buf
 }
 
-#[cfg(test)]
-pub(crate) mod testing {
-    use super::*;
-    use crate::*;
-    use ark_std::{rand::RngCore, UniformRand};
+// Upcoming Arkworks features.
+pub(crate) mod ark_next {
+    use ark_ec::{
+        short_weierstrass::{Affine as WeierstrassAffine, SWCurveConfig},
+        twisted_edwards::{Affine as EdwardsAffine, MontCurveConfig, TECurveConfig},
+        CurveConfig,
+    };
+    use ark_ff::{Field, One};
 
-    pub const TEST_SEED: &[u8] = b"seed";
-
-    #[derive(Debug, Copy, Clone, PartialEq)]
-    pub struct TestSuite;
-
-    impl Suite for TestSuite {
-        const SUITE_ID: u8 = 0xFF;
-        const CHALLENGE_LEN: usize = 16;
-
-        type Affine = ark_ed25519::EdwardsAffine;
-        type Hasher = sha2::Sha256;
+    // Constants used in mapping TE form to SW form and vice versa
+    pub trait MapConfig: TECurveConfig + SWCurveConfig + MontCurveConfig {
+        const MONT_A_OVER_THREE: <Self as CurveConfig>::BaseField;
+        const MONT_B_INV: <Self as CurveConfig>::BaseField;
     }
 
-    suite_types!(TestSuite);
-
+    // https://github.com/arkworks-rs/algebra/pull/804
     #[allow(unused)]
-    pub fn random_vec<T: UniformRand>(n: usize, rng: Option<&mut dyn RngCore>) -> Vec<T> {
-        let mut local_rng = ark_std::test_rng();
-        let rng = rng.unwrap_or(&mut local_rng);
-        (0..n).map(|_| T::rand(rng)).collect()
+    pub fn map_sw_to_te<C: MapConfig>(point: &WeierstrassAffine<C>) -> Option<EdwardsAffine<C>> {
+        // First map the point from SW to Montgomery
+        // (Bx - A/3, By)
+        let mx = <C as MontCurveConfig>::COEFF_B * point.x - C::MONT_A_OVER_THREE;
+        let my = <C as MontCurveConfig>::COEFF_B * point.y;
+
+        // Then we map the TE point to Montgamory
+        // (x,y)↦(x/y,(x−1)/(x+1))
+        let v_denom = my.inverse()?;
+        let x_p_1 = mx + <<C as CurveConfig>::BaseField as One>::one();
+        let w_denom = x_p_1.inverse()?;
+        let v = mx * v_denom;
+        let w = (mx - <<C as CurveConfig>::BaseField as One>::one()) * w_denom;
+
+        Some(EdwardsAffine::new_unchecked(v, w))
     }
 
     #[allow(unused)]
-    pub fn random_val<T: UniformRand>(rng: Option<&mut dyn RngCore>) -> T {
-        let mut local_rng = ark_std::test_rng();
-        let rng = rng.unwrap_or(&mut local_rng);
-        T::rand(rng)
+    pub fn map_te_to_sw<C: MapConfig>(point: &EdwardsAffine<C>) -> Option<WeierstrassAffine<C>> {
+        // Map from TE to Montgomery: (1+y)/(1-y), (1+y)/(x(1-y))
+        let v_denom = <<C as CurveConfig>::BaseField as One>::one() - point.y;
+        let w_denom = point.x - point.x * point.y;
+        let v_denom_inv = v_denom.inverse()?;
+        let w_denom_inv = w_denom.inverse()?;
+        let v_w_num = <<C as CurveConfig>::BaseField as One>::one() + point.y;
+        let v = v_w_num * v_denom_inv;
+        let w = v_w_num * w_denom_inv;
+
+        // Mapp Montgamory to SW: ((x+A/3)/B,y/B)
+        let x = C::MONT_B_INV * (v + C::MONT_A_OVER_THREE);
+        let y = C::MONT_B_INV * w;
+
+        Some(WeierstrassAffine::new_unchecked(x, y))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use testing::TestSuite;
+    use crate::testing::suite::TestSuite;
 
     #[test]
     fn hash_to_curve_tai_works() {

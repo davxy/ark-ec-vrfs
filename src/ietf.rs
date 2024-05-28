@@ -20,7 +20,7 @@ pub struct Proof<S: IetfSuite> {
     pub s: ScalarField<S>,
 }
 
-impl<S: IetfSuite + Sync> CanonicalSerialize for Proof<S> {
+impl<S: IetfSuite> CanonicalSerialize for Proof<S> {
     fn serialize_with_mode<W: ark_serialize::Write>(
         &self,
         mut writer: W,
@@ -41,7 +41,7 @@ impl<S: IetfSuite + Sync> CanonicalSerialize for Proof<S> {
     }
 }
 
-impl<S: IetfSuite + Sync> CanonicalDeserialize for Proof<S> {
+impl<S: IetfSuite> CanonicalDeserialize for Proof<S> {
     fn deserialize_with_mode<R: ark_serialize::Read>(
         mut reader: R,
         _compress_always: ark_serialize::Compress,
@@ -61,7 +61,7 @@ impl<S: IetfSuite + Sync> CanonicalDeserialize for Proof<S> {
     }
 }
 
-impl<S: IetfSuite + Sync> ark_serialize::Valid for Proof<S> {
+impl<S: IetfSuite> ark_serialize::Valid for Proof<S> {
     fn check(&self) -> Result<(), ark_serialize::SerializationError> {
         self.c.check()?;
         self.s.check()?;
@@ -184,8 +184,10 @@ pub mod testing {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::testing::{
-        random_val, AffinePoint, Input, ScalarField, Secret, TestSuite, TEST_SEED,
+    use crate::testing::{
+        random_val,
+        suite::{AffinePoint, Input, ScalarField, Secret, TestSuite},
+        TEST_SEED,
     };
 
     #[test]

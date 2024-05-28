@@ -273,37 +273,3 @@ where
         self.pcs_params.check()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::suites::bandersnatch::{ring::RingContext, AffinePoint, Input, Secret};
-    use crate::utils::testing::{random_val, random_vec, TEST_SEED};
-
-    #[test]
-    fn prove_verify_works() {
-        let rng = &mut ark_std::test_rng();
-        let domain_size = 1024;
-        let ring_ctx = RingContext::new_random(domain_size, rng);
-
-        let secret = Secret::from_seed(TEST_SEED);
-        let public = secret.public();
-        let input = Input::from(random_val(Some(rng)));
-        let output = secret.output(input);
-
-        let keyset_size = ring_ctx.piop_params.keyset_part_size;
-
-        let prover_idx = 3;
-        let mut pks = random_vec::<AffinePoint>(keyset_size, Some(rng));
-        pks[prover_idx] = public.0;
-
-        let prover_key = ring_ctx.prover_key(pks.clone());
-        let prover = ring_ctx.prover(prover_key, prover_idx);
-        let proof = secret.prove(input, output, b"foo", &prover);
-
-        let verifier_key = ring_ctx.verifier_key(pks);
-        let verifier = ring_ctx.verifier(verifier_key);
-        let result = Public::verify(input, output, b"foo", &proof, &verifier);
-        assert!(result.is_ok());
-    }
-}

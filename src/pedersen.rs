@@ -116,8 +116,10 @@ impl<S: PedersenSuite> PedersenVerifier<S> for Public<S> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::testing::{
-        random_val, AffinePoint, BaseField, Input, Secret, TestSuite, TEST_SEED,
+    use crate::testing::{
+        random_val,
+        suite::{AffinePoint, BaseField, Input, Secret, TestSuite},
+        TEST_SEED,
     };
     use ark_ff::MontFp;
 

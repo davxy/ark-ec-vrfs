@@ -51,86 +51,158 @@
 //     GENERATOR_X = 18886178867200960497001835917649091219057080094937609519140440539760939937304
 //     GENERATOR_Y = 19188667384257783945677642223292697773471335439753913231509108946878080696678
 
+use crate::{pedersen::PedersenSuite, utils::ark_next::*, *};
 use ark_ff::MontFp;
 
-use crate::pedersen::PedersenSuite;
-use crate::*;
-
-#[derive(Debug, Copy, Clone)]
-pub struct BandersnatchSha512;
-
-suite_types!(BandersnatchSha512);
-
-impl Suite for BandersnatchSha512 {
-    const SUITE_ID: u8 = CUSTOM_SUITE_ID_FLAG | 0x03;
-    const CHALLENGE_LEN: usize = 32;
-
-    type Affine = ark_ed_on_bls12_381_bandersnatch::SWAffine;
-    type Hasher = sha2::Sha512;
-}
-
-impl PedersenSuite for BandersnatchSha512 {
-    const BLINDING_BASE: AffinePoint = {
-        const X: BaseField =
-            MontFp!("4956610287995045830459834427365747411162584416641336688940534788579455781570");
-        const Y: BaseField = MontFp!(
-            "52360910621642801549936840538960627498114783432181489929217988668068368626761"
-        );
-        AffinePoint::new_unchecked(X, Y)
-    };
-}
-
-#[cfg(feature = "ring")]
-pub mod ring {
+pub mod weierstrass {
     use super::*;
-    use crate::ring;
 
-    impl ring::Pairing<BandersnatchSha512> for ark_bls12_381::Bls12_381 {}
+    #[derive(Debug, Copy, Clone)]
+    pub struct BandersnatchSha512;
 
-    impl ring::RingSuite for BandersnatchSha512 {
-        type Config = ark_ed_on_bls12_381_bandersnatch::SWConfig;
-        type Pairing = ark_bls12_381::Bls12_381;
+    suite_types!(BandersnatchSha512);
 
-        /// A point on the curve not belonging to the prime order subgroup.
-        ///
-        /// Found using `ring_proof::find_complement_point::<Self::Config>()` function.
-        const COMPLEMENT_POINT: AffinePoint = {
-            const X: BaseField = MontFp!("0");
+    impl Suite for BandersnatchSha512 {
+        const SUITE_ID: u8 = CUSTOM_SUITE_ID_FLAG | 0x03;
+        const CHALLENGE_LEN: usize = 32;
+
+        type Affine = ark_ed_on_bls12_381_bandersnatch::SWAffine;
+        type Hasher = sha2::Sha512;
+    }
+
+    impl PedersenSuite for BandersnatchSha512 {
+        const BLINDING_BASE: AffinePoint = {
+            const X: BaseField = MontFp!(
+                "4956610287995045830459834427365747411162584416641336688940534788579455781570"
+            );
             const Y: BaseField = MontFp!(
-                "11982629110561008531870698410380659621661946968466267969586599013782997959645"
+                "52360910621642801549936840538960627498114783432181489929217988668068368626761"
             );
             AffinePoint::new_unchecked(X, Y)
         };
     }
 
-    pub type RingContext = ring::RingContext<BandersnatchSha512>;
-    pub type VerifierKey = ring::VerifierKey<BandersnatchSha512>;
-    pub type Prover = ring::Prover<BandersnatchSha512>;
-    pub type Verifier = ring::Verifier<BandersnatchSha512>;
-    pub type Proof = ring::Proof<BandersnatchSha512>;
+    #[cfg(feature = "ring")]
+    pub mod ring {
+        use super::*;
+        use crate::ring;
+
+        impl ring::Pairing<BandersnatchSha512> for ark_bls12_381::Bls12_381 {}
+
+        impl ring::RingSuite for BandersnatchSha512 {
+            type Config = ark_ed_on_bls12_381_bandersnatch::SWConfig;
+            type Pairing = ark_bls12_381::Bls12_381;
+
+            /// A point on the curve not belonging to the prime order subgroup.
+            ///
+            /// Found using `ring_proof::find_complement_point::<Self::Config>()` function.
+            const COMPLEMENT_POINT: AffinePoint = {
+                const X: BaseField = MontFp!("0");
+                const Y: BaseField = MontFp!(
+                    "11982629110561008531870698410380659621661946968466267969586599013782997959645"
+                );
+                AffinePoint::new_unchecked(X, Y)
+            };
+        }
+
+        pub type RingContext = ring::RingContext<BandersnatchSha512>;
+        pub type VerifierKey = ring::VerifierKey<BandersnatchSha512>;
+        pub type Prover = ring::Prover<BandersnatchSha512>;
+        pub type Verifier = ring::Verifier<BandersnatchSha512>;
+        pub type Proof = ring::Proof<BandersnatchSha512>;
+    }
+
+    // sage: q = 52435875175126190479447740508185965837690552500527637822603658699938581184513
+    // sage: Fq = GF(q)
+    // sage: MONT_A = 29978822694968839326280996386011761570173833766074948509196803838190355340952
+    // sage: MONT_B = 25465760566081946422412445027709227188579564747101592991722834452325077642517
+    // sage: MONT_A/Fq(3) = 9992940898322946442093665462003920523391277922024982836398934612730118446984
+    // sage: Fq(1)/MONT_B = 41180284393978236561320365279764246793818536543197771097409483252169927600582
+    impl MapConfig for ark_ed_on_bls12_381_bandersnatch::BandersnatchConfig {
+        const MONT_A_OVER_THREE: ark_ed_on_bls12_381_bandersnatch::Fq =
+            MontFp!("9992940898322946442093665462003920523391277922024982836398934612730118446984");
+        const MONT_B_INV: ark_ed_on_bls12_381_bandersnatch::Fq = MontFp!(
+            "41180284393978236561320365279764246793818536543197771097409483252169927600582"
+        );
+    }
+
+    #[cfg(test)]
+    mod test {
+        use super::*;
+
+        // TODO: use macro to build all tests
+        #[test]
+        fn ietf_prove_verify() {
+            testing::ietf_prove_verify::<BandersnatchSha512>();
+        }
+
+        #[test]
+        fn prove_verify_pedersen() {
+            testing::pedersen_prove_verify::<BandersnatchSha512>();
+        }
+
+        #[cfg(feature = "ring")]
+        #[test]
+        fn ring_prove_verify() {
+            testing::ring_prove_verify::<BandersnatchSha512>()
+        }
+
+        #[test]
+        fn sw_to_te_roundtrip() {
+            use crate::{testing, utils::ark_next};
+            use ark_ed_on_bls12_381_bandersnatch::{BandersnatchConfig, SWAffine};
+
+            let org_point = testing::random_val::<SWAffine>(None);
+
+            let te_point = ark_next::map_sw_to_te::<BandersnatchConfig>(&org_point).unwrap();
+            assert!(te_point.is_on_curve());
+
+            let sw_point = ark_next::map_te_to_sw::<BandersnatchConfig>(&te_point).unwrap();
+            assert!(sw_point.is_on_curve());
+        }
+    }
 }
 
-#[cfg(test)]
-mod test {
+pub mod edwards {
     use super::*;
-    use utils::testing::{random_val, TEST_SEED};
 
-    #[test]
-    fn prove_verify_works() {
-        use crate::pedersen::{PedersenProver, PedersenVerifier};
+    #[derive(Debug, Copy, Clone)]
+    pub struct BandersnatchSha512Edwards;
 
-        let secret = Secret::from_seed(TEST_SEED);
-        let input = Input::from(random_val(None));
-        let output = secret.output(input);
+    suite_types!(BandersnatchSha512Edwards);
 
-        let (proof, blinding) = secret.prove(input, output, b"foo");
+    impl Suite for BandersnatchSha512Edwards {
+        const SUITE_ID: u8 = CUSTOM_SUITE_ID_FLAG | 0x04;
+        const CHALLENGE_LEN: usize = 32;
 
-        let result = Public::verify(input, output, b"foo", &proof);
-        assert!(result.is_ok());
+        type Affine = ark_ed_on_bls12_381_bandersnatch::EdwardsAffine;
+        type Hasher = sha2::Sha512;
+    }
 
-        assert_eq!(
-            proof.key_commitment(),
-            secret.public().0 + BandersnatchSha512::BLINDING_BASE * blinding
-        );
+    impl PedersenSuite for BandersnatchSha512Edwards {
+        const BLINDING_BASE: AffinePoint = {
+            const X: BaseField = MontFp!(
+                "14576224270591906826192118712803723445031237947873156025406837473427562701854"
+            );
+            const Y: BaseField = MontFp!(
+                "38436873314098705092845609371301773715650206984323659492499960072785679638442"
+            );
+            AffinePoint::new_unchecked(X, Y)
+        };
+    }
+
+    #[cfg(test)]
+    mod test {
+        use super::*;
+
+        #[test]
+        fn ietf_prove_verify() {
+            testing::ietf_prove_verify::<BandersnatchSha512Edwards>();
+        }
+
+        #[test]
+        fn prove_verify_pedersen() {
+            testing::pedersen_prove_verify::<BandersnatchSha512Edwards>();
+        }
     }
 }
