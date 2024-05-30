@@ -46,12 +46,16 @@
 //!    Section 5.4.1.1, with interpret_hash_value_as_a_point(s) =
 //!    string_to_point(s[0]...s[31]).
 
-use crate::*;
+use crate::{pedersen::PedersenSuite, *};
+use ark_ff::MontFp;
 
 #[derive(Copy, Clone)]
 pub struct Ed25519Sha512;
 
 suite_types!(Ed25519Sha512);
+
+#[cfg(test)]
+suite_tests!(Ed25519Sha512);
 
 impl Suite for Ed25519Sha512 {
     const SUITE_ID: u8 = CUSTOM_SUITE_ID_FLAG | 0x03;
@@ -59,4 +63,15 @@ impl Suite for Ed25519Sha512 {
 
     type Affine = ark_ed25519::EdwardsAffine;
     type Hasher = sha2::Sha512;
+}
+
+impl PedersenSuite for Ed25519Sha512 {
+    const BLINDING_BASE: AffinePoint = {
+        const X: BaseField =
+            MontFp!("1181072390894490040170698195029164902368238760122173135634802939739986120753");
+        const Y: BaseField = MontFp!(
+            "16819438535150625131748701663066892288775529055803151482550035706857354997714"
+        );
+        AffinePoint::new_unchecked(X, Y)
+    };
 }

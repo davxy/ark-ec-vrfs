@@ -62,6 +62,9 @@ pub mod weierstrass {
 
     suite_types!(BandersnatchSha512);
 
+    #[cfg(test)]
+    suite_tests!(BandersnatchSha512, true);
+
     impl Suite for BandersnatchSha512 {
         const SUITE_ID: u8 = CUSTOM_SUITE_ID_FLAG | 0x03;
         const CHALLENGE_LEN: usize = 32;
@@ -111,56 +114,6 @@ pub mod weierstrass {
         pub type Verifier = ring::Verifier<BandersnatchSha512>;
         pub type Proof = ring::Proof<BandersnatchSha512>;
     }
-
-    // sage: q = 52435875175126190479447740508185965837690552500527637822603658699938581184513
-    // sage: Fq = GF(q)
-    // sage: MONT_A = 29978822694968839326280996386011761570173833766074948509196803838190355340952
-    // sage: MONT_B = 25465760566081946422412445027709227188579564747101592991722834452325077642517
-    // sage: MONT_A/Fq(3) = 9992940898322946442093665462003920523391277922024982836398934612730118446984
-    // sage: Fq(1)/MONT_B = 41180284393978236561320365279764246793818536543197771097409483252169927600582
-    impl MapConfig for ark_ed_on_bls12_381_bandersnatch::BandersnatchConfig {
-        const MONT_A_OVER_THREE: ark_ed_on_bls12_381_bandersnatch::Fq =
-            MontFp!("9992940898322946442093665462003920523391277922024982836398934612730118446984");
-        const MONT_B_INV: ark_ed_on_bls12_381_bandersnatch::Fq = MontFp!(
-            "41180284393978236561320365279764246793818536543197771097409483252169927600582"
-        );
-    }
-
-    #[cfg(test)]
-    mod test {
-        use super::*;
-
-        // TODO: use macro to build all tests
-        #[test]
-        fn ietf_prove_verify() {
-            testing::ietf_prove_verify::<BandersnatchSha512>();
-        }
-
-        #[test]
-        fn prove_verify_pedersen() {
-            testing::pedersen_prove_verify::<BandersnatchSha512>();
-        }
-
-        #[cfg(feature = "ring")]
-        #[test]
-        fn ring_prove_verify() {
-            testing::ring_prove_verify::<BandersnatchSha512>()
-        }
-
-        #[test]
-        fn sw_to_te_roundtrip() {
-            use crate::{testing, utils::ark_next};
-            use ark_ed_on_bls12_381_bandersnatch::{BandersnatchConfig, SWAffine};
-
-            let org_point = testing::random_val::<SWAffine>(None);
-
-            let te_point = ark_next::map_sw_to_te::<BandersnatchConfig>(&org_point).unwrap();
-            assert!(te_point.is_on_curve());
-
-            let sw_point = ark_next::map_te_to_sw::<BandersnatchConfig>(&te_point).unwrap();
-            assert!(sw_point.is_on_curve());
-        }
-    }
 }
 
 pub mod edwards {
@@ -170,6 +123,9 @@ pub mod edwards {
     pub struct BandersnatchSha512Edwards;
 
     suite_types!(BandersnatchSha512Edwards);
+
+    #[cfg(test)]
+    suite_tests!(BandersnatchSha512Edwards);
 
     impl Suite for BandersnatchSha512Edwards {
         const SUITE_ID: u8 = CUSTOM_SUITE_ID_FLAG | 0x04;
@@ -190,19 +146,34 @@ pub mod edwards {
             AffinePoint::new_unchecked(X, Y)
         };
     }
+}
 
-    #[cfg(test)]
-    mod test {
-        use super::*;
+// sage: q = 52435875175126190479447740508185965837690552500527637822603658699938581184513
+// sage: Fq = GF(q)
+// sage: MONT_A = 29978822694968839326280996386011761570173833766074948509196803838190355340952
+// sage: MONT_B = 25465760566081946422412445027709227188579564747101592991722834452325077642517
+// sage: MONT_A/Fq(3) = 9992940898322946442093665462003920523391277922024982836398934612730118446984
+// sage: Fq(1)/MONT_B = 41180284393978236561320365279764246793818536543197771097409483252169927600582
+impl MapConfig for ark_ed_on_bls12_381_bandersnatch::BandersnatchConfig {
+    const MONT_A_OVER_THREE: ark_ed_on_bls12_381_bandersnatch::Fq =
+        MontFp!("9992940898322946442093665462003920523391277922024982836398934612730118446984");
+    const MONT_B_INV: ark_ed_on_bls12_381_bandersnatch::Fq =
+        MontFp!("41180284393978236561320365279764246793818536543197771097409483252169927600582");
+}
 
-        #[test]
-        fn ietf_prove_verify() {
-            testing::ietf_prove_verify::<BandersnatchSha512Edwards>();
-        }
+#[cfg(test)]
+mod tests {
+    use crate::{testing, utils::ark_next};
+    use ark_ed_on_bls12_381_bandersnatch::{BandersnatchConfig, SWAffine};
 
-        #[test]
-        fn prove_verify_pedersen() {
-            testing::pedersen_prove_verify::<BandersnatchSha512Edwards>();
-        }
+    #[test]
+    fn sw_to_te_roundtrip() {
+        let org_point = testing::random_val::<SWAffine>(None);
+
+        let te_point = ark_next::map_sw_to_te::<BandersnatchConfig>(&org_point).unwrap();
+        assert!(te_point.is_on_curve());
+
+        let sw_point = ark_next::map_te_to_sw::<BandersnatchConfig>(&te_point).unwrap();
+        assert!(sw_point.is_on_curve());
     }
 }

@@ -1,3 +1,4 @@
+#![allow(unused)]
 #[cfg(not(feature = "std"))]
 use ark_std::{vec, vec::Vec};
 
@@ -23,14 +24,12 @@ pub(crate) mod suite {
     suite_types!(TestSuite);
 }
 
-#[allow(unused)]
 pub fn random_vec<T: UniformRand>(n: usize, rng: Option<&mut dyn RngCore>) -> Vec<T> {
     let mut local_rng = ark_std::test_rng();
     let rng = rng.unwrap_or(&mut local_rng);
     (0..n).map(|_| T::rand(rng)).collect()
 }
 
-#[allow(unused)]
 pub fn random_val<T: UniformRand>(rng: Option<&mut dyn RngCore>) -> T {
     let mut local_rng = ark_std::test_rng();
     let rng = rng.unwrap_or(&mut local_rng);
@@ -45,15 +44,7 @@ pub fn ietf_prove_verify<S: crate::ietf::IetfSuite>() {
     let input = Input::from(random_val(None));
     let output = secret.output(input);
 
-    let mut buf = Vec::new();
-    public.serialize_compressed(&mut buf).unwrap();
-    println!("{}", buf.len());
-
     let proof = secret.prove(input, output, b"foo");
-    let mut buf = Vec::new();
-    proof.serialize_compressed(&mut buf).unwrap();
-    println!("{}", buf.len());
-
     let result = public.verify(input, output, b"foo", &proof);
     assert!(result.is_ok());
 }
@@ -66,14 +57,6 @@ pub fn pedersen_prove_verify<S: crate::pedersen::PedersenSuite>() {
     let output = secret.output(input);
 
     let (proof, blinding) = secret.prove(input, output, b"foo");
-    let mut buf = Vec::new();
-    secret.public().serialize_compressed(&mut buf).unwrap();
-    println!("{}", buf.len());
-
-    let mut buf = Vec::new();
-    proof.serialize_compressed(&mut buf).unwrap();
-    println!("{}", buf.len());
-
     let result = Public::verify(input, output, b"foo", &proof);
     assert!(result.is_ok());
 
@@ -117,4 +100,35 @@ where
     let verifier = ring_ctx.verifier(verifier_key);
     let result = Public::verify(input, output, b"foo", &proof, &verifier);
     assert!(result.is_ok());
+}
+
+#[macro_export]
+macro_rules! suite_tests {
+    ($suite:ident, $build_ring:ident) => {
+        suite_tests!($suite);
+        ring_suite_tests!($build_ring);
+    };
+    ($suite:ident) => {
+        #[test]
+        fn ietf_prove_verify() {
+            $crate::testing::ietf_prove_verify::<$suite>();
+        }
+
+        #[test]
+        fn pedersen_prove_verify() {
+            $crate::testing::pedersen_prove_verify::<$suite>();
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! ring_suite_tests {
+    (true) => {
+        #[cfg(feature = "ring")]
+        #[test]
+        fn ring_prove_verify() {
+            $crate::testing::ring_prove_verify::<BandersnatchSha512>()
+        }
+    };
+    (false) => {};
 }

@@ -48,12 +48,16 @@
 //!    Section 5.4.1.1, with interpret_hash_value_as_a_point(s) =
 //!    string_to_point(0x02 || s).
 
-use crate::*;
+use crate::{pedersen::PedersenSuite, *};
+use ark_ff::MontFp;
 
 #[derive(Copy, Clone)]
 pub struct P256Sha256Tai;
 
 suite_types!(P256Sha256Tai);
+
+#[cfg(test)]
+suite_tests!(P256Sha256Tai);
 
 impl Suite for P256Sha256Tai {
     const SUITE_ID: u8 = 0x01;
@@ -100,13 +104,25 @@ impl Suite for P256Sha256Tai {
     }
 }
 
+impl PedersenSuite for P256Sha256Tai {
+    const BLINDING_BASE: AffinePoint = {
+        const X: BaseField = MontFp!(
+            "14043613715035732602742871684475452461130505690937359323850445130419175222977"
+        );
+        const Y: BaseField = MontFp!(
+            "56943419272466863994763824717057516408187649339843987947344693936486947084336"
+        );
+        AffinePoint::new_unchecked(X, Y)
+    };
+}
+
 #[cfg(test)]
-mod tests {
+mod test_vectors {
     use super::*;
     use crate::ietf::testing::*;
 
     #[test]
-    fn secp256_rfc_9381_test_vector_10() {
+    fn rfc_9381_10() {
         let v = TestVector {
             flags: TEST_FLAG_SKIP_PROOF_CHECK,
             sk: "c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721",
@@ -126,7 +142,7 @@ mod tests {
     }
 
     #[test]
-    fn secp256_rfc_9381_test_vector_11() {
+    fn rfc_9381_11() {
         let v = TestVector {
             flags: 0,
             sk: "c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721",
@@ -143,7 +159,7 @@ mod tests {
     }
 
     #[test]
-    fn secp256_rfc_9381_test_vector_12() {
+    fn rfc_9381_12() {
         let v = TestVector {
             flags: 0,
             sk: "2ca1411a41b17b24cc8c3b089cfd033f1920202a6c0de8abb97df1498d50d2c8",
