@@ -36,8 +36,8 @@ pub fn random_val<T: UniformRand>(rng: Option<&mut dyn RngCore>) -> T {
     T::rand(rng)
 }
 
-pub fn ietf_prove_verify<S: crate::ietf::IetfSuite>() {
-    use crate::ietf::{IetfProver, IetfVerifier};
+pub fn ietf_prove_verify<S: ietf::IetfSuite>() {
+    use ietf::{Prover, Verifier};
 
     let secret = Secret::<S>::from_seed(TEST_SEED);
     let public = secret.public();
@@ -49,8 +49,8 @@ pub fn ietf_prove_verify<S: crate::ietf::IetfSuite>() {
     assert!(result.is_ok());
 }
 
-pub fn pedersen_prove_verify<S: crate::pedersen::PedersenSuite>() {
-    use crate::pedersen::{PedersenProver, PedersenVerifier};
+pub fn pedersen_prove_verify<S: pedersen::PedersenSuite>() {
+    use pedersen::{Prover, Verifier};
 
     let secret = Secret::<S>::from_seed(TEST_SEED);
     let input = Input::from(random_val(None));
@@ -67,12 +67,13 @@ pub fn pedersen_prove_verify<S: crate::pedersen::PedersenSuite>() {
 }
 
 #[cfg(feature = "ring")]
-pub fn ring_prove_verify<S: crate::ring::RingSuite>()
+pub fn ring_prove_verify<S: ring::RingSuite>()
 where
-    S::Config: ark_ec::short_weierstrass::SWCurveConfig + Clone,
-    <S::Config as ark_ec::CurveConfig>::BaseField: ark_ff::PrimeField,
+    BaseField<S>: ark_ff::PrimeField,
+    CurveConfig<S>: ark_ec::short_weierstrass::SWCurveConfig + Clone,
+    AffinePoint<S>: ring::IntoSW<CurveConfig<S>>,
 {
-    use crate::ring::{RingContext, RingProver, RingVerifier};
+    use ring::{Prover, RingContext, Verifier};
 
     let rng = &mut ark_std::test_rng();
     let domain_size = 1024;
@@ -89,14 +90,11 @@ where
     let mut pks = random_vec::<AffinePoint<S>>(keyset_size, Some(rng));
     pks[prover_idx] = public.0;
 
-    let prover_key = ring_ctx.prover_key(pks.clone());
+    let prover_key = ring_ctx.prover_key(&pks);
     let prover = ring_ctx.prover(prover_key, prover_idx);
     let proof = secret.prove(input, output, b"foo", &prover);
-    let mut buf = Vec::new();
-    proof.serialize_compressed(&mut buf).unwrap();
-    println!("RING PROOF LEN: {}", buf.len());
 
-    let verifier_key = ring_ctx.verifier_key(pks);
+    let verifier_key = ring_ctx.verifier_key(&pks);
     let verifier = ring_ctx.verifier(verifier_key);
     let result = Public::verify(input, output, b"foo", &proof, &verifier);
     assert!(result.is_ok());
@@ -106,7 +104,7 @@ where
 macro_rules! suite_tests {
     ($suite:ident, $build_ring:ident) => {
         suite_tests!($suite);
-        ring_suite_tests!($build_ring);
+        ring_suite_tests!($suite, $build_ring);
     };
     ($suite:ident) => {
         #[test]
@@ -123,12 +121,12 @@ macro_rules! suite_tests {
 
 #[macro_export]
 macro_rules! ring_suite_tests {
-    (true) => {
+    ($suite:ident, true) => {
         #[cfg(feature = "ring")]
         #[test]
         fn ring_prove_verify() {
-            $crate::testing::ring_prove_verify::<BandersnatchSha512>()
+            $crate::testing::ring_prove_verify::<$suite>()
         }
     };
-    (false) => {};
+    ($suite:ident, false) => {};
 }

@@ -20,7 +20,7 @@ impl<S: PedersenSuite> Proof<S> {
     }
 }
 
-pub trait PedersenProver<S: PedersenSuite> {
+pub trait Prover<S: PedersenSuite> {
     /// Generate a proof for the given input/output and user additional data.
     ///
     /// Returns the proof together with the associated blinding factor.
@@ -32,7 +32,7 @@ pub trait PedersenProver<S: PedersenSuite> {
     ) -> (Proof<S>, ScalarField<S>);
 }
 
-pub trait PedersenVerifier<S: PedersenSuite> {
+pub trait Verifier<S: PedersenSuite> {
     /// Verify a proof for the given input/output and user additional data.
     fn verify(
         input: Input<S>,
@@ -42,7 +42,7 @@ pub trait PedersenVerifier<S: PedersenSuite> {
     ) -> Result<(), Error>;
 }
 
-impl<S: PedersenSuite> PedersenProver<S> for Secret<S> {
+impl<S: PedersenSuite> Prover<S> for Secret<S> {
     fn prove(
         &self,
         input: Input<S>,
@@ -81,7 +81,7 @@ impl<S: PedersenSuite> PedersenProver<S> for Secret<S> {
     }
 }
 
-impl<S: PedersenSuite> PedersenVerifier<S> for Public<S> {
+impl<S: PedersenSuite> Verifier<S> for Public<S> {
     fn verify(
         input: Input<S>,
         output: Output<S>,

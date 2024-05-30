@@ -69,12 +69,12 @@ impl<S: IetfSuite> ark_serialize::Valid for Proof<S> {
     }
 }
 
-pub trait IetfProver<S: IetfSuite> {
+pub trait Prover<S: IetfSuite> {
     /// Generate a proof for the given input/output and user additional data.
     fn prove(&self, input: Input<S>, output: Output<S>, ad: impl AsRef<[u8]>) -> Proof<S>;
 }
 
-pub trait IetfVerifier<S: IetfSuite> {
+pub trait Verifier<S: IetfSuite> {
     /// Verify a proof for the given input/output and user additional data.
     fn verify(
         &self,
@@ -85,7 +85,7 @@ pub trait IetfVerifier<S: IetfSuite> {
     ) -> Result<(), Error>;
 }
 
-impl<S: IetfSuite> IetfProver<S> for Secret<S> {
+impl<S: IetfSuite> Prover<S> for Secret<S> {
     fn prove(&self, input: Input<S>, output: Output<S>, ad: impl AsRef<[u8]>) -> Proof<S> {
         let k = S::nonce(&self.scalar, input);
         let k_b = (S::Affine::generator() * k).into_affine();
@@ -101,7 +101,7 @@ impl<S: IetfSuite> IetfProver<S> for Secret<S> {
     }
 }
 
-impl<S: IetfSuite> IetfVerifier<S> for Public<S> {
+impl<S: IetfSuite> Verifier<S> for Public<S> {
     fn verify(
         &self,
         input: Input<S>,

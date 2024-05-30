@@ -62,9 +62,6 @@ pub mod weierstrass {
 
     suite_types!(BandersnatchSha512);
 
-    #[cfg(test)]
-    suite_tests!(BandersnatchSha512, true);
-
     impl Suite for BandersnatchSha512 {
         const SUITE_ID: u8 = CUSTOM_SUITE_ID_FLAG | 0x03;
         const CHALLENGE_LEN: usize = 32;
@@ -86,14 +83,17 @@ pub mod weierstrass {
     }
 
     #[cfg(feature = "ring")]
-    pub mod ring {
+    mod ring_defs {
         use super::*;
-        use crate::ring;
+        use crate::ring as ring_suite;
 
-        impl ring::Pairing<BandersnatchSha512> for ark_bls12_381::Bls12_381 {}
+        pub type RingContext = ring_suite::RingContext<BandersnatchSha512>;
+        pub type VerifierKey = ring_suite::VerifierKey<BandersnatchSha512>;
+        pub type RingProver = ring_suite::RingProver<BandersnatchSha512>;
+        pub type RingVerifier = ring_suite::RingVerifier<BandersnatchSha512>;
+        pub type Proof = ring_suite::Proof<BandersnatchSha512>;
 
-        impl ring::RingSuite for BandersnatchSha512 {
-            type Config = ark_ed_on_bls12_381_bandersnatch::SWConfig;
+        impl ring_suite::RingSuite for BandersnatchSha512 {
             type Pairing = ark_bls12_381::Bls12_381;
 
             /// A point on the curve not belonging to the prime order subgroup.
@@ -107,13 +107,12 @@ pub mod weierstrass {
                 AffinePoint::new_unchecked(X, Y)
             };
         }
-
-        pub type RingContext = ring::RingContext<BandersnatchSha512>;
-        pub type VerifierKey = ring::VerifierKey<BandersnatchSha512>;
-        pub type Prover = ring::Prover<BandersnatchSha512>;
-        pub type Verifier = ring::Verifier<BandersnatchSha512>;
-        pub type Proof = ring::Proof<BandersnatchSha512>;
     }
+    #[cfg(feature = "ring")]
+    pub use ring_defs::*;
+
+    #[cfg(test)]
+    suite_tests!(BandersnatchSha512, true);
 }
 
 pub mod edwards {
@@ -124,9 +123,6 @@ pub mod edwards {
 
     suite_types!(BandersnatchSha512Edwards);
 
-    #[cfg(test)]
-    suite_tests!(BandersnatchSha512Edwards);
-
     impl Suite for BandersnatchSha512Edwards {
         const SUITE_ID: u8 = CUSTOM_SUITE_ID_FLAG | 0x04;
         const CHALLENGE_LEN: usize = 32;
@@ -136,6 +132,7 @@ pub mod edwards {
     }
 
     impl PedersenSuite for BandersnatchSha512Edwards {
+        /// Found mapping the `BLINDING_BASE` of `weierstrass` module using the `utils::map_sw_to_te`
         const BLINDING_BASE: AffinePoint = {
             const X: BaseField = MontFp!(
                 "14576224270591906826192118712803723445031237947873156025406837473427562701854"
@@ -146,6 +143,40 @@ pub mod edwards {
             AffinePoint::new_unchecked(X, Y)
         };
     }
+
+    #[cfg(feature = "ring")]
+    mod ring_defs {
+        use super::*;
+        use crate::ring as ring_suite;
+
+        pub type RingContext = ring_suite::RingContext<BandersnatchSha512Edwards>;
+        pub type VerifierKey = ring_suite::VerifierKey<BandersnatchSha512Edwards>;
+        pub type RingProver = ring_suite::RingProver<BandersnatchSha512Edwards>;
+        pub type RingVerifier = ring_suite::RingVerifier<BandersnatchSha512Edwards>;
+        pub type Proof = ring_suite::Proof<BandersnatchSha512Edwards>;
+
+        impl ring_suite::RingSuite for BandersnatchSha512Edwards {
+            type Pairing = ark_bls12_381::Bls12_381;
+
+            /// A point on the curve not belonging to the prime order subgroup.
+            ///
+            /// Found mapping the `COMPLEMENT_POINT` of `weierstrass` module using the `utils::map_sw_to_te`
+            const COMPLEMENT_POINT: AffinePoint = {
+                const X: BaseField = MontFp!(
+                    "3955725774225903122339172568337849452553276548604445833196164961773358506589"
+                );
+                const Y: BaseField = MontFp!(
+                    "29870564530691725960104983716673293929719207405660860235233811770612192692323"
+                );
+                AffinePoint::new_unchecked(X, Y)
+            };
+        }
+    }
+    #[cfg(feature = "ring")]
+    pub use ring_defs::*;
+
+    #[cfg(test)]
+    suite_tests!(BandersnatchSha512Edwards, true);
 }
 
 // sage: q = 52435875175126190479447740508185965837690552500527637822603658699938581184513

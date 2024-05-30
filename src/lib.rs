@@ -41,13 +41,16 @@ pub mod prelude {
     pub use ark_std;
 }
 
-pub type ScalarField<S> = <<S as Suite>::Affine as AffineRepr>::ScalarField;
-pub type BaseField<S> = <<S as Suite>::Affine as AffineRepr>::BaseField;
 pub type AffinePoint<S> = <S as Suite>::Affine;
+
+pub type BaseField<S> = <AffinePoint<S> as AffineRepr>::BaseField;
+pub type ScalarField<S> = <AffinePoint<S> as AffineRepr>::ScalarField;
+pub type CurveConfig<S> = <AffinePoint<S> as AffineRepr>::Config;
 
 pub type HashOutput<S> = digest::Output<<S as Suite>::Hasher>;
 
 /// Verification error(s)
+#[derive(Debug)]
 pub enum Error {
     VerificationFailure,
 }
