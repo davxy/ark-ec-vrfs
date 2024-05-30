@@ -2,6 +2,9 @@ use crate::*;
 use ark_ec::short_weierstrass::SWCurveConfig;
 use pedersen::{PedersenSuite, Proof as PedersenProof};
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+
 pub trait RingSuite: PedersenSuite {
     type Pairing: ark_ec::pairing::Pairing<ScalarField = BaseField<Self>>;
 
@@ -165,12 +168,18 @@ where
     }
 
     pub fn prover_key(&self, pks: &[AffinePoint<S>]) -> ProverKey<S> {
+        #[cfg(feature = "parallel")]
+        let pks = pks.par_iter().map(|p| p.into_sw()).collect();
+        #[cfg(not(feature = "parallel"))]
         let pks = pks.iter().map(|p| p.into_sw()).collect();
         ring_proof::index(self.pcs_params.clone(), &self.piop_params, pks).0
     }
 
     pub fn verifier_key(&self, pks: &[AffinePoint<S>]) -> VerifierKey<S> {
-        let pks: Vec<_> = pks.iter().map(|p| p.into_sw()).collect();
+        #[cfg(feature = "parallel")]
+        let pks = pks.par_iter().map(|p| p.into_sw()).collect();
+        #[cfg(not(feature = "parallel"))]
+        let pks = pks.iter().map(|p| p.into_sw()).collect();
         ring_proof::index(self.pcs_params.clone(), &self.piop_params, pks).1
     }
 

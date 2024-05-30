@@ -13,6 +13,7 @@ ark-std = { version = "0.4.0", default-features = false }
 ark-serialize = { version = "0.4.2", default-features = false }
 rand_core = { version = "0.6.4", default-features = false, optional = true }
 rand_chacha = { version = "0.3.1", default-features = false }
+rayon = { version = "1.10", default-features = false, optional = true }
 zeroize = { version = "1.7.0", default-features = false }
 hmac = {version = "0.12.1", default-features = false, optional = true }
 digest = { version = "0.10.7", default-features = false }
@@ -60,6 +61,7 @@ parallel = [
   "ark-std/parallel",
   "ring-proof?/parallel",
   "fflonk?/parallel",
+  "rayon",
 ]
 ring = [
   "bandersnatch",
