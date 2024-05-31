@@ -100,6 +100,19 @@ where
     assert!(result.is_ok());
 }
 
+#[cfg(feature = "ring")]
+pub fn check_complement_point<S: ring::RingSuite>()
+where
+    BaseField<S>: ark_ff::PrimeField,
+    CurveConfig<S>: ark_ec::short_weierstrass::SWCurveConfig + Clone,
+    AffinePoint<S>: ring::IntoSW<CurveConfig<S>>,
+{
+    use ring::IntoSW;
+    let pt = S::COMPLEMENT_POINT.into_sw();
+    assert!(pt.is_on_curve());
+    assert!(!pt.is_in_correct_subgroup_assuming_on_curve());
+}
+
 #[macro_export]
 macro_rules! suite_tests {
     ($suite:ident, $build_ring:ident) => {
@@ -126,6 +139,12 @@ macro_rules! ring_suite_tests {
         #[test]
         fn ring_prove_verify() {
             $crate::testing::ring_prove_verify::<$suite>()
+        }
+
+        #[cfg(feature = "ring")]
+        #[test]
+        fn check_complement_point() {
+            $crate::testing::check_complement_point::<$suite>()
         }
     };
     ($suite:ident, false) => {};
