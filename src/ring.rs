@@ -201,6 +201,64 @@ where
     }
 }
 
+impl<S: RingSuite> CanonicalSerialize for RingContext<S>
+where
+    BaseField<S>: ark_ff::PrimeField,
+    CurveConfig<S>: SWCurveConfig + Clone,
+    AffinePoint<S>: IntoSW<CurveConfig<S>>,
+{
+    fn serialize_with_mode<W: ark_serialize::Write>(
+        &self,
+        mut writer: W,
+        compress: ark_serialize::Compress,
+    ) -> Result<(), ark_serialize::SerializationError> {
+        self.domain_size.serialize_compressed(&mut writer)?;
+        self.pcs_params.serialize_with_mode(&mut writer, compress)?;
+        Ok(())
+    }
+
+    fn serialized_size(&self, compress: ark_serialize::Compress) -> usize {
+        self.domain_size.compressed_size() + self.pcs_params.serialized_size(compress)
+    }
+}
+
+impl<S: RingSuite> CanonicalDeserialize for RingContext<S>
+where
+    BaseField<S>: ark_ff::PrimeField,
+    CurveConfig<S>: SWCurveConfig + Clone,
+    AffinePoint<S>: IntoSW<CurveConfig<S>>,
+{
+    fn deserialize_with_mode<R: ark_serialize::Read>(
+        mut reader: R,
+        compress: ark_serialize::Compress,
+        validate: ark_serialize::Validate,
+    ) -> Result<Self, ark_serialize::SerializationError> {
+        let domain_size = <usize as CanonicalDeserialize>::deserialize_compressed(&mut reader)?;
+        let piop_params = make_piop_params::<S>(domain_size);
+        let pcs_params = <PcsParams<S> as CanonicalDeserialize>::deserialize_with_mode(
+            &mut reader,
+            compress,
+            validate,
+        )?;
+        Ok(RingContext {
+            piop_params,
+            pcs_params,
+            domain_size,
+        })
+    }
+}
+
+impl<S: RingSuite> ark_serialize::Valid for RingContext<S>
+where
+    BaseField<S>: ark_ff::PrimeField,
+    CurveConfig<S>: SWCurveConfig + Clone,
+    AffinePoint<S>: IntoSW<CurveConfig<S>>,
+{
+    fn check(&self) -> Result<(), ark_serialize::SerializationError> {
+        self.pcs_params.check()
+    }
+}
+
 pub trait IntoSW<C: SWCurveConfig> {
     fn into_sw(self) -> ark_ec::short_weierstrass::Affine<C>;
 }
@@ -230,5 +288,22 @@ where
         domain,
         S::BLINDING_BASE.into_sw(),
         S::COMPLEMENT_POINT.into_sw(),
+    )
+}
+
+pub fn make_ring_verifier<S: RingSuite>(
+    verifier_key: VerifierKey<S>,
+    domain_size: usize,
+) -> RingVerifier<S>
+where
+    BaseField<S>: ark_ff::PrimeField,
+    CurveConfig<S>: SWCurveConfig,
+    AffinePoint<S>: IntoSW<CurveConfig<S>>,
+{
+    let piop_params = make_piop_params::<S>(domain_size);
+    RingVerifier::<S>::init(
+        verifier_key,
+        piop_params,
+        merlin::Transcript::new(b"ring-vrf"),
     )
 }
