@@ -55,9 +55,6 @@ pub enum Error {
     VerificationFailure,
 }
 
-/// Flag to identify custom suites (i.e. not specified by RFC-9381).
-pub const CUSTOM_SUITE_ID_FLAG: u8 = 0x80;
-
 /// Defines a cipher suite.
 ///
 /// This trait can be used to easily implement a VRF which follows the guidelines
@@ -66,9 +63,8 @@ pub const CUSTOM_SUITE_ID_FLAG: u8 = 0x80;
 /// Can be easily customized to implement more exotic VRF types by overwriting
 /// the default methods implementations.
 pub trait Suite: Copy + Clone {
-    // TODO: make this a byte array
     /// Suite identifier (aka `suite_string` in RFC-9381)
-    const SUITE_ID: u8;
+    const SUITE_ID: &'static [u8];
 
     /// Challenge encoded length.
     ///
@@ -294,7 +290,7 @@ mod tests {
         let input = Input::from(random_val(None));
         let output = secret.output(input);
 
-        let expected = "08ffdc9d48f6553c0352b92a233a8101a69ac9f4dcb7f9e2c9c43d46a441c331";
+        let expected = "2eaa1a349197bb2b6c455bc5554b331162f0e9b13aea0aab28283cc30e7c6482";
         assert_eq!(expected, hex::encode(output.hash()));
     }
 }

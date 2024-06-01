@@ -2,10 +2,12 @@
 //!
 //! Configuration:
 //!
-//! *  `suite_string` = 0x83.
+//! *  `suite_string` = b"bandersnatch-sha512-tai-sw for Short Weierstrass form.
+//! *  `suite_string` = b"bandersnatch-sha512-tai-ed for Twisted Edwards form.
 //!
-//! *  The EC group G is the Bandersnatch elliptic curve, in Twisted Edwards form,
-//!    with the finite field and curve parameters as specified [here](https://neuromancer.sk/std/bls/Bandersnatch)
+//! *  The EC group G is the Bandersnatch elliptic curve, in Short Weierstrass or
+//!    Twisted Edwards form, with the finite field and curve parameters as specified
+//!    [here](https://neuromancer.sk/std/bls/Bandersnatch)
 //!    For this group, `fLen` = `qLen` = 32 and `cofactor` = 4.
 //!
 //! *  `cLen` = 32.
@@ -63,7 +65,7 @@ pub mod weierstrass {
     suite_types!(BandersnatchSha512);
 
     impl Suite for BandersnatchSha512 {
-        const SUITE_ID: u8 = CUSTOM_SUITE_ID_FLAG | 0x03;
+        const SUITE_ID: &'static [u8] = b"bandersnatch-sha512-tai-sw";
         const CHALLENGE_LEN: usize = 32;
 
         type Affine = ark_ed_on_bls12_381_bandersnatch::SWAffine;
@@ -124,7 +126,7 @@ pub mod edwards {
     suite_types!(BandersnatchSha512Edwards);
 
     impl Suite for BandersnatchSha512Edwards {
-        const SUITE_ID: u8 = CUSTOM_SUITE_ID_FLAG | 0x04;
+        const SUITE_ID: &'static [u8] = b"bandersnatch-sha512-tai-te";
         const CHALLENGE_LEN: usize = 32;
 
         type Affine = ark_ed_on_bls12_381_bandersnatch::EdwardsAffine;

@@ -4,7 +4,7 @@ use ark_ff::PrimeField;
 use digest::Digest;
 
 #[cfg(not(feature = "std"))]
-use ark_std::{vec, vec::Vec};
+use ark_std::vec::Vec;
 
 #[macro_export]
 macro_rules! suite_types {
@@ -78,7 +78,7 @@ pub fn hash_to_curve_tai_rfc_9381<S: Suite>(
         return None;
     }
 
-    let mut buf = [&[S::SUITE_ID, DOM_SEP_FRONT], data, &[0x00, DOM_SEP_BACK]].concat();
+    let mut buf = [S::SUITE_ID, &[DOM_SEP_FRONT], data, &[0x00, DOM_SEP_BACK]].concat();
     let ctr_pos = buf.len() - 2;
 
     for ctr in 0..=255 {
@@ -104,7 +104,7 @@ pub fn hash_to_curve_tai_rfc_9381<S: Suite>(
 pub fn challenge_rfc_9381<S: Suite>(pts: &[&AffinePoint<S>], ad: &[u8]) -> ScalarField<S> {
     const DOM_SEP_START: u8 = 0x02;
     const DOM_SEP_END: u8 = 0x00;
-    let mut buf = vec![S::SUITE_ID, DOM_SEP_START];
+    let mut buf = [S::SUITE_ID, &[DOM_SEP_START]].concat();
     pts.iter().for_each(|p| {
         S::point_encode(p, &mut buf);
     });
@@ -118,7 +118,7 @@ pub fn challenge_rfc_9381<S: Suite>(pts: &[&AffinePoint<S>], ad: &[u8]) -> Scala
 pub fn point_to_hash_rfc_9381<S: Suite>(pt: &AffinePoint<S>) -> HashOutput<S> {
     const DOM_SEP_START: u8 = 0x03;
     const DOM_SEP_END: u8 = 0x00;
-    let mut buf = vec![S::SUITE_ID, DOM_SEP_START];
+    let mut buf = [S::SUITE_ID, &[DOM_SEP_START]].concat();
     S::point_encode(pt, &mut buf);
     buf.push(DOM_SEP_END);
     hash::<S::Hasher>(&buf)

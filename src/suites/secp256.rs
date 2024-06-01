@@ -60,7 +60,7 @@ suite_types!(P256Sha256Tai);
 suite_tests!(P256Sha256Tai);
 
 impl Suite for P256Sha256Tai {
-    const SUITE_ID: u8 = 0x01;
+    const SUITE_ID: &'static [u8] = &[0x01];
     const CHALLENGE_LEN: usize = 16;
 
     type Affine = ark_secp256r1::Affine;

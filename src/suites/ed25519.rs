@@ -2,7 +2,9 @@
 //!
 //! Configuration (RFC-9381 with some compromises):
 //!
-//! *  suite_string = 0x83.
+//! *  suite_string = b"ed25519-sha512-tai"
+//!    We slightly deviate from the suite described in RFC-9381, thus
+//!    we prefer to not use suite id [0x03].
 //!
 //! *  The EC group G is the edwards25519 elliptic curve, with the finite
 //!    field and curve parameters as defined in Table 1 in Section 5.1 of
@@ -58,7 +60,7 @@ suite_types!(Ed25519Sha512);
 suite_tests!(Ed25519Sha512);
 
 impl Suite for Ed25519Sha512 {
-    const SUITE_ID: u8 = CUSTOM_SUITE_ID_FLAG | 0x03;
+    const SUITE_ID: &'static [u8] = b"ed25519-sha512-tai";
     const CHALLENGE_LEN: usize = 16;
 
     type Affine = ark_ed25519::EdwardsAffine;

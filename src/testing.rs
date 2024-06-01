@@ -14,7 +14,7 @@ pub(crate) mod suite {
     pub struct TestSuite;
 
     impl Suite for TestSuite {
-        const SUITE_ID: u8 = 0xFF;
+        const SUITE_ID: &'static [u8] = b"ark-ec-vrfs-testing";
         const CHALLENGE_LEN: usize = 16;
 
         type Affine = ark_ed25519::EdwardsAffine;
