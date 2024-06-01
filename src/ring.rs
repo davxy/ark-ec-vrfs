@@ -33,7 +33,7 @@ pub type RingProof<S> = ring_proof::RingProof<BaseField<S>, Pcs<S>>;
 
 pub type PiopParams<S> = ring_proof::PiopParams<BaseField<S>, CurveConfig<S>>;
 
-const TRANSCRIPT_LABEL: &'static [u8] = b"";
+const TRANSCRIPT_LABEL: &[u8] = b"";
 
 #[derive(Clone, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Proof<S: RingSuite>
