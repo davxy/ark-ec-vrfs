@@ -33,6 +33,8 @@ pub type RingProof<S> = ring_proof::RingProof<BaseField<S>, Pcs<S>>;
 
 pub type PiopParams<S> = ring_proof::PiopParams<BaseField<S>, CurveConfig<S>>;
 
+const TRANSCRIPT_LABEL: &'static [u8] = b"";
+
 #[derive(Clone, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Proof<S: RingSuite>
 where
@@ -183,7 +185,7 @@ where
             prover_key,
             self.piop_params.clone(),
             key_index,
-            merlin::Transcript::new(b""),
+            merlin::Transcript::new(TRANSCRIPT_LABEL),
         )
     }
 
@@ -191,7 +193,7 @@ where
         RingVerifier::<S>::init(
             verifier_key,
             self.piop_params.clone(),
-            merlin::Transcript::new(b""),
+            merlin::Transcript::new(TRANSCRIPT_LABEL),
         )
     }
 }
@@ -299,6 +301,6 @@ where
     RingVerifier::<S>::init(
         verifier_key,
         piop_params,
-        merlin::Transcript::new(b"ring-vrf"),
+        merlin::Transcript::new(TRANSCRIPT_LABEL),
     )
 }
