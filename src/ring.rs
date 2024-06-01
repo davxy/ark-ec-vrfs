@@ -19,30 +19,25 @@ type Pcs<S> = fflonk::pcs::kzg::KZG<<S as RingSuite>::Pairing>;
 /// Basically the powers of tau URS.
 type PcsParams<S> = fflonk::pcs::kzg::urs::URS<<S as RingSuite>::Pairing>;
 
-type PairingScalarField<S> = <<S as RingSuite>::Pairing as ark_ec::pairing::Pairing>::ScalarField;
+pub type ProverKey<S> =
+    ring_proof::ProverKey<BaseField<S>, Pcs<S>, ark_ec::short_weierstrass::Affine<CurveConfig<S>>>;
 
-pub type ProverKey<S> = ring_proof::ProverKey<
-    PairingScalarField<S>,
-    Pcs<S>,
-    ark_ec::short_weierstrass::Affine<CurveConfig<S>>,
->;
+pub type VerifierKey<S> = ring_proof::VerifierKey<BaseField<S>, Pcs<S>>;
 
-pub type VerifierKey<S> = ring_proof::VerifierKey<PairingScalarField<S>, Pcs<S>>;
-
-pub type RingProver<S> =
-    ring_proof::ring_prover::RingProver<PairingScalarField<S>, Pcs<S>, CurveConfig<S>>;
+pub type RingProver<S> = ring_proof::ring_prover::RingProver<BaseField<S>, Pcs<S>, CurveConfig<S>>;
 
 pub type RingVerifier<S> =
-    ring_proof::ring_verifier::RingVerifier<PairingScalarField<S>, Pcs<S>, CurveConfig<S>>;
+    ring_proof::ring_verifier::RingVerifier<BaseField<S>, Pcs<S>, CurveConfig<S>>;
 
-pub type RingProof<S> = ring_proof::RingProof<PairingScalarField<S>, Pcs<S>>;
+pub type RingProof<S> = ring_proof::RingProof<BaseField<S>, Pcs<S>>;
 
-pub type PiopParams<S> = ring_proof::PiopParams<PairingScalarField<S>, CurveConfig<S>>;
+pub type PiopParams<S> = ring_proof::PiopParams<BaseField<S>, CurveConfig<S>>;
 
 #[derive(Clone, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Proof<S: RingSuite>
 where
     BaseField<S>: ark_ff::PrimeField,
+    CurveConfig<S>: SWCurveConfig,
 {
     pub pedersen_proof: PedersenProof<S>,
     pub ring_proof: RingProof<S>,
@@ -188,7 +183,7 @@ where
             prover_key,
             self.piop_params.clone(),
             key_index,
-            merlin::Transcript::new(b"ring-vrf"),
+            merlin::Transcript::new(b""),
         )
     }
 
@@ -196,7 +191,7 @@ where
         RingVerifier::<S>::init(
             verifier_key,
             self.piop_params.clone(),
-            merlin::Transcript::new(b"ring-vrf"),
+            merlin::Transcript::new(b""),
         )
     }
 }
