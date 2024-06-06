@@ -1,4 +1,4 @@
-//! `ECVRF-BANDERSNATCH-BLAKE2-TAI` suite.
+//! `ECVRF-BANDERSNATCH-SHA512-ELL2` suite.
 //!
 //! Configuration:
 //!
@@ -41,7 +41,7 @@
 //!    [RFC6234](https://www.rfc-editor.org/rfc/rfc6234), with hLen = 64.
 //!
 //! *  The ECVRF_encode_to_curve function is as specified in
-//!    Section 5.4.1.2, with `h2c_suite_ID_string` = `"BANDERSNATCH_XMD:BLAKE2b_ELL2_RO_"`.
+//!    Section 5.4.1.2, with `h2c_suite_ID_string` = `"Bandersnatch_XMD:SHA-512_ELL2_RO_"`.
 //!    The suite is defined in Section 8.5 of [RFC9380](https://datatracker.ietf.org/doc/rfc9380/).
 //!
 //! *  The prime subgroup generator is generated following Zcash's fashion:
@@ -60,11 +60,11 @@ pub mod weierstrass {
     use super::*;
 
     #[derive(Debug, Copy, Clone)]
-    pub struct BandersnatchSha512;
+    pub struct BandersnatchSha512Tai;
 
-    suite_types!(BandersnatchSha512);
+    suite_types!(BandersnatchSha512Tai);
 
-    impl Suite for BandersnatchSha512 {
+    impl Suite for BandersnatchSha512Tai {
         const SUITE_ID: &'static [u8] = b"bandersnatch-sha512-tai-sw";
         const CHALLENGE_LEN: usize = 32;
 
@@ -72,7 +72,7 @@ pub mod weierstrass {
         type Hasher = sha2::Sha512;
     }
 
-    impl PedersenSuite for BandersnatchSha512 {
+    impl PedersenSuite for BandersnatchSha512Tai {
         const BLINDING_BASE: AffinePoint = {
             const X: BaseField = MontFp!(
                 "4956610287995045830459834427365747411162584416641336688940534788579455781570"
@@ -89,13 +89,13 @@ pub mod weierstrass {
         use super::*;
         use crate::ring as ring_suite;
 
-        pub type RingContext = ring_suite::RingContext<BandersnatchSha512>;
-        pub type VerifierKey = ring_suite::VerifierKey<BandersnatchSha512>;
-        pub type RingProver = ring_suite::RingProver<BandersnatchSha512>;
-        pub type RingVerifier = ring_suite::RingVerifier<BandersnatchSha512>;
-        pub type Proof = ring_suite::Proof<BandersnatchSha512>;
+        pub type RingContext = ring_suite::RingContext<BandersnatchSha512Tai>;
+        pub type VerifierKey = ring_suite::VerifierKey<BandersnatchSha512Tai>;
+        pub type RingProver = ring_suite::RingProver<BandersnatchSha512Tai>;
+        pub type RingVerifier = ring_suite::RingVerifier<BandersnatchSha512Tai>;
+        pub type Proof = ring_suite::Proof<BandersnatchSha512Tai>;
 
-        impl ring_suite::RingSuite for BandersnatchSha512 {
+        impl ring_suite::RingSuite for BandersnatchSha512Tai {
             type Pairing = ark_bls12_381::Bls12_381;
 
             /// A point on the curve not belonging to the prime order subgroup.
@@ -114,26 +114,34 @@ pub mod weierstrass {
     pub use ring_defs::*;
 
     #[cfg(test)]
-    suite_tests!(BandersnatchSha512, true);
+    suite_tests!(BandersnatchSha512Tai, true);
 }
 
 pub mod edwards {
     use super::*;
 
     #[derive(Debug, Copy, Clone)]
-    pub struct BandersnatchSha512Edwards;
+    pub struct BandersnatchSha512Ell2;
 
-    suite_types!(BandersnatchSha512Edwards);
+    suite_types!(BandersnatchSha512Ell2);
 
-    impl Suite for BandersnatchSha512Edwards {
-        const SUITE_ID: &'static [u8] = b"bandersnatch-sha512-tai-te";
+    impl Suite for BandersnatchSha512Ell2 {
+        const SUITE_ID: &'static [u8] = b"bandersnatch-sha512-ell2-ed";
         const CHALLENGE_LEN: usize = 32;
 
         type Affine = ark_ed_on_bls12_381_bandersnatch::EdwardsAffine;
         type Hasher = sha2::Sha512;
+
+        /// Hash data to a curve point using Elligator2 method described by RFC 9380.
+        fn data_to_point(data: &[u8]) -> Option<AffinePoint> {
+            // "XMD" for expand_message_xmd (Section 5.3.1).
+            // "RO" for random oracle (Section 3 - hash_to_curve method)
+            let h2c_suite_id = b"bandersnatch_XMD:SHA-512_ELL2_RO_";
+            utils::hash_to_curve_ell2_rfc_9380::<Self>(data, h2c_suite_id)
+        }
     }
 
-    impl PedersenSuite for BandersnatchSha512Edwards {
+    impl PedersenSuite for BandersnatchSha512Ell2 {
         /// Found mapping the `BLINDING_BASE` of `weierstrass` module using the `utils::map_sw_to_te`
         const BLINDING_BASE: AffinePoint = {
             const X: BaseField = MontFp!(
@@ -146,18 +154,34 @@ pub mod edwards {
         };
     }
 
+    impl arkworks::elligator2::Elligator2Config
+        for ark_ed_on_bls12_381_bandersnatch::BandersnatchConfig
+    {
+        const Z: ark_ed_on_bls12_381_bandersnatch::Fq = MontFp!("5");
+
+        /// This must be equal to 1/(MontCurveConfig::COEFF_B)^2;
+        const ONE_OVER_COEFF_B_SQUARE: ark_ed_on_bls12_381_bandersnatch::Fq = MontFp!(
+            "35484827650731063748396669747216844996598387089274032563585525486049249153249"
+        );
+
+        /// This must be equal to MontCurveConfig::COEFF_A/MontCurveConfig::COEFF_B;
+        const COEFF_A_OVER_COEFF_B: ark_ed_on_bls12_381_bandersnatch::Fq = MontFp!(
+            "22511181562295907836254750456843438087744031914659733450388350895537307167857"
+        );
+    }
+
     #[cfg(feature = "ring")]
     mod ring_defs {
         use super::*;
         use crate::ring as ring_suite;
 
-        pub type RingContext = ring_suite::RingContext<BandersnatchSha512Edwards>;
-        pub type VerifierKey = ring_suite::VerifierKey<BandersnatchSha512Edwards>;
-        pub type RingProver = ring_suite::RingProver<BandersnatchSha512Edwards>;
-        pub type RingVerifier = ring_suite::RingVerifier<BandersnatchSha512Edwards>;
-        pub type Proof = ring_suite::Proof<BandersnatchSha512Edwards>;
+        pub type RingContext = ring_suite::RingContext<BandersnatchSha512Ell2>;
+        pub type VerifierKey = ring_suite::VerifierKey<BandersnatchSha512Ell2>;
+        pub type RingProver = ring_suite::RingProver<BandersnatchSha512Ell2>;
+        pub type RingVerifier = ring_suite::RingVerifier<BandersnatchSha512Ell2>;
+        pub type Proof = ring_suite::Proof<BandersnatchSha512Ell2>;
 
-        impl ring_suite::RingSuite for BandersnatchSha512Edwards {
+        impl ring_suite::RingSuite for BandersnatchSha512Ell2 {
             type Pairing = ark_bls12_381::Bls12_381;
 
             /// A point on the curve not belonging to the prime order subgroup.
@@ -178,7 +202,14 @@ pub mod edwards {
     pub use ring_defs::*;
 
     #[cfg(test)]
-    suite_tests!(BandersnatchSha512Edwards, true);
+    suite_tests!(BandersnatchSha512Ell2, true);
+
+    #[test]
+    fn elligator2_hash_to_curve() {
+        let point = BandersnatchSha512Ell2::data_to_point(b"foo").unwrap();
+        assert!(point.is_on_curve());
+        assert!(point.is_in_correct_subgroup_assuming_on_curve());
+    }
 }
 
 // sage: q = 52435875175126190479447740508185965837690552500527637822603658699938581184513

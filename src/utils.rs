@@ -1,7 +1,8 @@
 use crate::{AffinePoint, HashOutput, ScalarField, Suite};
 
+use ark_ec::AffineRepr;
 use ark_ff::PrimeField;
-use digest::Digest;
+use digest::{Digest, FixedOutputReset};
 
 #[cfg(not(feature = "std"))]
 use ark_std::vec::Vec;
@@ -50,7 +51,7 @@ pub(crate) fn hmac<H: Digest + digest::core_api::BlockSizeUser>(sk: &[u8], data:
         .to_vec()
 }
 
-/// Try-And-Increment (TAI) method as defined by RFC9381 section 5.4.1.1.
+/// Try-And-Increment (TAI) method as defined by RFC 9381 section 5.4.1.1.
 ///
 /// Implements ECVRF_encode_to_curve in a simple and generic way that works
 /// for any elliptic curve.
@@ -61,7 +62,7 @@ pub(crate) fn hmac<H: Digest + digest::core_api::BlockSizeUser>(sk: &[u8], data:
 /// ciphersuites specified in Section 5.5, this algorithm is expected to
 /// find a valid curve point after approximately two attempts on average.
 ///
-/// The input `data` is defined to be `salt || alpha` according to the spec.
+/// The input `data` is defined to be `salt || alpha` according to the RFC 9281.
 pub fn hash_to_curve_tai_rfc_9381<S: Suite>(
     data: &[u8],
     point_be_encoding: bool,
@@ -73,7 +74,9 @@ pub fn hash_to_curve_tai_rfc_9381<S: Suite>(
     const DOM_SEP_FRONT: u8 = 0x01;
     const DOM_SEP_BACK: u8 = 0x00;
 
-    let mod_size = <<<S::Affine as AffineRepr>::BaseField as Field>::BasePrimeField as PrimeField>::MODULUS_BIT_SIZE as usize / 8;
+    let mod_size = <<crate::BaseField<S> as Field>::BasePrimeField as PrimeField>::MODULUS_BIT_SIZE
+        as usize
+        / 8;
     if S::Hasher::output_size() < mod_size {
         return None;
     }
@@ -98,6 +101,46 @@ pub fn hash_to_curve_tai_rfc_9381<S: Suite>(
         }
     }
     None
+}
+
+/// Elligator2 method as defined by RFC 9380 and further refined in RFC 9381 section 5.4.1.2.
+///
+/// Implements ECVRF_encode_to_curve using one of the several hash-to-curve options defined
+/// in [RFC9380].  The specific choice of the hash-to-curve option (called the Suite ID in [RFC9380])
+/// is given by the h2c_suite_ID_string parameter.
+///
+/// The input `data` is defined to be `salt || alpha` according to the RFC 9281.
+pub fn hash_to_curve_ell2_rfc_9380<S: Suite>(
+    data: &[u8],
+    h2c_suite_id: &[u8],
+) -> Option<AffinePoint<S>>
+where
+    <S as Suite>::Hasher: Default + Clone + FixedOutputReset + 'static,
+    crate::CurveConfig<S>: ark_ec::twisted_edwards::TECurveConfig,
+    crate::CurveConfig<S>: crate::arkworks::elligator2::Elligator2Config,
+    crate::arkworks::elligator2::Elligator2Map<crate::CurveConfig<S>>:
+        ark_ec::hashing::map_to_curve_hasher::MapToCurve<<AffinePoint<S> as AffineRepr>::Group>,
+{
+    use ark_ec::hashing::HashToCurve;
+    const SEC_PARAM: usize = 128;
+
+    // Domain Separation Tag := "ECVRF_" || h2c_suite_ID_string || suite_string
+    let dst: Vec<_> = b"ECVRF_"
+        .iter()
+        .chain(h2c_suite_id.iter())
+        .chain(S::SUITE_ID)
+        .cloned()
+        .collect();
+
+    let hasher = ark_ec::hashing::map_to_curve_hasher::MapToCurveBasedHasher::<
+        <AffinePoint<S> as AffineRepr>::Group,
+        ark_ff::field_hashers::DefaultFieldHasher<<S as Suite>::Hasher, SEC_PARAM>,
+        crate::arkworks::elligator2::Elligator2Map<crate::CurveConfig<S>>,
+    >::new(&dst)
+    .ok()?;
+
+    let res = hasher.hash(data).ok()?;
+    Some(res)
 }
 
 /// Challenge generation according to RFC 9381 section 5.4.3.
@@ -245,7 +288,7 @@ pub(crate) mod ark_next {
         let v = v_w_num * v_denom_inv;
         let w = v_w_num * w_denom_inv;
 
-        // Mapp Montgamory to SW: ((x+A/3)/B,y/B)
+        // Map Montgamory to SW: ((x+A/3)/B,y/B)
         let x = C::MONT_B_INV * (v + C::MONT_A_OVER_THREE);
         let y = C::MONT_B_INV * w;
 

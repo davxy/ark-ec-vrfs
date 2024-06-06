@@ -31,6 +31,8 @@ pub mod utils;
 #[cfg(feature = "ring")]
 pub mod ring;
 
+mod arkworks;
+
 #[cfg(test)]
 mod testing;
 
