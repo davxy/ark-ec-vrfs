@@ -237,10 +237,18 @@ pub fn encode_point<S: Suite>(pt: &AffinePoint<S>) -> Vec<u8> {
     buf
 }
 
+pub fn decode_point<S: Suite>(buf: &[u8]) -> AffinePoint<S> {
+    S::point_decode(buf)
+}
+
 pub fn encode_scalar<S: Suite>(sc: &ScalarField<S>) -> Vec<u8> {
     let mut buf = Vec::new();
     S::scalar_encode(sc, &mut buf);
     buf
+}
+
+pub fn decode_scalar<S: Suite>(buf: &[u8]) -> ScalarField<S> {
+    S::scalar_decode(buf)
 }
 
 // Upcoming Arkworks features.

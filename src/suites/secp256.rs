@@ -51,7 +51,7 @@
 use crate::{pedersen::PedersenSuite, *};
 use ark_ff::MontFp;
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct P256Sha256Tai;
 
 suite_types!(P256Sha256Tai);
@@ -92,6 +92,27 @@ impl Suite for P256Sha256Tai {
         buf.extend_from_slice(&tmp[..]);
     }
 
+    /// Encode point according to Section 2.3.3 "SEC 1: Elliptic Curve Cryptography",
+    /// (https://www.secg.org/sec1-v2.pdf) with point compression on.
+    fn point_decode(buf: &[u8]) -> AffinePoint {
+        use ark_ff::biginteger::BigInteger;
+        if buf.len() == 1 && buf[0] == 0x00 {
+            return AffinePoint::zero();
+        }
+        let mut tmp = buf.to_vec();
+        tmp.reverse();
+        let y_flag = tmp.pop().unwrap();
+
+        let x = BaseField::deserialize_compressed(&mut &tmp[..]).unwrap();
+        let (y1, y2) = AffinePoint::get_ys_from_x_unchecked(x).unwrap();
+        let y = if ((y_flag & 0x01) != 0) == y1.into_bigint().is_odd() {
+            y1
+        } else {
+            y2
+        };
+        AffinePoint::new_unchecked(x, y)
+    }
+
     fn scalar_encode(sc: &ScalarField, buf: &mut Vec<u8>) {
         let mut tmp = Vec::new();
         sc.serialize_compressed(&mut tmp).unwrap();
@@ -119,59 +140,32 @@ impl PedersenSuite for P256Sha256Tai {
 #[cfg(test)]
 mod test_vectors {
     use super::*;
-    use crate::ietf::testing::*;
+
+    type S = P256Sha256Tai;
+
+    const TEST_VECTORS_FILE: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/data/secp256_sha256_tai_vectors.json"
+    );
+
+    const TEST_VECTORS_FILE_RFC_9381: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/data/secp256_sha256_tai_vectors_rfc_9381.json"
+    );
 
     #[test]
-    fn rfc_9381_10() {
-        let v = TestVector {
-            flags: TEST_FLAG_SKIP_PROOF_CHECK,
-            sk: "c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721",
-            pk: "0360fed4ba255a9d31c961eb74c6356d68c049b8923b61fa6ce669622e60f29fb6",
-            alpha: b"sample",
-            beta: "a3ad7b0ef73d8fc6655053ea22f9bede8c743f08bbed3d38821f0e16474b505e",
-            // RFC sets sign byte to 0x02, but it is not correct as y is odd
-            h: "0372a877532e9ac193aff4401234266f59900a4a9e3fc3cfc6a4b7e467a15d06d4",
-            // RFC sets sign byte to 0x03, but it is not correct as y is even
-            gamma: "025b5c726e8c0e2c488a107c600578ee75cb702343c153cb1eb8dec77f4b5071b4",
-            // Skip these checks as test vector looks like is not correct
-            c: "",
-            s: "",
-        };
-
-        run_test_vector::<P256Sha256Tai>(&v);
+    #[ignore = "test vectors generator"]
+    fn test_vectors_generate() {
+        testing::test_vectors_generate::<S>(TEST_VECTORS_FILE);
     }
 
     #[test]
-    fn rfc_9381_11() {
-        let v = TestVector {
-            flags: 0,
-            sk: "c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721",
-            pk: "0360fed4ba255a9d31c961eb74c6356d68c049b8923b61fa6ce669622e60f29fb6",
-            alpha: b"test",
-            beta: "a284f94ceec2ff4b3794629da7cbafa49121972671b466cab4ce170aa365f26d",
-            h: "02173119b4fff5e6f8afed4868a29fe8920f1b54c2cf89cc7b301d0d473de6b974",
-            gamma: "034dac60aba508ba0c01aa9be80377ebd7562c4a52d74722e0abae7dc3080ddb56",
-            c: "00000000000000000000000000000000c19e067b15a8a8174905b13617804534",
-            s: "214f935b94c2287f797e393eb0816969d864f37625b443f30f1a5a33f2b3c854",
-        };
-
-        run_test_vector::<P256Sha256Tai>(&v);
+    fn test_vectors_process() {
+        testing::test_vectors_process::<S>(TEST_VECTORS_FILE);
     }
 
     #[test]
-    fn rfc_9381_12() {
-        let v = TestVector {
-            flags: 0,
-            sk: "2ca1411a41b17b24cc8c3b089cfd033f1920202a6c0de8abb97df1498d50d2c8",
-            pk: "03596375e6ce57e0f20294fc46bdfcfd19a39f8161b58695b3ec5b3d16427c274d",
-            alpha: b"Example using ECDSA key from Appendix L.4.2 of ANSI.X9-62-2005",
-            beta: "90871e06da5caa39a3c61578ebb844de8635e27ac0b13e829997d0d95dd98c19",
-            h: "0258055c26c4b01d01c00fb57567955f7d39cd6f6e85fd37c58f696cc6b7aa761d",
-            gamma: "03d03398bf53aa23831d7d1b2937e005fb0062cbefa06796579f2a1fc7e7b8c667",
-            c: "00000000000000000000000000000000d091c00b0f5c3619d10ecea44363b5a5",
-            s: "99cadc5b2957e223fec62e81f7b4825fc799a771a3d7334b9186bdbee87316b1",
-        };
-
-        run_test_vector::<P256Sha256Tai>(&v);
+    fn test_vectors_process_rfc_9381() {
+        testing::test_vectors_process::<S>(TEST_VECTORS_FILE_RFC_9381);
     }
 }

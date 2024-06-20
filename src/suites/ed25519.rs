@@ -51,15 +51,12 @@
 use crate::{pedersen::PedersenSuite, *};
 use ark_ff::MontFp;
 
-#[derive(Copy, Clone)]
-pub struct Ed25519Sha512;
+#[derive(Debug, Copy, Clone)]
+pub struct Ed25519Sha512Tai;
 
-suite_types!(Ed25519Sha512);
+suite_types!(Ed25519Sha512Tai);
 
-#[cfg(test)]
-suite_tests!(Ed25519Sha512);
-
-impl Suite for Ed25519Sha512 {
+impl Suite for Ed25519Sha512Tai {
     const SUITE_ID: &'static [u8] = b"ed25519-sha512-tai";
     const CHALLENGE_LEN: usize = 16;
 
@@ -67,7 +64,7 @@ impl Suite for Ed25519Sha512 {
     type Hasher = sha2::Sha512;
 }
 
-impl PedersenSuite for Ed25519Sha512 {
+impl PedersenSuite for Ed25519Sha512Tai {
     const BLINDING_BASE: AffinePoint = {
         const X: BaseField =
             MontFp!("1181072390894490040170698195029164902368238760122173135634802939739986120753");
@@ -76,4 +73,30 @@ impl PedersenSuite for Ed25519Sha512 {
         );
         AffinePoint::new_unchecked(X, Y)
     };
+}
+
+#[cfg(test)]
+suite_tests!(Ed25519Sha512Tai);
+
+#[cfg(test)]
+mod test_vectors {
+    use super::*;
+
+    type S = Ed25519Sha512Tai;
+
+    const TEST_VECTORS_FILE: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/data/ed25519_sha512_tai_vectors.json"
+    );
+
+    #[test]
+    #[ignore = "test vectors generator"]
+    fn test_vectors_generate() {
+        testing::test_vectors_generate::<S>(TEST_VECTORS_FILE);
+    }
+
+    #[test]
+    fn test_vectors_process() {
+        testing::test_vectors_process::<S>(TEST_VECTORS_FILE);
+    }
 }

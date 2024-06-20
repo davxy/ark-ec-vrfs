@@ -149,3 +149,67 @@ macro_rules! ring_suite_tests {
     };
     ($suite:ident, false) => {};
 }
+
+use ietf::testing::{TestVector, TestVectorMap};
+
+fn vec_to_ascii_string(buf: &[u8]) -> Option<String> {
+    if buf.iter().all(|&c| c.is_ascii_graphic() || c == b' ') {
+        Some(String::from_utf8(buf.to_vec()).unwrap())
+    } else {
+        None
+    }
+}
+
+// Some aliases for built-in suites without a printable SUITE-ID
+pub fn suite_alias(id: &[u8]) -> Option<String> {
+    let alias_map: std::collections::BTreeMap<&[u8], &str> =
+        vec![(&[0x01_u8][..], "secp256r1_sha256_tai")]
+            .into_iter()
+            .collect();
+    alias_map.get(id).map(|s| s.to_string())
+}
+
+pub fn test_vectors_generate<S: ietf::IetfSuite + std::fmt::Debug>(file: &str) {
+    use std::{fs::File, io::Write};
+    // ("alpha", "ad"))
+    let var_data: Vec<(&[u8], &[u8])> = vec![
+        (b"", b""),
+        (b"0a", b""),
+        (b"", b"0b8c"),
+        (b"73616D706C65", b""),
+        (b"42616E646572736E6174636820766563746F72", b""),
+        (b"42616E646572736E6174636820766563746F72", b"73616D706C65"),
+    ];
+
+    let mut vector_maps = Vec::with_capacity(var_data.len());
+
+    for (i, var_data) in var_data.iter().enumerate() {
+        let alpha = hex::decode(var_data.0).unwrap();
+        let ad = hex::decode(var_data.1).unwrap();
+        let suite_string =
+            vec_to_ascii_string(S::SUITE_ID).unwrap_or_else(|| suite_alias(S::SUITE_ID).unwrap());
+        let comment = format!("{} vector-{}", suite_string, i);
+        let vector = TestVector::<S>::new(&comment, &[i as u8], &alpha, None, &ad, 0);
+        println!("{:#?}", vector);
+        vector.run();
+        vector_maps.push(TestVectorMap::from(vector));
+    }
+
+    let mut file = File::create(file).unwrap();
+    let json = serde_json::to_string_pretty(&vector_maps).unwrap();
+    file.write_all(json.as_bytes()).unwrap();
+}
+
+pub fn test_vectors_process<S: ietf::IetfSuite + std::fmt::Debug>(file: &str) {
+    use std::{fs::File, io::BufReader};
+
+    let file = File::open(file).unwrap();
+    let reader = BufReader::new(file);
+
+    let vector_maps: Vec<TestVectorMap> = serde_json::from_reader(reader).unwrap();
+
+    for vector_map in vector_maps {
+        let vector = TestVector::<S>::from(vector_map);
+        vector.run();
+    }
+}

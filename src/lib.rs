@@ -131,6 +131,10 @@ pub trait Suite: Copy + Clone {
         pt.serialize_compressed(buf).unwrap();
     }
 
+    fn point_decode(buf: &[u8]) -> AffinePoint<Self> {
+        AffinePoint::<Self>::deserialize_compressed(buf).unwrap()
+    }
+
     fn scalar_encode(sc: &ScalarField<Self>, buf: &mut Vec<u8>) {
         sc.serialize_compressed(buf).unwrap();
     }
