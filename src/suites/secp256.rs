@@ -145,12 +145,13 @@ mod test_vectors {
 
     const TEST_VECTORS_FILE: &str = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/data/secp256_sha256_tai_vectors.json"
+        "/data/secp256_sha256_tai_ietf_vectors.json"
     );
 
+    // Vectors from RFC-9381
     const TEST_VECTORS_FILE_RFC_9381: &str = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/data/secp256_sha256_tai_vectors_rfc_9381.json"
+        "/data/secp256_sha256_tai_ietf_vectors_rfc_9381.json"
     );
 
     #[test]

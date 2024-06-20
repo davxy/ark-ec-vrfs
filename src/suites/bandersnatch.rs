@@ -251,7 +251,7 @@ mod test_vectors_ed {
 
     const TEST_VECTORS_FILE: &str = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/data/bandersnatch_ed_sha512_ell2_vectors.json"
+        "/data/bandersnatch_ed_sha512_ell2_ietf_vectors.json"
     );
 
     #[test]
@@ -275,7 +275,7 @@ mod test_vectors_sw {
 
     const TEST_VECTORS_FILE: &str = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/data/bandersnatch_sw_sha512_tai_vectors.json"
+        "/data/bandersnatch_sw_sha512_tai_ietf_vectors.json"
     );
 
     #[test]

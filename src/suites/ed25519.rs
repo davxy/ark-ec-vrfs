@@ -86,7 +86,7 @@ mod test_vectors {
 
     const TEST_VECTORS_FILE: &str = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/data/ed25519_sha512_tai_vectors.json"
+        "/data/ed25519_sha512_tai_ietf_vectors.json"
     );
 
     #[test]
