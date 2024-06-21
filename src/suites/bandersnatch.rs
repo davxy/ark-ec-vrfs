@@ -2,8 +2,8 @@
 //!
 //! Configuration:
 //!
-//! *  `suite_string` = b"bandersnatch-sha512-tai-sw for Short Weierstrass form.
-//! *  `suite_string` = b"bandersnatch-sha512-tai-ed for Twisted Edwards form.
+//! *  `suite_string` = b"Bandersnatch-sha512-tai-sw for Short Weierstrass form.
+//! *  `suite_string` = b"Bandersnatch-sha512-tai-ed for Twisted Edwards form.
 //!
 //! *  The EC group G is the Bandersnatch elliptic curve, in Short Weierstrass or
 //!    Twisted Edwards form, with the finite field and curve parameters as specified
@@ -65,7 +65,7 @@ pub mod weierstrass {
     suite_types!(BandersnatchSha512Tai);
 
     impl Suite for BandersnatchSha512Tai {
-        const SUITE_ID: &'static [u8] = b"bandersnatch-sw-sha512-tai";
+        const SUITE_ID: &'static [u8] = b"Bandersnatch_SW_SHA-512_TAI";
         const CHALLENGE_LEN: usize = 32;
 
         type Affine = ark_ed_on_bls12_381_bandersnatch::SWAffine;
@@ -126,7 +126,7 @@ pub mod edwards {
     suite_types!(BandersnatchSha512Ell2);
 
     impl Suite for BandersnatchSha512Ell2 {
-        const SUITE_ID: &'static [u8] = b"bandersnatch-ed-sha512-ell2";
+        const SUITE_ID: &'static [u8] = b"Bandersnatch_SHA-512-ELL2";
         const CHALLENGE_LEN: usize = 32;
 
         type Affine = ark_ed_on_bls12_381_bandersnatch::EdwardsAffine;
@@ -136,7 +136,8 @@ pub mod edwards {
         fn data_to_point(data: &[u8]) -> Option<AffinePoint> {
             // "XMD" for expand_message_xmd (Section 5.3.1).
             // "RO" for random oracle (Section 3 - hash_to_curve method)
-            let h2c_suite_id = b"bandersnatch_XMD:SHA-512_ELL2_RO_";
+            // TODO: prepend `encode_to_curve_salt` (i.e. pk)
+            let h2c_suite_id = b"Bandersnatch_XMD:SHA-512_ELL2_RO_";
             utils::hash_to_curve_ell2_rfc_9380::<Self>(data, h2c_suite_id)
         }
     }

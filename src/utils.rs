@@ -127,7 +127,7 @@ where
     // Domain Separation Tag := "ECVRF_" || h2c_suite_ID_string || suite_string
     let dst: Vec<_> = b"ECVRF_"
         .iter()
-        .chain(h2c_suite_id.iter())
+        .chain(h2c_suite_id)
         .chain(S::SUITE_ID)
         .cloned()
         .collect();

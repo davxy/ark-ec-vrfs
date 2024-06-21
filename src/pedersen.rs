@@ -51,8 +51,8 @@ impl<S: PedersenSuite> Prover<S> for Secret<S> {
     ) -> (Proof<S>, ScalarField<S>) {
         // Construct the nonces
         let k = S::nonce(&self.scalar, input);
-        let b = S::nonce(&k, input);
-        let kb = S::nonce(&b, input);
+        let kb = S::nonce(&k, input);
+        let b = S::nonce(&kb, input);
 
         // Yb = x*G + b*B
         let pk_blind = (S::Affine::generator() * self.scalar + S::BLINDING_BASE * b).into_affine();
@@ -99,12 +99,12 @@ impl<S: PedersenSuite> Verifier<S> for Public<S> {
         // c = Hash(Yb, I, O, R, Ok, ad)
         let c = S::challenge(&[pk_blind, &input.0, &output.0, r, ok], ad.as_ref());
 
-        // z1 = Ok + c*O - s*I
+        // Ok + c*O = s*I
         if output.0 * c + ok != input.0 * s {
             return Err(Error::VerificationFailure);
         }
 
-        // z2 = R + c*Yb - s*G  - sb*B
+        // R + c*Yb = s*G + sb*B
         if *pk_blind * c + r != S::Affine::generator() * s + S::BLINDING_BASE * sb {
             return Err(Error::VerificationFailure);
         }
