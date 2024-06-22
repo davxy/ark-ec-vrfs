@@ -1,6 +1,7 @@
 [
   {
-    "comment": "Bandersnatch_SW_SHA-512_TAI vector-0",
+    "comment": "Bandersnatch_SW_SHA-512_ELL2 - vector-1",
+    "flags": "00",
     "sk": "2bd8776e6ca6a43d51987f756be88b643ab4431b523132f675c8f0004f5d5a17",
     "pk": "f55a48e6befa22dc42007ec6d5bf83620d8f794901f42b18c10a4f7a6176985280",
     "alpha": "",
@@ -9,11 +10,11 @@
     "gamma": "5f3c9b5f8a80679b1bd335c46cfd35686750291704811d581f9e9a4904f8401b00",
     "beta": "5f66fe722cb411ce93c415a8f5bf6ae9e8c95acd90762e11ebddba2727c3fa41813005dc6ce72078e0e9d0f4702b5fe0a7debfaf1e64c638c8a098b384ac4b69",
     "proof_c": "48a36c67b1bb86ca1d603be702bf2499206425ba88213a15fca5c25e37304a07",
-    "proof_s": "c05e6568ece7e8409f86962e48594546fcaf7d338ca9938c77db863b1d294f11",
-    "flags": "00"
+    "proof_s": "c05e6568ece7e8409f86962e48594546fcaf7d338ca9938c77db863b1d294f11"
   },
   {
-    "comment": "Bandersnatch_SW_SHA-512_TAI vector-1",
+    "comment": "Bandersnatch_SW_SHA-512_ELL2 - vector-2",
+    "flags": "00",
     "sk": "3d6406500d4009fdf2604546093665911e753f2213570a29521fd88bc30ede18",
     "pk": "fd72a90d1eeba6733824e76bb31991b8108d6562756b85f244333e3c7205225200",
     "alpha": "0a",
@@ -22,11 +23,11 @@
     "gamma": "60031e90dc2998241e5ae73e0237d08fe1aaca59431adb7c5e54fcf64e3e7c0080",
     "beta": "333ce15eec798c112a1cee57484d66877e1001ba20537dd2bf6153e122d0851728a7c26e0201cbae348d9205a71d8846c4cd3e148b7ff50c484e1f1894e289e1",
     "proof_c": "fb6e25405a7481613d17f661dfc06939749b06b1406521a894d089acf8f0c812",
-    "proof_s": "56c0c71dc0250b3b8e51b66e8c2794e76974840f0d3176db4bb2207cf080db1c",
-    "flags": "00"
+    "proof_s": "56c0c71dc0250b3b8e51b66e8c2794e76974840f0d3176db4bb2207cf080db1c"
   },
   {
-    "comment": "Bandersnatch_SW_SHA-512_TAI vector-2",
+    "comment": "Bandersnatch_SW_SHA-512_ELL2 - vector-3",
+    "flags": "00",
     "sk": "8b9063872331dda4c3c282f7d813fb3c13e7339b7dc9635fdc764e32cc57cb15",
     "pk": "e30eae606d21dff460cdaecfc9bfcd2e319628ccc0242f3ca21f2d5c940ba41680",
     "alpha": "",
@@ -35,11 +36,11 @@
     "gamma": "718f7ea6e99c70dd9a54f6493ece5d27cfcdeb13d5629d10568ceb3096d6a93100",
     "beta": "664617a664c598dc8b3513338d9fdcfee2b04f8bc77bb7225fd49258e2098f220d9ad054c74fa2cdd6e9f762ecaee89a08ab0957d21dfc8873fe1c39ffc300e5",
     "proof_c": "1366457ac5194e3bf3ad79f4589e8e9a44ab29bcc9bc1a6148856b97be5ae810",
-    "proof_s": "70a744c46a4e72826de234deebcb6e826e23e4375f5233fd78ed0a4353b6c508",
-    "flags": "00"
+    "proof_s": "70a744c46a4e72826de234deebcb6e826e23e4375f5233fd78ed0a4353b6c508"
   },
   {
-    "comment": "Bandersnatch_SW_SHA-512_TAI vector-3",
+    "comment": "Bandersnatch_SW_SHA-512_ELL2 - vector-4",
+    "flags": "00",
     "sk": "6db187202f69e627e432296ae1d0f166ae6ac3c1222585b6ceae80ea07670b14",
     "pk": "2a00e5a32e2f097858a1a4a73cf5c2fb4e6d375a4ea4cc3ae3e91660eade850c80",
     "alpha": "73616d706c65",
@@ -48,11 +49,11 @@
     "gamma": "f9522a47aaf42c87bb3981ab51be6be878c6212a13e788f5b5716ed630221c2b80",
     "beta": "25178372616cc2632cac6c79d2af0dec6998ee6bba60aa7138fdb225590e68da81d2681e3c9d0e38b2ee7cd50ef7acf87b8a572b616edfbb3fe159301df5555b",
     "proof_c": "22cbf0b63d4f0117e870a7a4c66f114b014a70eb4f3614ef5987d196f7683404",
-    "proof_s": "85c6fc7354bd6a2e52aa5b5e25269d9cba3c21b34f8f80c596a56f62d8fa911c",
-    "flags": "00"
+    "proof_s": "85c6fc7354bd6a2e52aa5b5e25269d9cba3c21b34f8f80c596a56f62d8fa911c"
   },
   {
-    "comment": "Bandersnatch_SW_SHA-512_TAI vector-4",
+    "comment": "Bandersnatch_SW_SHA-512_ELL2 - vector-5",
+    "flags": "00",
     "sk": "b56cc204f1b6c2323709012cb16c72f3021035ce935fbe69b600a88d842c7407",
     "pk": "4f29d79a27b9545d7223431eb6a63776949454b16e2ac0b7a959304ce3e52b6a00",
     "alpha": "42616e646572736e6174636820766563746f72",
@@ -61,11 +62,11 @@
     "gamma": "47aa1025c292656b2ca74854033b8c92a48b02ad72271b642998a4384752af6080",
     "beta": "f08a4e95ca4e9351a3f83f9921aabfa0771983cb6194fdfb22cf85128645ee0e3df03f7ec7e3b47e06dc602cce8d282672b4fcde522b69fc85e04f1300288bf8",
     "proof_c": "279c376a958bed339298a05177d2af316870fb0a07747691a4ca73e8b0293e0a",
-    "proof_s": "a228daebff3f0c261bd6382d4e0be4f043ee687704a6596f72c626bc52b31418",
-    "flags": "00"
+    "proof_s": "a228daebff3f0c261bd6382d4e0be4f043ee687704a6596f72c626bc52b31418"
   },
   {
-    "comment": "Bandersnatch_SW_SHA-512_TAI vector-5",
+    "comment": "Bandersnatch_SW_SHA-512_ELL2 - vector-6",
+    "flags": "00",
     "sk": "da36359bf1bfd1694d3ed359e7340bd02a6a5e54827d94db1384df29f5bdd302",
     "pk": "e58e8ba2e99035fb7ae11fa14e2a609d6d13679278dac63ebee64ca8612ffa1480",
     "alpha": "42616e646572736e6174636820766563746f72",
@@ -74,7 +75,6 @@
     "gamma": "aacbf066133024064dd8923da69ae3fc52b2fb8b2b1a2508621472392e99e00b80",
     "beta": "a67a122a8423aabb806342b4b3f8f652de250acf964339d8975f07052015ca993b97a96cfc07ed2f07bc8b596eb88f561724d376f25846337af88edf5c86f602",
     "proof_c": "e7c9fd3972dcaa9e4003215c76f5b8c4b92b39de476e4d6644cd036fb3f2ed18",
-    "proof_s": "fd212be9e5b38e392737cb11f9d2380e4e3e1323c535bb89b7cf0f76ab936a01",
-    "flags": "00"
+    "proof_s": "fd212be9e5b38e392737cb11f9d2380e4e3e1323c535bb89b7cf0f76ab936a01"
   }
 ]
