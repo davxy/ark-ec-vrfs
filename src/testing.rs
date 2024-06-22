@@ -150,26 +150,180 @@ macro_rules! ring_suite_tests {
     ($suite:ident, false) => {};
 }
 
-use ietf::testing::{TestVector, TestVectorMap};
-
-fn vec_to_ascii_string(buf: &[u8]) -> Option<String> {
-    if buf.iter().all(|&c| c.is_ascii_graphic() || c == b' ') {
-        Some(String::from_utf8(buf.to_vec()).unwrap())
-    } else {
-        None
+impl<S: Suite> core::fmt::Debug for TestVector<S> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let sk = hex::encode(utils::encode_scalar::<S>(&self.sk));
+        let pk = hex::encode(utils::encode_point::<S>(&self.pk));
+        let alpha = hex::encode(&self.alpha);
+        let ad = hex::encode(&self.ad);
+        let h = hex::encode(utils::encode_point::<S>(&self.h));
+        let gamma = hex::encode(utils::encode_point::<S>(&self.gamma));
+        let beta = hex::encode(&self.beta);
+        f.debug_struct("TestVector")
+            .field("comment", &self.comment)
+            .field("flags", &self.flags)
+            .field("sk", &sk)
+            .field("pk", &pk)
+            .field("alpha", &alpha)
+            .field("ad", &ad)
+            .field("h", &h)
+            .field("gamma", &gamma)
+            .field("beta", &beta)
+            .finish()
     }
 }
 
-// Some aliases for built-in suites without a printable SUITE-ID
-pub fn suite_alias(id: &[u8]) -> Option<String> {
-    let alias_map: std::collections::BTreeMap<&[u8], &str> =
-        vec![(&[0x01_u8][..], "secp256r1_sha256_tai")]
-            .into_iter()
-            .collect();
-    alias_map.get(id).map(|s| s.to_string())
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct TestVectorMap(pub indexmap::IndexMap<String, String>);
+
+impl TestVectorMap {
+    pub fn item_bytes(&self, field: &str) -> Vec<u8> {
+        hex::decode(self.0.get(field).unwrap()).unwrap()
+    }
 }
 
-pub fn test_vectors_generate<S: ietf::IetfSuite + std::fmt::Debug>(file: &str) {
+pub trait TestVectorTrait {
+    fn new(
+        comment: &str,
+        seed: &[u8],
+        alpha: &[u8],
+        salt: Option<&[u8]>,
+        ad: &[u8],
+        flags: u8,
+    ) -> Self;
+
+    fn from_map(map: &TestVectorMap) -> Self;
+
+    fn to_map(&self) -> TestVectorMap;
+
+    fn run(&self);
+}
+
+pub struct TestVector<S: Suite> {
+    pub comment: String,
+    pub flags: u8,
+    pub sk: ScalarField<S>,
+    pub pk: AffinePoint<S>,
+    pub alpha: Vec<u8>,
+    pub ad: Vec<u8>,
+    pub h: AffinePoint<S>,
+    pub gamma: AffinePoint<S>,
+    pub beta: Vec<u8>,
+}
+
+pub const TEST_FLAG_SKIP_PROOF_CHECK: u8 = 1 << 0;
+
+impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
+    fn new(
+        comment: &str,
+        seed: &[u8],
+        alpha: &[u8],
+        salt: Option<&[u8]>,
+        ad: &[u8],
+        flags: u8,
+    ) -> Self {
+        let sk = Secret::<S>::from_seed(seed);
+        let pk = sk.public().0;
+
+        let salt = salt
+            .map(|v| v.to_vec())
+            .unwrap_or_else(|| utils::encode_point::<S>(&pk));
+
+        let h2c_data = [&salt[..], alpha].concat();
+        let h = <S as Suite>::data_to_point(&h2c_data).unwrap();
+        let input = Input::from(h);
+
+        let alpha = alpha.to_vec();
+        let output = sk.output(input);
+        let gamma = output.0;
+        let beta = output.hash().to_vec();
+
+        TestVector {
+            comment: comment.to_string(),
+            sk: sk.scalar,
+            pk,
+            alpha,
+            ad: ad.to_vec(),
+            h,
+            gamma,
+            beta,
+            flags,
+        }
+    }
+
+    fn from_map(map: &TestVectorMap) -> Self {
+        let item_bytes = |field| hex::decode(map.0.get(field).unwrap()).unwrap();
+        let comment = map.0.get("comment").unwrap().to_string();
+        let flags = item_bytes("flags")[0];
+        let sk = utils::decode_scalar::<S>(&item_bytes("sk"));
+        let pk = utils::decode_point::<S>(&item_bytes("pk"));
+        let alpha = item_bytes("alpha");
+        let ad = item_bytes("ad");
+        let h = utils::decode_point::<S>(&item_bytes("h"));
+        let gamma = utils::decode_point::<S>(&item_bytes("gamma"));
+        let beta = item_bytes("beta");
+        Self {
+            comment,
+            flags,
+            sk,
+            pk,
+            alpha,
+            ad,
+            h,
+            gamma,
+            beta,
+        }
+    }
+
+    fn to_map(&self) -> TestVectorMap {
+        let items = [
+            ("comment", self.comment.clone()),
+            ("flags", hex::encode([self.flags])),
+            ("sk", hex::encode(utils::encode_scalar::<S>(&self.sk))),
+            ("pk", hex::encode(utils::encode_point::<S>(&self.pk))),
+            ("alpha", hex::encode(&self.alpha)),
+            ("ad", hex::encode(&self.ad)),
+            ("h", hex::encode(utils::encode_point::<S>(&self.h))),
+            ("gamma", hex::encode(utils::encode_point::<S>(&self.gamma))),
+            ("beta", hex::encode(&self.beta)),
+            // ("proof_c", hex::encode(utils::encode_scalar::<S>(&v.c))),
+            // ("proof_s", hex::encode(utils::encode_scalar::<S>(&v.s))),
+        ];
+        let map: indexmap::IndexMap<String, String> =
+            items.into_iter().map(|(k, v)| (k.to_string(), v)).collect();
+        TestVectorMap(map)
+    }
+
+    fn run(&self) {
+        println!("Running test vector: {}", self.comment);
+
+        let sk = Secret::<S>::from_scalar(self.sk);
+
+        let pk = sk.public();
+        assert_eq!(self.pk, pk.0, "public key ('pk') mismatch");
+
+        // Prepare hash_to_curve data = salt || alpha
+        // Salt is defined to be pk (adjust it to make the encoding to match)
+        let pk_bytes = utils::encode_point::<S>(&pk.0);
+        let h2c_data = [&pk_bytes[..], &self.alpha[..]].concat();
+
+        let h = S::data_to_point(&h2c_data).unwrap();
+        assert_eq!(self.h, h, "hash-to-curve ('h') mismatch");
+        let input = Input::<S>::from(h);
+
+        let output = sk.output(input);
+        assert_eq!(self.gamma, output.0, "VRF pre-output ('gamma') mismatch");
+
+        if self.flags & TEST_FLAG_SKIP_PROOF_CHECK != 0 {
+            return;
+        }
+
+        let beta = output.hash().to_vec();
+        assert_eq!(self.beta, beta, "VRF output ('beta') mismatch");
+    }
+}
+
+pub fn test_vectors_generate<V: TestVectorTrait + std::fmt::Debug>(file: &str, identifier: &str) {
     use std::{fs::File, io::Write};
     // ("alpha", "ad"))
     let var_data: Vec<(&[u8], &[u8])> = vec![
@@ -186,13 +340,10 @@ pub fn test_vectors_generate<S: ietf::IetfSuite + std::fmt::Debug>(file: &str) {
     for (i, var_data) in var_data.iter().enumerate() {
         let alpha = hex::decode(var_data.0).unwrap();
         let ad = hex::decode(var_data.1).unwrap();
-        let suite_string =
-            vec_to_ascii_string(S::SUITE_ID).unwrap_or_else(|| suite_alias(S::SUITE_ID).unwrap());
-        let comment = format!("{} vector-{}", suite_string, i);
-        let vector = TestVector::<S>::new(&comment, &[i as u8], &alpha, None, &ad, 0);
-        println!("{:#?}", vector);
+        let comment = format!("{} - vector-{}", identifier, i + 1);
+        let vector = V::new(&comment, &[i as u8], &alpha, None, &ad, 0);
         vector.run();
-        vector_maps.push(TestVectorMap::from(vector));
+        vector_maps.push(vector.to_map());
     }
 
     let mut file = File::create(file).unwrap();
@@ -200,7 +351,7 @@ pub fn test_vectors_generate<S: ietf::IetfSuite + std::fmt::Debug>(file: &str) {
     file.write_all(json.as_bytes()).unwrap();
 }
 
-pub fn test_vectors_process<S: ietf::IetfSuite + std::fmt::Debug>(file: &str) {
+pub fn test_vectors_process<V: TestVectorTrait>(file: &str) {
     use std::{fs::File, io::BufReader};
 
     let file = File::open(file).unwrap();
@@ -208,8 +359,8 @@ pub fn test_vectors_process<S: ietf::IetfSuite + std::fmt::Debug>(file: &str) {
 
     let vector_maps: Vec<TestVectorMap> = serde_json::from_reader(reader).unwrap();
 
-    for vector_map in vector_maps {
-        let vector = TestVector::<S>::from(vector_map);
+    for vector_map in vector_maps.iter() {
+        let vector = V::from_map(vector_map);
         vector.run();
     }
 }

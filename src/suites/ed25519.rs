@@ -57,7 +57,7 @@ pub struct Ed25519Sha512Tai;
 suite_types!(Ed25519Sha512Tai);
 
 impl Suite for Ed25519Sha512Tai {
-    const SUITE_ID: &'static [u8] = b"ed25519-sha512-tai";
+    const SUITE_ID: &'static [u8] = b"Ed25519_SHA-512_TAI";
     const CHALLENGE_LEN: usize = 16;
 
     type Affine = ark_ed25519::EdwardsAffine;
@@ -79,10 +79,10 @@ impl PedersenSuite for Ed25519Sha512Tai {
 suite_tests!(Ed25519Sha512Tai);
 
 #[cfg(test)]
-mod test_vectors {
+mod test_vectors_ietf {
     use super::*;
 
-    type S = Ed25519Sha512Tai;
+    type V = crate::ietf::testing::TestVector<Ed25519Sha512Tai>;
 
     const TEST_VECTORS_FILE: &str = concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -91,12 +91,35 @@ mod test_vectors {
 
     #[test]
     #[ignore = "test vectors generator"]
-    fn test_vectors_generate() {
-        testing::test_vectors_generate::<S>(TEST_VECTORS_FILE);
+    fn generate() {
+        testing::test_vectors_generate::<V>(TEST_VECTORS_FILE, "Ed25519_SHA-512_TAI");
     }
 
     #[test]
-    fn test_vectors_process() {
-        testing::test_vectors_process::<S>(TEST_VECTORS_FILE);
+    fn process() {
+        testing::test_vectors_process::<V>(TEST_VECTORS_FILE);
+    }
+}
+
+#[cfg(test)]
+mod test_vectors_pedersen {
+    use super::*;
+
+    type V = crate::pedersen::testing::TestVector<Ed25519Sha512Tai>;
+
+    const TEST_VECTORS_FILE: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/data/ed25519_sha512_tai_pedersen_vectors.json"
+    );
+
+    #[test]
+    #[ignore = "test vectors generator"]
+    fn generate() {
+        testing::test_vectors_generate::<V>(TEST_VECTORS_FILE, "Ed25519_SHA-512_TAI");
+    }
+
+    #[test]
+    fn process() {
+        testing::test_vectors_process::<V>(TEST_VECTORS_FILE);
     }
 }

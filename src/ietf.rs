@@ -129,25 +129,28 @@ impl<S: IetfSuite> Verifier<S> for Public<S> {
 #[cfg(test)]
 pub mod testing {
     use super::*;
-
-    pub const TEST_FLAG_SKIP_PROOF_CHECK: u8 = 1 << 0;
+    use crate::testing as common;
 
     pub struct TestVector<S: IetfSuite> {
-        pub comment: String,
-        pub sk: ScalarField<S>,
-        pub pk: AffinePoint<S>,
-        pub alpha: Vec<u8>,
-        pub ad: Vec<u8>,
-        pub h: AffinePoint<S>,
-        pub gamma: AffinePoint<S>,
-        pub beta: Vec<u8>,
+        pub base: common::TestVector<S>,
         pub c: ScalarField<S>,
         pub s: ScalarField<S>,
-        pub flags: u8,
     }
 
-    impl<S: IetfSuite + std::fmt::Debug> TestVector<S> {
-        pub fn new(
+    impl<S: IetfSuite> core::fmt::Debug for TestVector<S> {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            let c = hex::encode(utils::encode_scalar::<S>(&self.c));
+            let s = hex::encode(utils::encode_scalar::<S>(&self.s));
+            f.debug_struct("TestVector")
+                .field("base", &self.base)
+                .field("proof_c", &c)
+                .field("proof_s", &s)
+                .finish()
+        }
+    }
+
+    impl<S: IetfSuite + std::fmt::Debug> common::TestVectorTrait for TestVector<S> {
+        fn new(
             comment: &str,
             seed: &[u8],
             alpha: &[u8],
@@ -155,152 +158,53 @@ pub mod testing {
             ad: &[u8],
             flags: u8,
         ) -> Self {
-            let sk = Secret::<S>::from_seed(seed);
-            let pk = sk.public().0;
-
-            let salt = salt
-                .map(|v| v.to_vec())
-                .unwrap_or_else(|| utils::encode_point::<S>(&pk));
-
-            let h2c_data = [&salt[..], alpha].concat();
-            let h = <S as Suite>::data_to_point(&h2c_data).unwrap();
-            let input = Input::from(h);
-
-            let alpha = alpha.to_vec();
-            let output = sk.output(input);
-            let gamma = output.0;
-            let beta = output.hash().to_vec();
-
-            let proof = sk.prove(input, output, ad);
-
-            TestVector {
-                comment: comment.to_string(),
-                sk: sk.scalar,
-                pk,
-                alpha,
-                ad: ad.to_vec(),
-                h,
-                gamma,
-                beta,
+            use super::Prover;
+            let base = common::TestVector::new(comment, seed, alpha, salt, ad, flags);
+            // TODO: store constructed types in the vectors
+            let input = Input::from(base.h);
+            let output = Output::from(base.gamma);
+            let sk = Secret::from_scalar(base.sk);
+            let proof: Proof<S> = sk.prove(input, output, ad);
+            Self {
+                base,
                 c: proof.c,
                 s: proof.s,
-                flags,
             }
         }
 
-        pub fn run(&self) {
-            println!("Running test vector: {}", self.comment);
+        fn from_map(map: &common::TestVectorMap) -> Self {
+            let base = common::TestVector::from_map(map);
+            let c = utils::decode_scalar::<S>(&map.item_bytes("proof_c"));
+            let s = utils::decode_scalar::<S>(&map.item_bytes("proof_s"));
+            Self { base, c, s }
+        }
 
-            let sk = Secret::<S>::from_scalar(self.sk);
+        fn to_map(&self) -> common::TestVectorMap {
+            let items = [
+                ("proof_c", hex::encode(utils::encode_scalar::<S>(&self.c))),
+                ("proof_s", hex::encode(utils::encode_scalar::<S>(&self.s))),
+            ];
+            let mut map = self.base.to_map();
+            items.into_iter().for_each(|(name, value)| {
+                map.0.insert(name.to_string(), value);
+            });
+            map
+        }
 
-            let pk = sk.public();
-            assert_eq!(self.pk, pk.0, "public key ('pk') mismatch");
-
-            // Prepare hash_to_curve data = salt || alpha
-            // Salt is defined to be pk (adjust it to make the encoding to match)
-            let pk_bytes = utils::encode_point::<S>(&pk.0);
-            let h2c_data = [&pk_bytes[..], &self.alpha[..]].concat();
-
-            let h = S::data_to_point(&h2c_data).unwrap();
-            assert_eq!(self.h, h, "hash-to-curve ('h') mismatch");
-            let input = Input::<S>::from(h);
-
-            let output = sk.output(input);
-            assert_eq!(self.gamma, output.0, "VRF pre-output ('gamma') mismatch");
-
-            if self.flags & TEST_FLAG_SKIP_PROOF_CHECK != 0 {
+        fn run(&self) {
+            self.base.run();
+            if self.base.flags & common::TEST_FLAG_SKIP_PROOF_CHECK != 0 {
                 return;
             }
-
-            let beta = output.hash().to_vec();
-            assert_eq!(self.beta, beta, "VRF output ('beta') mismatch");
-
-            let proof = sk.prove(input, output, &self.ad);
+            let input = Input::<S>::from(self.base.h);
+            let output = Output::from(self.base.gamma);
+            let sk = Secret::from_scalar(self.base.sk);
+            let proof = sk.prove(input, output, &self.base.ad);
             assert_eq!(self.c, proof.c, "VRF proof challenge ('c') mismatch");
             assert_eq!(self.s, proof.s, "VRF proof response ('s') mismatch");
 
-            assert!(pk.verify(input, output, &self.ad, &proof).is_ok());
-        }
-    }
-
-    impl<S: IetfSuite> core::fmt::Debug for TestVector<S> {
-        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-            let sk = hex::encode(utils::encode_scalar::<S>(&self.sk));
-            let pk = hex::encode(utils::encode_point::<S>(&self.pk));
-            let alpha = hex::encode(&self.alpha);
-            let ad = hex::encode(&self.ad);
-            let h = hex::encode(utils::encode_point::<S>(&self.h));
-            let gamma = hex::encode(utils::encode_point::<S>(&self.gamma));
-            let beta = hex::encode(&self.beta);
-            let c = hex::encode(utils::encode_scalar::<S>(&self.c));
-            let s = hex::encode(utils::encode_scalar::<S>(&self.s));
-            f.debug_struct("TestVector")
-                .field("comment", &self.comment)
-                .field("sk", &sk)
-                .field("pk", &pk)
-                .field("alpha", &alpha)
-                .field("ad", &ad)
-                .field("h", &h)
-                .field("gamma", &gamma)
-                .field("beta", &beta)
-                .field("proof_c", &c)
-                .field("proof_s", &s)
-                .field("flags", &self.flags)
-                .finish()
-        }
-    }
-
-    #[derive(Debug, serde::Serialize, serde::Deserialize)]
-    pub struct TestVectorMap(indexmap::IndexMap<String, String>);
-
-    impl<S: IetfSuite> From<TestVector<S>> for TestVectorMap {
-        fn from(v: TestVector<S>) -> Self {
-            let items = [
-                ("comment", v.comment),
-                ("sk", hex::encode(utils::encode_scalar::<S>(&v.sk))),
-                ("pk", hex::encode(utils::encode_point::<S>(&v.pk))),
-                ("alpha", hex::encode(&v.alpha)),
-                ("ad", hex::encode(&v.ad)),
-                ("h", hex::encode(utils::encode_point::<S>(&v.h))),
-                ("gamma", hex::encode(utils::encode_point::<S>(&v.gamma))),
-                ("beta", hex::encode(&v.beta)),
-                ("proof_c", hex::encode(utils::encode_scalar::<S>(&v.c))),
-                ("proof_s", hex::encode(utils::encode_scalar::<S>(&v.s))),
-                ("flags", hex::encode([v.flags])),
-            ];
-            let map: indexmap::IndexMap<String, String> =
-                items.into_iter().map(|(k, v)| (k.to_string(), v)).collect();
-            Self(map)
-        }
-    }
-
-    impl<S: IetfSuite> From<TestVectorMap> for TestVector<S> {
-        fn from(map: TestVectorMap) -> Self {
-            let item_bytes = |field| hex::decode(map.0.get(field).unwrap()).unwrap();
-            let comment = map.0.get("comment").unwrap().to_string();
-            let sk = utils::decode_scalar::<S>(&item_bytes("sk"));
-            let pk = utils::decode_point::<S>(&item_bytes("pk"));
-            let alpha = item_bytes("alpha");
-            let ad = item_bytes("ad");
-            let h = utils::decode_point::<S>(&item_bytes("h"));
-            let gamma = utils::decode_point::<S>(&item_bytes("gamma"));
-            let beta = item_bytes("beta");
-            let c = utils::decode_scalar::<S>(&item_bytes("proof_c"));
-            let s = utils::decode_scalar::<S>(&item_bytes("proof_s"));
-            let flags = item_bytes("flags")[0];
-            Self {
-                comment,
-                sk,
-                pk,
-                alpha,
-                ad,
-                h,
-                gamma,
-                beta,
-                c,
-                s,
-                flags,
-            }
+            let pk = Public(self.base.pk);
+            assert!(pk.verify(input, output, &self.base.ad, &proof).is_ok());
         }
     }
 }

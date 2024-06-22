@@ -138,10 +138,10 @@ impl PedersenSuite for P256Sha256Tai {
 }
 
 #[cfg(test)]
-mod test_vectors {
+mod test_vectors_ietf {
     use super::*;
 
-    type S = P256Sha256Tai;
+    type V = crate::ietf::testing::TestVector<P256Sha256Tai>;
 
     const TEST_VECTORS_FILE: &str = concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -156,17 +156,40 @@ mod test_vectors {
 
     #[test]
     #[ignore = "test vectors generator"]
-    fn test_vectors_generate() {
-        testing::test_vectors_generate::<S>(TEST_VECTORS_FILE);
+    fn generate() {
+        testing::test_vectors_generate::<V>(TEST_VECTORS_FILE, "secp256r1_SHA-256_TAI");
     }
 
     #[test]
-    fn test_vectors_process() {
-        testing::test_vectors_process::<S>(TEST_VECTORS_FILE);
+    fn process() {
+        testing::test_vectors_process::<V>(TEST_VECTORS_FILE);
     }
 
     #[test]
-    fn test_vectors_process_rfc_9381() {
-        testing::test_vectors_process::<S>(TEST_VECTORS_FILE_RFC_9381);
+    fn process_rfc_9381() {
+        testing::test_vectors_process::<V>(TEST_VECTORS_FILE_RFC_9381);
+    }
+}
+
+#[cfg(test)]
+mod test_vectors_pedersen {
+    use super::*;
+
+    type V = crate::pedersen::testing::TestVector<P256Sha256Tai>;
+
+    const TEST_VECTORS_FILE: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/data/secp256r1_sha256_tai_pedersen_vectors.json"
+    );
+
+    #[test]
+    #[ignore = "test vectors generator"]
+    fn generate() {
+        testing::test_vectors_generate::<V>(TEST_VECTORS_FILE, "secp256r1_SHA-256_TAI");
+    }
+
+    #[test]
+    fn process() {
+        testing::test_vectors_process::<V>(TEST_VECTORS_FILE);
     }
 }
