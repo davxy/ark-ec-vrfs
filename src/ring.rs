@@ -154,15 +154,19 @@ where
     CurveConfig<S>: SWCurveConfig + Clone,
     AffinePoint<S>: IntoSW<CurveConfig<S>>,
 {
-    pub fn from_seed(domain_size: usize, seed: [u8; 32]) -> Self {
+    /// Construct a new ring context suitable to manage the given ring size.
+    pub fn from_seed(ring_size: usize, seed: [u8; 32]) -> Self {
         use ark_std::rand::SeedableRng;
         let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
-        Self::new_random(domain_size, &mut rng)
+        Self::new_random(ring_size, &mut rng)
     }
 
-    pub fn new_random<R: ark_std::rand::RngCore>(domain_size: usize, rng: &mut R) -> Self {
+    /// Construct a new random ring context suitable for the given ring size.
+    pub fn new_random<R: ark_std::rand::RngCore>(ring_size: usize, rng: &mut R) -> Self {
         use fflonk::pcs::PCS;
+        const RING_DOMAIN_OVERHEAD: usize = 257;
 
+        let domain_size = 1 << ark_std::log2(ring_size + RING_DOMAIN_OVERHEAD);
         let pcs_params = Pcs::<S>::setup(3 * domain_size, rng);
         let piop_params = make_piop_params::<S>(domain_size);
         Self {
@@ -172,11 +176,8 @@ where
         }
     }
 
-    pub fn domain_size(&self) -> usize {
-        self.domain_size
-    }
-
-    pub fn keyset_max_size(&self) -> usize {
+    /// The max ring size this context is able to manage.
+    pub fn max_ring_size(&self) -> usize {
         self.piop_params.keyset_part_size
     }
 

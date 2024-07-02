@@ -76,18 +76,17 @@ where
     use ring::{Prover, RingContext, Verifier};
 
     let rng = &mut ark_std::test_rng();
-    let domain_size = 1024;
-    let ring_ctx = RingContext::<S>::new_random(domain_size, rng);
+    let ring_ctx = RingContext::<S>::new_random(512, rng);
 
     let secret = Secret::<S>::from_seed(TEST_SEED);
     let public = secret.public();
     let input = Input::from(random_val(Some(rng)));
     let output = secret.output(input);
 
-    let keyset_size = ring_ctx.piop_params.keyset_part_size;
+    let ring_size = ring_ctx.max_ring_size();
 
     let prover_idx = 3;
-    let mut pks = random_vec::<AffinePoint<S>>(keyset_size, Some(rng));
+    let mut pks = random_vec::<AffinePoint<S>>(ring_size, Some(rng));
     pks[prover_idx] = public.0;
 
     let prover_key = ring_ctx.prover_key(&pks);
