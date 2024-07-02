@@ -27,7 +27,7 @@ ark-bls12-381 = { version = "0.4.0", default-features = false, optional = true }
 sha2 = { version = "0.10", default-features = false }
 # Ring VRF (waiting for crates.io)
 fflonk = { git = "https://github.com/w3f/fflonk", default-features = false, optional = true }
-ring-proof = { package = "ring", git = "https://github.com/w3f/ring-proof", rev = "b273d33", default-features = false, optional = true }
+ring-proof = { package = "ring", git = "https://github.com/davxy/ring-proof", branch = "extended", default-features = false, optional = true }
 
 [dev-dependencies]
 ark-ed25519 = "0.4"
@@ -77,4 +77,7 @@ rfc-6979 = [ "hmac" ]
 full = [
   "curves",
   "ring",
+]
+test-vectors = [
+  "ring-proof?/test-vectors"
 ]

@@ -2,6 +2,11 @@ use crate::*;
 use ark_ec::short_weierstrass::SWCurveConfig;
 use pedersen::{PedersenSuite, Proof as PedersenProof};
 
+pub mod prelude {
+    pub use fflonk;
+    pub use ring_proof;
+}
+
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
@@ -12,29 +17,40 @@ pub trait RingSuite: PedersenSuite {
 }
 
 /// KZG Polynomial Commitment Scheme.
-type Pcs<S> = fflonk::pcs::kzg::KZG<<S as RingSuite>::Pairing>;
+pub type Pcs<S> = fflonk::pcs::kzg::KZG<<S as RingSuite>::Pairing>;
 
-/// KZG Setup Parameters.
+/// KZG commitment.
+pub type PcsCommitment<S> = fflonk::pcs::kzg::commitment::KzgCommitment<<S as RingSuite>::Pairing>;
+
+/// KZG setup parameters.
 ///
-/// Basically the powers of tau URS.
-type PcsParams<S> = fflonk::pcs::kzg::urs::URS<<S as RingSuite>::Pairing>;
+/// Basically the powers of tau SRS.
+pub type PcsParams<S> = fflonk::pcs::kzg::urs::URS<<S as RingSuite>::Pairing>;
 
+/// Ring proof application specific setup parameters.
+pub type PiopParams<S> = ring_proof::PiopParams<BaseField<S>, CurveConfig<S>>;
+
+/// Ring keys commitment.
+pub type RingCommitment<S> = ring_proof::FixedColumnsCommitted<BaseField<S>, PcsCommitment<S>>;
+
+/// Ring prover key.
 pub type ProverKey<S> =
     ring_proof::ProverKey<BaseField<S>, Pcs<S>, ark_ec::short_weierstrass::Affine<CurveConfig<S>>>;
 
+/// Ring verifier key.
 pub type VerifierKey<S> = ring_proof::VerifierKey<BaseField<S>, Pcs<S>>;
 
+/// Ring prover.
 pub type RingProver<S> = ring_proof::ring_prover::RingProver<BaseField<S>, Pcs<S>, CurveConfig<S>>;
 
+/// Ring verifier.
 pub type RingVerifier<S> =
     ring_proof::ring_verifier::RingVerifier<BaseField<S>, Pcs<S>, CurveConfig<S>>;
 
+/// Ring proof.
 pub type RingProof<S> = ring_proof::RingProof<BaseField<S>, Pcs<S>>;
 
-pub type PiopParams<S> = ring_proof::PiopParams<BaseField<S>, CurveConfig<S>>;
-
-const TRANSCRIPT_LABEL: &[u8] = b"";
-
+/// Ring proof.
 #[derive(Clone, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Proof<S: RingSuite>
 where
@@ -147,7 +163,7 @@ where
     pub fn new_random<R: ark_std::rand::RngCore>(domain_size: usize, rng: &mut R) -> Self {
         use fflonk::pcs::PCS;
 
-        let pcs_params = <Pcs<S>>::setup(3 * domain_size, rng);
+        let pcs_params = Pcs::<S>::setup(3 * domain_size, rng);
         let piop_params = make_piop_params::<S>(domain_size);
         Self {
             pcs_params,
@@ -185,7 +201,7 @@ where
             prover_key,
             self.piop_params.clone(),
             key_index,
-            merlin::Transcript::new(TRANSCRIPT_LABEL),
+            merlin::Transcript::new(b""),
         )
     }
 
@@ -193,7 +209,7 @@ where
         RingVerifier::<S>::init(
             verifier_key,
             self.piop_params.clone(),
-            merlin::Transcript::new(TRANSCRIPT_LABEL),
+            merlin::Transcript::new(b""),
         )
     }
 }
@@ -285,22 +301,5 @@ where
         domain,
         S::BLINDING_BASE.into_sw(),
         S::COMPLEMENT_POINT.into_sw(),
-    )
-}
-
-pub fn make_ring_verifier<S: RingSuite>(
-    verifier_key: VerifierKey<S>,
-    domain_size: usize,
-) -> RingVerifier<S>
-where
-    BaseField<S>: ark_ff::PrimeField,
-    CurveConfig<S>: SWCurveConfig,
-    AffinePoint<S>: IntoSW<CurveConfig<S>>,
-{
-    let piop_params = make_piop_params::<S>(domain_size);
-    RingVerifier::<S>::init(
-        verifier_key,
-        piop_params,
-        merlin::Transcript::new(TRANSCRIPT_LABEL),
     )
 }
