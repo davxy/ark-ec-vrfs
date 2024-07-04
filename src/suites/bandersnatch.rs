@@ -89,6 +89,7 @@ pub mod weierstrass {
         use super::*;
         use crate::ring as ring_suite;
 
+        pub type PcsParams = ring_suite::PcsParams<BandersnatchSha512Tai>;
         pub type RingContext = ring_suite::RingContext<BandersnatchSha512Tai>;
         pub type VerifierKey = ring_suite::VerifierKey<BandersnatchSha512Tai>;
         pub type RingProver = ring_suite::RingProver<BandersnatchSha512Tai>;
@@ -176,6 +177,7 @@ pub mod edwards {
         use super::*;
         use crate::ring as ring_suite;
 
+        pub type PcsParams = ring_suite::PcsParams<BandersnatchSha512Ell2>;
         pub type RingContext = ring_suite::RingContext<BandersnatchSha512Ell2>;
         pub type VerifierKey = ring_suite::VerifierKey<BandersnatchSha512Ell2>;
         pub type RingProver = ring_suite::RingProver<BandersnatchSha512Ell2>;

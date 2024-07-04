@@ -148,6 +148,8 @@ where
     pub domain_size: usize,
 }
 
+const RING_DOMAIN_OVERHEAD: usize = 257;
+
 impl<S: RingSuite> RingContext<S>
 where
     BaseField<S>: ark_ff::PrimeField,
@@ -164,16 +166,26 @@ where
     /// Construct a new random ring context suitable for the given ring size.
     pub fn new_random<R: ark_std::rand::RngCore>(ring_size: usize, rng: &mut R) -> Self {
         use fflonk::pcs::PCS;
-        const RING_DOMAIN_OVERHEAD: usize = 257;
-
         let domain_size = 1 << ark_std::log2(ring_size + RING_DOMAIN_OVERHEAD);
         let pcs_params = Pcs::<S>::setup(3 * domain_size, rng);
+        Self::from_srs(pcs_params, ring_size).expect("PCS params is correct")
+    }
+
+    pub fn from_srs(mut pcs_params: PcsParams<S>, ring_size: usize) -> Result<Self, ()> {
+        let domain_size = 1 << ark_std::log2(ring_size + RING_DOMAIN_OVERHEAD);
+        if pcs_params.powers_in_g1.len() < 3 * domain_size + 1 || pcs_params.powers_in_g2.len() < 2
+        {
+            return Err(());
+        }
+        // Keep only the required powers of tau.
+        pcs_params.powers_in_g1.truncate(3 * domain_size + 1);
+        pcs_params.powers_in_g2.truncate(2);
         let piop_params = make_piop_params::<S>(domain_size);
-        Self {
+        Ok(Self {
             pcs_params,
             piop_params,
             domain_size,
-        }
+        })
     }
 
     /// The max ring size this context is able to manage.
@@ -291,7 +303,7 @@ impl<C: utils::ark_next::MapConfig> IntoSW<C> for ark_ec::twisted_edwards::Affin
     }
 }
 
-fn make_piop_params<S: RingSuite>(domain_size: usize) -> PiopParams<S>
+pub(crate) fn make_piop_params<S: RingSuite>(domain_size: usize) -> PiopParams<S>
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: SWCurveConfig,
