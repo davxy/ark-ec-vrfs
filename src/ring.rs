@@ -145,10 +145,12 @@ where
 {
     pub pcs_params: PcsParams<S>,
     pub piop_params: PiopParams<S>,
-    pub domain_size: usize,
 }
 
-const RING_DOMAIN_OVERHEAD: usize = 257;
+fn domain_size(ring_size: usize) -> usize {
+    const RING_DOMAIN_OVERHEAD: usize = 257;
+    1 << ark_std::log2(ring_size + RING_DOMAIN_OVERHEAD)
+}
 
 impl<S: RingSuite> RingContext<S>
 where
@@ -166,13 +168,13 @@ where
     /// Construct a new random ring context suitable for the given ring size.
     pub fn new_random<R: ark_std::rand::RngCore>(ring_size: usize, rng: &mut R) -> Self {
         use fflonk::pcs::PCS;
-        let domain_size = 1 << ark_std::log2(ring_size + RING_DOMAIN_OVERHEAD);
+        let domain_size = domain_size(ring_size);
         let pcs_params = Pcs::<S>::setup(3 * domain_size, rng);
-        Self::from_srs(pcs_params, ring_size).expect("PCS params is correct")
+        Self::from_srs(ring_size, pcs_params).expect("PCS params is correct")
     }
 
-    pub fn from_srs(mut pcs_params: PcsParams<S>, ring_size: usize) -> Result<Self, ()> {
-        let domain_size = 1 << ark_std::log2(ring_size + RING_DOMAIN_OVERHEAD);
+    pub fn from_srs(ring_size: usize, mut pcs_params: PcsParams<S>) -> Result<Self, ()> {
+        let domain_size = domain_size(ring_size);
         if pcs_params.powers_in_g1.len() < 3 * domain_size + 1 || pcs_params.powers_in_g2.len() < 2
         {
             return Err(());
@@ -184,7 +186,6 @@ where
         Ok(Self {
             pcs_params,
             piop_params,
-            domain_size,
         })
     }
 
@@ -238,13 +239,12 @@ where
         mut writer: W,
         compress: ark_serialize::Compress,
     ) -> Result<(), ark_serialize::SerializationError> {
-        self.domain_size.serialize_compressed(&mut writer)?;
         self.pcs_params.serialize_with_mode(&mut writer, compress)?;
         Ok(())
     }
 
     fn serialized_size(&self, compress: ark_serialize::Compress) -> usize {
-        self.domain_size.compressed_size() + self.pcs_params.serialized_size(compress)
+        self.pcs_params.serialized_size(compress)
     }
 }
 
@@ -259,17 +259,16 @@ where
         compress: ark_serialize::Compress,
         validate: ark_serialize::Validate,
     ) -> Result<Self, ark_serialize::SerializationError> {
-        let domain_size = <usize as CanonicalDeserialize>::deserialize_compressed(&mut reader)?;
-        let piop_params = make_piop_params::<S>(domain_size);
         let pcs_params = <PcsParams<S> as CanonicalDeserialize>::deserialize_with_mode(
             &mut reader,
             compress,
             validate,
         )?;
+        let domain_size = (pcs_params.powers_in_g1.len() - 1) / 3;
+        let piop_params = make_piop_params::<S>(domain_size);
         Ok(RingContext {
             piop_params,
             pcs_params,
-            domain_size,
         })
     }
 }
