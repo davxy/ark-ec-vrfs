@@ -65,6 +65,7 @@ impl Suite for P256Sha256Tai {
 
     type Affine = ark_secp256r1::Affine;
     type Hasher = sha2::Sha256;
+    type Codec = codec::Sec1Codec;
 
     fn nonce(sk: &ScalarField, pt: Input) -> ScalarField {
         utils::nonce_rfc_6979::<Self>(sk, &pt.0)
@@ -72,56 +73,6 @@ impl Suite for P256Sha256Tai {
 
     fn data_to_point(data: &[u8]) -> Option<AffinePoint> {
         utils::hash_to_curve_tai_rfc_9381::<Self>(data, true)
-    }
-
-    /// Encode point according to Section 2.3.3 "SEC 1: Elliptic Curve Cryptography",
-    /// (https://www.secg.org/sec1-v2.pdf) with point compression on.
-    fn point_encode(pt: &AffinePoint, buf: &mut Vec<u8>) {
-        use ark_ff::biginteger::BigInteger;
-        let mut tmp = Vec::new();
-
-        if pt.is_zero() {
-            buf.push(0x00);
-            return;
-        }
-        let is_odd = pt.y.into_bigint().is_odd();
-        buf.push(if is_odd { 0x03 } else { 0x02 });
-
-        pt.x.serialize_compressed(&mut tmp).unwrap();
-        tmp.reverse();
-        buf.extend_from_slice(&tmp[..]);
-    }
-
-    /// Encode point according to Section 2.3.3 "SEC 1: Elliptic Curve Cryptography",
-    /// (https://www.secg.org/sec1-v2.pdf) with point compression on.
-    fn point_decode(buf: &[u8]) -> AffinePoint {
-        use ark_ff::biginteger::BigInteger;
-        if buf.len() == 1 && buf[0] == 0x00 {
-            return AffinePoint::zero();
-        }
-        let mut tmp = buf.to_vec();
-        tmp.reverse();
-        let y_flag = tmp.pop().unwrap();
-
-        let x = BaseField::deserialize_compressed(&mut &tmp[..]).unwrap();
-        let (y1, y2) = AffinePoint::get_ys_from_x_unchecked(x).unwrap();
-        let y = if ((y_flag & 0x01) != 0) == y1.into_bigint().is_odd() {
-            y1
-        } else {
-            y2
-        };
-        AffinePoint::new_unchecked(x, y)
-    }
-
-    fn scalar_encode(sc: &ScalarField, buf: &mut Vec<u8>) {
-        let mut tmp = Vec::new();
-        sc.serialize_compressed(&mut tmp).unwrap();
-        tmp.reverse();
-        buf.extend_from_slice(&tmp[..]);
-    }
-
-    fn scalar_decode(buf: &[u8]) -> ScalarField {
-        ScalarField::from_be_bytes_mod_order(buf)
     }
 }
 

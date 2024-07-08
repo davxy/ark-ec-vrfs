@@ -62,6 +62,7 @@ impl Suite for Ed25519Sha512Tai {
 
     type Affine = ark_ed25519::EdwardsAffine;
     type Hasher = sha2::Sha512;
+    type Codec = codec::ArkworksCodec;
 }
 
 impl PedersenSuite for Ed25519Sha512Tai {

@@ -70,6 +70,7 @@ pub mod weierstrass {
 
         type Affine = ark_ed_on_bls12_381_bandersnatch::SWAffine;
         type Hasher = sha2::Sha512;
+        type Codec = codec::ArkworksCodec;
     }
 
     impl PedersenSuite for BandersnatchSha512Tai {
@@ -132,6 +133,7 @@ pub mod edwards {
 
         type Affine = ark_ed_on_bls12_381_bandersnatch::EdwardsAffine;
         type Hasher = sha2::Sha512;
+        type Codec = codec::ArkworksCodec;
 
         /// Hash data to a curve point using Elligator2 method described by RFC 9380.
         fn data_to_point(data: &[u8]) -> Option<AffinePoint> {

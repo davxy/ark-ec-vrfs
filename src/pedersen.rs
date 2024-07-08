@@ -198,12 +198,12 @@ pub mod testing {
 
         fn from_map(map: &common::TestVectorMap) -> Self {
             let base = common::TestVector::from_map(map);
-            let blind = utils::decode_scalar::<S>(&map.item_bytes("blinding"));
+            let blind = utils::scalar_decode::<S>(&map.item_bytes("blinding"));
             let pk_blind = utils::decode_point::<S>(&map.item_bytes("proof_pkb"));
             let r = utils::decode_point::<S>(&map.item_bytes("proof_r"));
             let ok = utils::decode_point::<S>(&map.item_bytes("proof_ok"));
-            let s = utils::decode_scalar::<S>(&map.item_bytes("proof_s"));
-            let sb = utils::decode_scalar::<S>(&map.item_bytes("proof_sb"));
+            let s = utils::scalar_decode::<S>(&map.item_bytes("proof_s"));
+            let sb = utils::scalar_decode::<S>(&map.item_bytes("proof_sb"));
             let proof = Proof {
                 pk_blind,
                 r,
@@ -218,7 +218,7 @@ pub mod testing {
             let items = [
                 (
                     "blinding",
-                    hex::encode(utils::encode_scalar::<S>(&self.blind)),
+                    hex::encode(utils::scalar_encode::<S>(&self.blind)),
                 ),
                 (
                     "proof_pkb",
@@ -234,11 +234,11 @@ pub mod testing {
                 ),
                 (
                     "proof_s",
-                    hex::encode(utils::encode_scalar::<S>(&self.proof.s)),
+                    hex::encode(utils::scalar_encode::<S>(&self.proof.s)),
                 ),
                 (
                     "proof_sb",
-                    hex::encode(utils::encode_scalar::<S>(&self.proof.sb)),
+                    hex::encode(utils::scalar_encode::<S>(&self.proof.sb)),
                 ),
             ];
             let mut map = self.base.to_map();

@@ -19,6 +19,7 @@ pub(crate) mod suite {
 
         type Affine = ark_ed25519::EdwardsAffine;
         type Hasher = sha2::Sha256;
+        type Codec = codec::ArkworksCodec;
     }
 
     suite_types!(TestSuite);
@@ -71,7 +72,7 @@ pub fn ring_prove_verify<S: ring::RingSuite>()
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: ark_ec::short_weierstrass::SWCurveConfig + Clone,
-    AffinePoint<S>: ring::IntoSW<CurveConfig<S>>,
+    AffinePoint<S>: utils::SWMapping<CurveConfig<S>>,
 {
     use ring::{Prover, RingContext, Verifier};
 
@@ -104,9 +105,9 @@ pub fn check_complement_point<S: ring::RingSuite>()
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: ark_ec::short_weierstrass::SWCurveConfig + Clone,
-    AffinePoint<S>: ring::IntoSW<CurveConfig<S>>,
+    AffinePoint<S>: utils::SWMapping<CurveConfig<S>>,
 {
-    use ring::IntoSW;
+    use utils::SWMapping;
     let pt = S::COMPLEMENT_POINT.into_sw();
     assert!(pt.is_on_curve());
     assert!(!pt.is_in_correct_subgroup_assuming_on_curve());
@@ -151,7 +152,7 @@ macro_rules! ring_suite_tests {
 
 impl<S: Suite> core::fmt::Debug for TestVector<S> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let sk = hex::encode(utils::encode_scalar::<S>(&self.sk));
+        let sk = hex::encode(utils::scalar_encode::<S>(&self.sk));
         let pk = hex::encode(utils::encode_point::<S>(&self.pk));
         let alpha = hex::encode(&self.alpha);
         let ad = hex::encode(&self.ad);
@@ -254,7 +255,7 @@ impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
         let item_bytes = |field| hex::decode(map.0.get(field).unwrap()).unwrap();
         let comment = map.0.get("comment").unwrap().to_string();
         let flags = item_bytes("flags")[0];
-        let sk = utils::decode_scalar::<S>(&item_bytes("sk"));
+        let sk = utils::scalar_decode::<S>(&item_bytes("sk"));
         let pk = utils::decode_point::<S>(&item_bytes("pk"));
         let alpha = item_bytes("alpha");
         let ad = item_bytes("ad");
@@ -278,7 +279,7 @@ impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
         let items = [
             ("comment", self.comment.clone()),
             ("flags", hex::encode([self.flags])),
-            ("sk", hex::encode(utils::encode_scalar::<S>(&self.sk))),
+            ("sk", hex::encode(utils::scalar_encode::<S>(&self.sk))),
             ("pk", hex::encode(utils::encode_point::<S>(&self.pk))),
             ("alpha", hex::encode(&self.alpha)),
             ("ad", hex::encode(&self.ad)),

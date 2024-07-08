@@ -23,6 +23,7 @@ use ark_std::vec::Vec;
 
 use digest::Digest;
 
+pub mod codec;
 pub mod ietf;
 pub mod pedersen;
 pub mod suites;
@@ -50,6 +51,8 @@ pub type ScalarField<S> = <AffinePoint<S> as AffineRepr>::ScalarField;
 pub type CurveConfig<S> = <AffinePoint<S> as AffineRepr>::Config;
 
 pub type HashOutput<S> = digest::Output<<S as Suite>::Hasher>;
+
+pub use codec::Codec;
 
 #[derive(Debug)]
 pub enum Error {
@@ -85,6 +88,8 @@ pub trait Suite: Copy + Clone {
     ///
     /// Used wherever an hash is required: nonce, challenge, MAC, etc.
     type Hasher: Digest;
+
+    type Codec: codec::Codec<Self>;
 
     /// Nonce generation as described by RFC-9381 section 5.4.2.
     ///
@@ -127,22 +132,6 @@ pub trait Suite: Copy + Clone {
     /// By default uses the algorithm described by RFC 9381.
     fn point_to_hash(pt: &AffinePoint<Self>) -> HashOutput<Self> {
         utils::point_to_hash_rfc_9381::<Self>(pt)
-    }
-
-    fn point_encode(pt: &AffinePoint<Self>, buf: &mut Vec<u8>) {
-        pt.serialize_compressed(buf).unwrap();
-    }
-
-    fn point_decode(buf: &[u8]) -> AffinePoint<Self> {
-        AffinePoint::<Self>::deserialize_compressed(buf).unwrap()
-    }
-
-    fn scalar_encode(sc: &ScalarField<Self>, buf: &mut Vec<u8>) {
-        sc.serialize_compressed(buf).unwrap();
-    }
-
-    fn scalar_decode(buf: &[u8]) -> ScalarField<Self> {
-        <ScalarField<Self>>::from_le_bytes_mod_order(buf)
     }
 }
 
@@ -271,26 +260,9 @@ impl<S: Suite> Output<S> {
 mod tests {
     use crate::testing::{
         random_val,
-        suite::{Input, Public, Secret},
+        suite::{Input, Secret},
         TEST_SEED,
     };
-    use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-
-    #[test]
-    fn codec_works() {
-        let secret = Secret::from_seed(TEST_SEED);
-
-        let mut buf = Vec::new();
-        secret.serialize_compressed(&mut buf).unwrap();
-        let secret2 = Secret::deserialize_compressed(&mut &buf[..]).unwrap();
-        assert_eq!(secret, secret2);
-
-        let mut buf = Vec::new();
-        let public = secret.public();
-        public.serialize_compressed(&mut buf).unwrap();
-        let public2 = Public::deserialize_compressed(&mut &buf[..]).unwrap();
-        assert_eq!(public, public2);
-    }
 
     #[test]
     fn proof_to_hash_works() {

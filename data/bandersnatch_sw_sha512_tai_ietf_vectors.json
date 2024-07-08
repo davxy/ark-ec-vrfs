@@ -1,6 +1,6 @@
 [
   {
-    "comment": "Bandersnatch_SW_SHA-512_ELL2 - vector-1",
+    "comment": "Bandersnatch_SW_SHA-512_TAI - vector-1",
     "flags": "00",
     "sk": "2bd8776e6ca6a43d51987f756be88b643ab4431b523132f675c8f0004f5d5a17",
     "pk": "f55a48e6befa22dc42007ec6d5bf83620d8f794901f42b18c10a4f7a6176985280",
@@ -13,7 +13,7 @@
     "proof_s": "c05e6568ece7e8409f86962e48594546fcaf7d338ca9938c77db863b1d294f11"
   },
   {
-    "comment": "Bandersnatch_SW_SHA-512_ELL2 - vector-2",
+    "comment": "Bandersnatch_SW_SHA-512_TAI - vector-2",
     "flags": "00",
     "sk": "3d6406500d4009fdf2604546093665911e753f2213570a29521fd88bc30ede18",
     "pk": "fd72a90d1eeba6733824e76bb31991b8108d6562756b85f244333e3c7205225200",
@@ -26,7 +26,7 @@
     "proof_s": "56c0c71dc0250b3b8e51b66e8c2794e76974840f0d3176db4bb2207cf080db1c"
   },
   {
-    "comment": "Bandersnatch_SW_SHA-512_ELL2 - vector-3",
+    "comment": "Bandersnatch_SW_SHA-512_TAI - vector-3",
     "flags": "00",
     "sk": "8b9063872331dda4c3c282f7d813fb3c13e7339b7dc9635fdc764e32cc57cb15",
     "pk": "e30eae606d21dff460cdaecfc9bfcd2e319628ccc0242f3ca21f2d5c940ba41680",
@@ -39,7 +39,7 @@
     "proof_s": "70a744c46a4e72826de234deebcb6e826e23e4375f5233fd78ed0a4353b6c508"
   },
   {
-    "comment": "Bandersnatch_SW_SHA-512_ELL2 - vector-4",
+    "comment": "Bandersnatch_SW_SHA-512_TAI - vector-4",
     "flags": "00",
     "sk": "6db187202f69e627e432296ae1d0f166ae6ac3c1222585b6ceae80ea07670b14",
     "pk": "2a00e5a32e2f097858a1a4a73cf5c2fb4e6d375a4ea4cc3ae3e91660eade850c80",
@@ -52,7 +52,7 @@
     "proof_s": "85c6fc7354bd6a2e52aa5b5e25269d9cba3c21b34f8f80c596a56f62d8fa911c"
   },
   {
-    "comment": "Bandersnatch_SW_SHA-512_ELL2 - vector-5",
+    "comment": "Bandersnatch_SW_SHA-512_TAI - vector-5",
     "flags": "00",
     "sk": "b56cc204f1b6c2323709012cb16c72f3021035ce935fbe69b600a88d842c7407",
     "pk": "4f29d79a27b9545d7223431eb6a63776949454b16e2ac0b7a959304ce3e52b6a00",
@@ -65,7 +65,7 @@
     "proof_s": "a228daebff3f0c261bd6382d4e0be4f043ee687704a6596f72c626bc52b31418"
   },
   {
-    "comment": "Bandersnatch_SW_SHA-512_ELL2 - vector-6",
+    "comment": "Bandersnatch_SW_SHA-512_TAI - vector-6",
     "flags": "00",
     "sk": "da36359bf1bfd1694d3ed359e7340bd02a6a5e54827d94db1384df29f5bdd302",
     "pk": "e58e8ba2e99035fb7ae11fa14e2a609d6d13679278dac63ebee64ca8612ffa1480",

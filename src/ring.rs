@@ -1,3 +1,4 @@
+use crate::utils::SWMapping;
 use crate::*;
 use ark_ec::short_weierstrass::SWCurveConfig;
 use pedersen::{PedersenSuite, Proof as PedersenProof};
@@ -118,7 +119,7 @@ impl<S: RingSuite> Verifier<S> for Public<S>
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: SWCurveConfig,
-    AffinePoint<S>: IntoSW<CurveConfig<S>>,
+    AffinePoint<S>: SWMapping<CurveConfig<S>>,
 {
     fn verify(
         input: Input<S>,
@@ -156,7 +157,7 @@ impl<S: RingSuite> RingContext<S>
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: SWCurveConfig + Clone,
-    AffinePoint<S>: IntoSW<CurveConfig<S>>,
+    AffinePoint<S>: SWMapping<CurveConfig<S>>,
 {
     /// Construct a new ring context suitable to manage the given ring size.
     pub fn from_seed(ring_size: usize, seed: [u8; 32]) -> Self {
@@ -232,7 +233,7 @@ impl<S: RingSuite> CanonicalSerialize for RingContext<S>
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: SWCurveConfig + Clone,
-    AffinePoint<S>: IntoSW<CurveConfig<S>>,
+    AffinePoint<S>: SWMapping<CurveConfig<S>>,
 {
     fn serialize_with_mode<W: ark_serialize::Write>(
         &self,
@@ -252,7 +253,7 @@ impl<S: RingSuite> CanonicalDeserialize for RingContext<S>
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: SWCurveConfig + Clone,
-    AffinePoint<S>: IntoSW<CurveConfig<S>>,
+    AffinePoint<S>: SWMapping<CurveConfig<S>>,
 {
     fn deserialize_with_mode<R: ark_serialize::Read>(
         mut reader: R,
@@ -277,28 +278,10 @@ impl<S: RingSuite> ark_serialize::Valid for RingContext<S>
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: SWCurveConfig + Clone,
-    AffinePoint<S>: IntoSW<CurveConfig<S>>,
+    AffinePoint<S>: SWMapping<CurveConfig<S>>,
 {
     fn check(&self) -> Result<(), ark_serialize::SerializationError> {
         self.pcs_params.check()
-    }
-}
-
-pub trait IntoSW<C: SWCurveConfig> {
-    fn into_sw(self) -> ark_ec::short_weierstrass::Affine<C>;
-}
-
-impl<C: SWCurveConfig> IntoSW<C> for ark_ec::short_weierstrass::Affine<C> {
-    fn into_sw(self) -> ark_ec::short_weierstrass::Affine<C> {
-        self
-    }
-}
-
-impl<C: utils::ark_next::MapConfig> IntoSW<C> for ark_ec::twisted_edwards::Affine<C> {
-    fn into_sw(self) -> ark_ec::short_weierstrass::Affine<C> {
-        const ERR_MSG: &str =
-            "'IntoSW' is expected to be implemented only for curves supporting the mapping";
-        utils::ark_next::map_te_to_sw(&self).expect(ERR_MSG)
     }
 }
 
@@ -306,7 +289,7 @@ pub(crate) fn make_piop_params<S: RingSuite>(domain_size: usize) -> PiopParams<S
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: SWCurveConfig,
-    AffinePoint<S>: IntoSW<CurveConfig<S>>,
+    AffinePoint<S>: SWMapping<CurveConfig<S>>,
 {
     let domain = ring_proof::Domain::new(domain_size, true);
     PiopParams::<S>::setup(
