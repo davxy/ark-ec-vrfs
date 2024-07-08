@@ -173,11 +173,11 @@ where
         Self::from_srs(ring_size, pcs_params).expect("PCS params is correct")
     }
 
-    pub fn from_srs(ring_size: usize, mut pcs_params: PcsParams<S>) -> Result<Self, ()> {
+    pub fn from_srs(ring_size: usize, mut pcs_params: PcsParams<S>) -> Result<Self, Error> {
         let domain_size = domain_size(ring_size);
         if pcs_params.powers_in_g1.len() < 3 * domain_size + 1 || pcs_params.powers_in_g2.len() < 2
         {
-            return Err(());
+            return Err(Error::BadInputData);
         }
         // Keep only the required powers of tau.
         pcs_params.powers_in_g1.truncate(3 * domain_size + 1);

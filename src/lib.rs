@@ -51,10 +51,12 @@ pub type CurveConfig<S> = <AffinePoint<S> as AffineRepr>::Config;
 
 pub type HashOutput<S> = digest::Output<<S as Suite>::Hasher>;
 
-/// Verification error(s)
 #[derive(Debug)]
 pub enum Error {
+    /// Verification error(s)
     VerificationFailure,
+    /// Bad input data
+    BadInputData,
 }
 
 /// Defines a cipher suite.
