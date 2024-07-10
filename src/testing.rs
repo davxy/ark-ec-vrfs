@@ -94,11 +94,11 @@ where
     let mut pks = random_vec::<AffinePoint<S>>(ring_size, Some(rng));
     pks[prover_idx] = public.0;
 
-    let prover_key = ring_ctx.prover_key(&pks);
+    let prover_key = ring_ctx.prover_key(&pks).unwrap();
     let prover = ring_ctx.prover(prover_key, prover_idx);
     let proof = secret.prove(input, output, b"foo", &prover);
 
-    let verifier_key = ring_ctx.verifier_key(&pks);
+    let verifier_key = ring_ctx.verifier_key(&pks).unwrap();
     let verifier = ring_ctx.verifier(verifier_key);
     let result = Public::verify(input, output, b"foo", &proof, &verifier);
     assert!(result.is_ok());

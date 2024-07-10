@@ -11,25 +11,31 @@ pub mod prelude {
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
+/// Ring suite.
 pub trait RingSuite: PedersenSuite {
+    /// Pairing type.
     type Pairing: ark_ec::pairing::Pairing<ScalarField = BaseField<Self>>;
 
+    /// Complement point.
     const COMPLEMENT_POINT: AffinePoint<Self>;
 }
 
-/// KZG Polynomial Commitment Scheme.
-pub type Pcs<S> = fflonk::pcs::kzg::KZG<<S as RingSuite>::Pairing>;
+/// Polinomial Commitment Scheme (KZG)
+type Pcs<S> = fflonk::pcs::kzg::KZG<<S as RingSuite>::Pairing>;
 
-/// KZG commitment.
-pub type PcsCommitment<S> = fflonk::pcs::kzg::commitment::KzgCommitment<<S as RingSuite>::Pairing>;
-
-/// KZG setup parameters.
+/// PCS setup parameters.
 ///
 /// Basically the powers of tau SRS.
 pub type PcsParams<S> = fflonk::pcs::kzg::urs::URS<<S as RingSuite>::Pairing>;
 
-/// Ring proof application specific setup parameters.
+/// Polynomial Interactive Oracle Proof (IOP) parameters.
+///
+/// Basically all the application specific parameters required to construct and
+/// verify the ring proof.
 pub type PiopParams<S> = ring_proof::PiopParams<BaseField<S>, CurveConfig<S>>;
+
+/// Single PCS commitment.
+pub type PcsCommitment<S> = fflonk::pcs::kzg::commitment::KzgCommitment<<S as RingSuite>::Pairing>;
 
 /// Ring keys commitment.
 pub type RingCommitment<S> = ring_proof::FixedColumnsCommitted<BaseField<S>, PcsCommitment<S>>;
@@ -48,10 +54,12 @@ pub type RingProver<S> = ring_proof::ring_prover::RingProver<BaseField<S>, Pcs<S
 pub type RingVerifier<S> =
     ring_proof::ring_verifier::RingVerifier<BaseField<S>, Pcs<S>, CurveConfig<S>>;
 
-/// Ring proof.
+/// Actual ring proof.
 pub type RingProof<S> = ring_proof::RingProof<BaseField<S>, Pcs<S>>;
 
-/// Ring proof.
+/// Ring proof bundled together with a Pedersen proof.
+///
+/// Pedersen proof is used to provide VRF capability.
 #[derive(Clone, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Proof<S: RingSuite>
 where
@@ -201,20 +209,26 @@ where
         self.piop_params.keyset_part_size
     }
 
-    pub fn prover_key(&self, pks: &[AffinePoint<S>]) -> ProverKey<S> {
+    pub fn prover_key(&self, pks: &[AffinePoint<S>]) -> Result<ProverKey<S>, Error> {
+        if pks.len() > self.max_ring_size() {
+            return Err(Error::InvalidData);
+        }
         #[cfg(feature = "parallel")]
         let pks = pks.par_iter().map(|p| p.into_sw()).collect();
         #[cfg(not(feature = "parallel"))]
         let pks = pks.iter().map(|p| p.into_sw()).collect();
-        ring_proof::index(self.pcs_params.clone(), &self.piop_params, pks).0
+        Ok(ring_proof::index(self.pcs_params.clone(), &self.piop_params, pks).0)
     }
 
-    pub fn verifier_key(&self, pks: &[AffinePoint<S>]) -> VerifierKey<S> {
+    pub fn verifier_key(&self, pks: &[AffinePoint<S>]) -> Result<VerifierKey<S>, Error> {
+        if pks.len() > self.max_ring_size() {
+            return Err(Error::InvalidData);
+        }
         #[cfg(feature = "parallel")]
         let pks = pks.par_iter().map(|p| p.into_sw()).collect();
         #[cfg(not(feature = "parallel"))]
         let pks = pks.iter().map(|p| p.into_sw()).collect();
-        ring_proof::index(self.pcs_params.clone(), &self.piop_params, pks).1
+        Ok(ring_proof::index(self.pcs_params.clone(), &self.piop_params, pks).1)
     }
 
     pub fn prover(&self, prover_key: ProverKey<S>, key_index: usize) -> RingProver<S> {
