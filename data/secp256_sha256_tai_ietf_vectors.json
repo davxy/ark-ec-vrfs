@@ -1,7 +1,6 @@
 [
   {
     "comment": "secp256r1_SHA-256_TAI - vector-1",
-    "flags": "00",
     "sk": "1da0af1706a31185763837b33f1d90782c0a78bbe644a59c987ab3ff9c0b346e",
     "pk": "0279c7e97a3a7fd19265b046236c4216c19cc9a9e0f16b890295cffb5a1cc990f1",
     "alpha": "",
@@ -14,7 +13,6 @@
   },
   {
     "comment": "secp256r1_SHA-256_TAI - vector-2",
-    "flags": "00",
     "sk": "9a4585773ce2ccd7a585c331d60a60d1e3b7d28cbb2ede3bc55445342f12f54b",
     "pk": "0218e11f9ef92fa3929aa8f078d2e73b58f0ac7d6f274e222b8515c7b0140138be",
     "alpha": "0a",
@@ -27,20 +25,18 @@
   },
   {
     "comment": "secp256r1_SHA-256_TAI - vector-3",
-    "flags": "00",
     "sk": "86d9576498ea764b49243efeb05df625010438c6a55d5b578de4ff00c9b4c1db",
     "pk": "03a47366bc18483e02261117304cdf77cc95f234c16d11a8356dc4514a7adaf120",
     "alpha": "",
     "ad": "0b8c",
-    "h": "03b90c05c10ddbfdafda6a964012946641737f888b90c930abdd2454c568f73d70",
-    "gamma": "03c572767b190538c104182dfac985cd58430074f0db24305f4006d896c93b96c7",
-    "beta": "d06d1139d2f0199b36d48b8d4980421e3d98504442e475c1760dcbbd19d27543",
-    "proof_c": "4b5b11f3b418095a5d02f835a283cc99",
-    "proof_s": "78bd588629d7dbfa7909384fc55590443f7d72996655ca933bf5979ccf342e14"
+    "h": "02b90c05c10ddbfdafda6a964012946641737f888b90c930abdd2454c568f73d70",
+    "gamma": "02c572767b190538c104182dfac985cd58430074f0db24305f4006d896c93b96c7",
+    "beta": "478e767539cb216ca6c8a545cc4749ee08d90d7bca54d4d92286c90ae31ef31e",
+    "proof_c": "e8c2ce765ffa672f0c83213c3dc3cf86",
+    "proof_s": "4edec2aebfda44486302eb57c29f1b3074266b82a5b66069aea8d06e7480075f"
   },
   {
     "comment": "secp256r1_SHA-256_TAI - vector-4",
-    "flags": "00",
     "sk": "c529ffad9a5ab61162b11d616b639e00586ba846746a197d4daf78b908ed4f08",
     "pk": "02d984ff7d61ba3a11d8ade6cea6ba949fba3bbcf841506cf8c3a7b6e1bd67b926",
     "alpha": "73616d706c65",
@@ -53,20 +49,18 @@
   },
   {
     "comment": "secp256r1_SHA-256_TAI - vector-5",
-    "flags": "00",
     "sk": "719ec881a39ca062f09262ff75fc8a06d6cb91ad078c4d344723508c509c2de5",
     "pk": "02c8f77b17ec60330366b9e148dfa565a7c8d6a0768e5737786722e3c85a5ff054",
     "alpha": "42616e646572736e6174636820766563746f72",
     "ad": "",
-    "h": "039edace829d35ef117e135c8b81b5b00a0d3c9f24a349761fc07a7503bf048966",
-    "gamma": "02d7b9b206af6fae3a6225ef09701e965e5387a22eca8e1bc71c167cd53f66903a",
-    "beta": "0f4965be7ec48d075a0035d5d1874a05328cb9f1cbe6b4066813ebb38e46b101",
-    "proof_c": "ebc773f07f5a559bf176f57f83d5d80d",
-    "proof_s": "e0f386d45474ea6eb40ebf59e4c7e6695813b6bf4b7984db868e415d1d3432e9"
+    "h": "029edace829d35ef117e135c8b81b5b00a0d3c9f24a349761fc07a7503bf048966",
+    "gamma": "03d7b9b206af6fae3a6225ef09701e965e5387a22eca8e1bc71c167cd53f66903a",
+    "beta": "8ddb31c01a18db34fccd27e152d7691aab6fd377436e8d845448e00e031bf4c4",
+    "proof_c": "c75128a72db92539cb1a61d7c4468548",
+    "proof_s": "f98499f4b5e56a3e43cf6dff3c451426c419b01eb28bdeaa07a0f38d6a0db550"
   },
   {
     "comment": "secp256r1_SHA-256_TAI - vector-6",
-    "flags": "00",
     "sk": "db43b75a9c05eb89ae926b7b1d5081e79def64a210f5b6bd0d0be3e99a9a7be7",
     "pk": "03c443ab7bbb42585044551b7efac1d9c3c8f007bdf0c325d35fde5417bbb8e11d",
     "alpha": "42616e646572736e6174636820766563746f72",

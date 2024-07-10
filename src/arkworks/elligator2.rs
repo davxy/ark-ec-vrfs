@@ -5,12 +5,7 @@
 //! - Elligator2 hash-to-curve for Bandersnatch: https://github.com/arkworks-rs/algebra/pull/758
 
 use ark_ec::{
-    hashing::{
-        // TODO: this looks identical to the one introduced by #659
-        curve_maps::swu::parity,
-        map_to_curve_hasher::MapToCurve,
-        HashToCurveError,
-    },
+    hashing::{curve_maps::swu::parity, map_to_curve_hasher::MapToCurve, HashToCurveError},
     twisted_edwards::{Affine, MontCurveConfig, Projective, TECurveConfig},
 };
 use ark_ff::{Field, One, Zero};

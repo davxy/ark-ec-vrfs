@@ -178,7 +178,7 @@ where
         let domain_size = domain_size(ring_size);
         if pcs_params.powers_in_g1.len() < 3 * domain_size + 1 || pcs_params.powers_in_g2.len() < 2
         {
-            return Err(Error::BadInputData);
+            return Err(Error::InvalidData);
         }
         // Keep only the required powers of tau.
         pcs_params.powers_in_g1.truncate(3 * domain_size + 1);

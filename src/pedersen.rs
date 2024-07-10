@@ -199,9 +199,9 @@ pub mod testing {
         fn from_map(map: &common::TestVectorMap) -> Self {
             let base = common::TestVector::from_map(map);
             let blind = codec::scalar_decode::<S>(&map.item_bytes("blinding"));
-            let pk_blind = codec::point_decode::<S>(&map.item_bytes("proof_pkb"));
-            let r = codec::point_decode::<S>(&map.item_bytes("proof_r"));
-            let ok = codec::point_decode::<S>(&map.item_bytes("proof_ok"));
+            let pk_blind = codec::point_decode::<S>(&map.item_bytes("proof_pkb")).unwrap();
+            let r = codec::point_decode::<S>(&map.item_bytes("proof_r")).unwrap();
+            let ok = codec::point_decode::<S>(&map.item_bytes("proof_ok")).unwrap();
             let s = codec::scalar_decode::<S>(&map.item_bytes("proof_s"));
             let sb = codec::scalar_decode::<S>(&map.item_bytes("proof_sb"));
             let proof = Proof {
@@ -250,9 +250,6 @@ pub mod testing {
 
         fn run(&self) {
             self.base.run();
-            if self.base.flags & common::TEST_FLAG_SKIP_PROOF_CHECK != 0 {
-                return;
-            }
             let input = Input::<S>::from(self.base.h);
             let output = Output::from(self.base.gamma);
             let sk = Secret::from_scalar(self.base.sk);

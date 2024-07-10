@@ -1,7 +1,6 @@
 [
   {
     "comment": "Bandersnatch_SHA-512_ELL2 - vector-1",
-    "flags": "00",
     "sk": "2bd8776e6ca6a43d51987f756be88b643ab4431b523132f675c8f0004f5d5a17",
     "pk": "76adde367eebc8b21f7ef37e327243a77e34e30f9a211fda05409b49f16f3473",
     "alpha": "",
@@ -18,7 +17,6 @@
   },
   {
     "comment": "Bandersnatch_SHA-512_ELL2 - vector-2",
-    "flags": "00",
     "sk": "3d6406500d4009fdf2604546093665911e753f2213570a29521fd88bc30ede18",
     "pk": "a1b1da71cc4682e159b7da23050d8b6261eb11a3247c89b07ef56ccd002fd38b",
     "alpha": "0a",
@@ -35,7 +33,6 @@
   },
   {
     "comment": "Bandersnatch_SHA-512_ELL2 - vector-3",
-    "flags": "00",
     "sk": "8b9063872331dda4c3c282f7d813fb3c13e7339b7dc9635fdc764e32cc57cb15",
     "pk": "5ebfe047f421e1a3e1d9bbb163839812657bbb3e4ffe9856a725b2b405844cf3",
     "alpha": "",
@@ -52,7 +49,6 @@
   },
   {
     "comment": "Bandersnatch_SHA-512_ELL2 - vector-4",
-    "flags": "00",
     "sk": "6db187202f69e627e432296ae1d0f166ae6ac3c1222585b6ceae80ea07670b14",
     "pk": "9d97151298a5339866ddd3539d16696e19e6b68ac731562c807fe63a1ca49506",
     "alpha": "73616d706c65",
@@ -69,7 +65,6 @@
   },
   {
     "comment": "Bandersnatch_SHA-512_ELL2 - vector-5",
-    "flags": "00",
     "sk": "b56cc204f1b6c2323709012cb16c72f3021035ce935fbe69b600a88d842c7407",
     "pk": "dc2de7312c2850a9f6c103289c64fbd76e2ebd2fa8b5734708eb2c76c0fb2d99",
     "alpha": "42616e646572736e6174636820766563746f72",
@@ -86,7 +81,6 @@
   },
   {
     "comment": "Bandersnatch_SHA-512_ELL2 - vector-6",
-    "flags": "00",
     "sk": "da36359bf1bfd1694d3ed359e7340bd02a6a5e54827d94db1384df29f5bdd302",
     "pk": "decb0151cbeb49f76f10419ab6a96242bdc87baac8a474e5161123de4304ac29",
     "alpha": "42616e646572736e6174636820766563746f72",

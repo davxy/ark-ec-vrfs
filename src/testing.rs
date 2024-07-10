@@ -165,7 +165,6 @@ impl<S: Suite> core::fmt::Debug for TestVector<S> {
         let beta = hex::encode(&self.beta);
         f.debug_struct("TestVector")
             .field("comment", &self.comment)
-            .field("flags", &self.flags)
             .field("sk", &sk)
             .field("pk", &pk)
             .field("alpha", &alpha)
@@ -205,7 +204,6 @@ pub trait TestVectorTrait {
 
 pub struct TestVector<S: Suite> {
     pub comment: String,
-    pub flags: u8,
     pub sk: ScalarField<S>,
     pub pk: AffinePoint<S>,
     pub alpha: Vec<u8>,
@@ -214,8 +212,6 @@ pub struct TestVector<S: Suite> {
     pub gamma: AffinePoint<S>,
     pub beta: Vec<u8>,
 }
-
-pub const TEST_FLAG_SKIP_PROOF_CHECK: u8 = 1 << 0;
 
 impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
     fn new(
@@ -251,24 +247,21 @@ impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
             h,
             gamma,
             beta,
-            flags,
         }
     }
 
     fn from_map(map: &TestVectorMap) -> Self {
         let item_bytes = |field| hex::decode(map.0.get(field).unwrap()).unwrap();
         let comment = map.0.get("comment").unwrap().to_string();
-        let flags = item_bytes("flags")[0];
         let sk = codec::scalar_decode::<S>(&item_bytes("sk"));
-        let pk = codec::point_decode::<S>(&item_bytes("pk"));
+        let pk = codec::point_decode::<S>(&item_bytes("pk")).unwrap();
         let alpha = item_bytes("alpha");
         let ad = item_bytes("ad");
-        let h = codec::point_decode::<S>(&item_bytes("h"));
-        let gamma = codec::point_decode::<S>(&item_bytes("gamma"));
+        let h = codec::point_decode::<S>(&item_bytes("h")).unwrap();
+        let gamma = codec::point_decode::<S>(&item_bytes("gamma")).unwrap();
         let beta = item_bytes("beta");
         Self {
             comment,
-            flags,
             sk,
             pk,
             alpha,
@@ -282,7 +275,6 @@ impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
     fn to_map(&self) -> TestVectorMap {
         let items = [
             ("comment", self.comment.clone()),
-            ("flags", hex::encode([self.flags])),
             ("sk", hex::encode(codec::scalar_encode::<S>(&self.sk))),
             ("pk", hex::encode(codec::point_encode::<S>(&self.pk))),
             ("alpha", hex::encode(&self.alpha)),
@@ -290,8 +282,6 @@ impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
             ("h", hex::encode(codec::point_encode::<S>(&self.h))),
             ("gamma", hex::encode(codec::point_encode::<S>(&self.gamma))),
             ("beta", hex::encode(&self.beta)),
-            // ("proof_c", hex::encode(utils::encode_scalar::<S>(&v.c))),
-            // ("proof_s", hex::encode(utils::encode_scalar::<S>(&v.s))),
         ];
         let map: indexmap::IndexMap<String, String> =
             items.into_iter().map(|(k, v)| (k.to_string(), v)).collect();
@@ -317,10 +307,6 @@ impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
 
         let output = sk.output(input);
         assert_eq!(self.gamma, output.0, "VRF pre-output ('gamma') mismatch");
-
-        if self.flags & TEST_FLAG_SKIP_PROOF_CHECK != 0 {
-            return;
-        }
 
         let beta = output.hash().to_vec();
         assert_eq!(self.beta, beta, "VRF output ('beta') mismatch");

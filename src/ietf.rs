@@ -205,9 +205,6 @@ pub mod testing {
 
         fn run(&self) {
             self.base.run();
-            if self.base.flags & common::TEST_FLAG_SKIP_PROOF_CHECK != 0 {
-                return;
-            }
             let input = Input::<S>::from(self.base.h);
             let output = Output::from(self.base.gamma);
             let sk = Secret::from_scalar(self.base.sk);

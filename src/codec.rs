@@ -10,7 +10,7 @@ pub trait Codec<S: Suite> {
     fn point_encode(pt: &AffinePoint<S>, buf: &mut Vec<u8>);
 
     /// Point decode.
-    fn point_decode(buf: &[u8]) -> AffinePoint<S>;
+    fn point_decode(buf: &[u8]) -> Result<AffinePoint<S>, Error>;
 
     /// Scalar encode
     fn scalar_encode(sc: &ScalarField<S>, buf: &mut Vec<u8>);
@@ -31,8 +31,8 @@ impl<S: Suite> Codec<S> for ArkworksCodec {
         pt.serialize_compressed(buf).unwrap();
     }
 
-    fn point_decode(buf: &[u8]) -> AffinePoint<S> {
-        AffinePoint::<S>::deserialize_compressed(buf).unwrap()
+    fn point_decode(buf: &[u8]) -> Result<AffinePoint<S>, Error> {
+        AffinePoint::<S>::deserialize_compressed_unchecked(buf).map_err(Into::into)
     }
 
     fn scalar_encode(sc: &ScalarField<S>, buf: &mut Vec<u8>) {
@@ -76,26 +76,28 @@ where
         buf.extend_from_slice(&tmp[..]);
     }
 
-    fn point_decode(buf: &[u8]) -> AffinePoint<S> {
+    fn point_decode(buf: &[u8]) -> Result<AffinePoint<S>, Error> {
         use ark_ff::biginteger::BigInteger;
         use utils::SWMapping;
         type SWAffine<C> = ark_ec::short_weierstrass::Affine<C>;
-        if buf.len() == 1 && buf[0] == 0x00 {
-            return AffinePoint::<S>::zero();
-        }
-        let mut tmp = buf.to_vec();
-        tmp.reverse();
-        let y_flag = tmp.pop().unwrap();
 
-        let x = BaseField::<S>::deserialize_compressed(&mut &tmp[..]).unwrap();
-        let (y1, y2) = SWAffine::<CurveConfig<S>>::get_ys_from_x_unchecked(x).unwrap();
+        if buf.len() == 1 && buf[0] == 0x00 {
+            return Ok(AffinePoint::<S>::zero());
+        }
+        let mut buf = buf.to_vec();
+        buf.reverse();
+        let y_flag = buf.pop().unwrap();
+
+        let x = BaseField::<S>::deserialize_compressed(&mut &buf[..])?;
+        let (y1, y2) =
+            SWAffine::<CurveConfig<S>>::get_ys_from_x_unchecked(x).ok_or(Error::InvalidData)?;
         let y = if ((y_flag & 0x01) != 0) == y1.into_bigint().is_odd() {
             y1
         } else {
             y2
         };
         let sw = SWAffine::<CurveConfig<S>>::new_unchecked(x, y);
-        AffinePoint::<S>::from_sw(sw)
+        Ok(AffinePoint::<S>::from_sw(sw))
     }
 
     fn scalar_encode(sc: &ScalarField<S>, buf: &mut Vec<u8>) {
@@ -118,7 +120,7 @@ pub fn point_encode<S: Suite>(pt: &AffinePoint<S>) -> Vec<u8> {
 }
 
 /// Point decoder wrapper using `Suite::Codec`.
-pub fn point_decode<S: Suite>(buf: &[u8]) -> AffinePoint<S> {
+pub fn point_decode<S: Suite>(buf: &[u8]) -> Result<AffinePoint<S>, Error> {
     S::Codec::point_decode(buf)
 }
 

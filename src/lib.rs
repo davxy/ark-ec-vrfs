@@ -59,7 +59,13 @@ pub enum Error {
     /// Verification error(s)
     VerificationFailure,
     /// Bad input data
-    BadInputData,
+    InvalidData,
+}
+
+impl From<ark_serialize::SerializationError> for Error {
+    fn from(_err: ark_serialize::SerializationError) -> Self {
+        Error::InvalidData
+    }
 }
 
 /// Defines a cipher suite.

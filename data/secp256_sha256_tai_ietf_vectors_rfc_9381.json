@@ -1,16 +1,16 @@
 [
   {
-    "comment": "secp256r1_sha256_tai - rfc-9381-vector-10 (Spec typos: gamma, h. Skip proof)",
-    "flags": "01",
+    "comment": "secp256r1_sha256_tai - rfc-9381-vector-10",
+    "flags": "00",
     "sk": "c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721",
     "pk": "0360fed4ba255a9d31c961eb74c6356d68c049b8923b61fa6ce669622e60f29fb6",
     "alpha": "73616D706C65",
     "ad": "",
-    "h": "0372a877532e9ac193aff4401234266f59900a4a9e3fc3cfc6a4b7e467a15d06d4",
-    "gamma": "025b5c726e8c0e2c488a107c600578ee75cb702343c153cb1eb8dec77f4b5071b4",
+    "h": "0272a877532e9ac193aff4401234266f59900a4a9e3fc3cfc6a4b7e467a15d06d4",
+    "gamma": "035b5c726e8c0e2c488a107c600578ee75cb702343c153cb1eb8dec77f4b5071b4",
     "beta": "a3ad7b0ef73d8fc6655053ea22f9bede8c743f08bbed3d38821f0e16474b505e",
-    "proof_c": "",
-    "proof_s": ""
+    "proof_c": "a53f0a46f018bc2c56e58d383f2305e0",
+    "proof_s": "975972c26feea0eb122fe7893c15af376b33edf7de17c6ea056d4d82de6bc02f"
   },
   {
     "comment": "secp256r1_sha256_tai - rfc-9381-vector-11",
