@@ -218,7 +218,7 @@ where
         let pks: Vec<_> = pks.par_iter().map(|p| p.into_sw()).collect();
         #[cfg(not(feature = "parallel"))]
         let pks: Vec<_> = pks.iter().map(|p| p.into_sw()).collect();
-        ring_proof::index(&self.pcs_params, &self.piop_params, &pks).0
+        ring_proof::index(self.pcs_params.clone(), &self.piop_params, pks).0
     }
 
     /// Construct a `VerifierKey` instance for the given ring.
@@ -230,7 +230,7 @@ where
         let pks: Vec<_> = pks.par_iter().map(|p| p.into_sw()).collect();
         #[cfg(not(feature = "parallel"))]
         let pks: Vec<_> = pks.iter().map(|p| p.into_sw()).collect();
-        ring_proof::index(&self.pcs_params, &self.piop_params, &pks).1
+        ring_proof::index(self.pcs_params.clone(), &self.piop_params, pks).1
     }
 
     pub fn prover(&self, prover_key: ProverKey<S>, key_index: usize) -> RingProver<S> {
