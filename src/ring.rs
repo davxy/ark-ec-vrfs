@@ -183,7 +183,13 @@ where
         // Keep only the required powers of tau.
         pcs_params.powers_in_g1.truncate(3 * domain_size + 1);
         pcs_params.powers_in_g2.truncate(2);
-        let piop_params = make_piop_params::<S>(domain_size);
+
+        let piop_params = PiopParams::<S>::setup(
+            ring_proof::Domain::new(domain_size, true),
+            S::BLINDING_BASE.into_sw(),
+            S::COMPLEMENT_POINT.into_sw(),
+        );
+
         Ok(Self {
             pcs_params,
             piop_params,
@@ -266,11 +272,8 @@ where
             validate,
         )?;
         let domain_size = (pcs_params.powers_in_g1.len() - 1) / 3;
-        let piop_params = make_piop_params::<S>(domain_size);
-        Ok(RingContext {
-            piop_params,
-            pcs_params,
-        })
+        Self::from_srs(domain_size, pcs_params)
+            .map_err(|_| ark_serialize::SerializationError::InvalidData)
     }
 }
 
@@ -283,18 +286,4 @@ where
     fn check(&self) -> Result<(), ark_serialize::SerializationError> {
         self.pcs_params.check()
     }
-}
-
-pub(crate) fn make_piop_params<S: RingSuite>(domain_size: usize) -> PiopParams<S>
-where
-    BaseField<S>: ark_ff::PrimeField,
-    CurveConfig<S>: SWCurveConfig,
-    AffinePoint<S>: SWMapping<CurveConfig<S>>,
-{
-    let domain = ring_proof::Domain::new(domain_size, true);
-    PiopParams::<S>::setup(
-        domain,
-        S::BLINDING_BASE.into_sw(),
-        S::COMPLEMENT_POINT.into_sw(),
-    )
 }
