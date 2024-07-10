@@ -20,6 +20,10 @@ pub(crate) mod suite {
         type Affine = ark_ed25519::EdwardsAffine;
         type Hasher = sha2::Sha256;
         type Codec = codec::ArkworksCodec;
+
+        fn nonce(_sk: &ScalarField, _pt: Input) -> ScalarField {
+            random_val(None)
+        }
     }
 
     suite_types!(TestSuite);
@@ -152,12 +156,12 @@ macro_rules! ring_suite_tests {
 
 impl<S: Suite> core::fmt::Debug for TestVector<S> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let sk = hex::encode(utils::scalar_encode::<S>(&self.sk));
-        let pk = hex::encode(utils::encode_point::<S>(&self.pk));
+        let sk = hex::encode(codec::scalar_encode::<S>(&self.sk));
+        let pk = hex::encode(codec::point_encode::<S>(&self.pk));
         let alpha = hex::encode(&self.alpha);
         let ad = hex::encode(&self.ad);
-        let h = hex::encode(utils::encode_point::<S>(&self.h));
-        let gamma = hex::encode(utils::encode_point::<S>(&self.gamma));
+        let h = hex::encode(codec::point_encode::<S>(&self.h));
+        let gamma = hex::encode(codec::point_encode::<S>(&self.gamma));
         let beta = hex::encode(&self.beta);
         f.debug_struct("TestVector")
             .field("comment", &self.comment)
@@ -227,7 +231,7 @@ impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
 
         let salt = salt
             .map(|v| v.to_vec())
-            .unwrap_or_else(|| utils::encode_point::<S>(&pk));
+            .unwrap_or_else(|| codec::point_encode::<S>(&pk));
 
         let h2c_data = [&salt[..], alpha].concat();
         let h = <S as Suite>::data_to_point(&h2c_data).unwrap();
@@ -255,12 +259,12 @@ impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
         let item_bytes = |field| hex::decode(map.0.get(field).unwrap()).unwrap();
         let comment = map.0.get("comment").unwrap().to_string();
         let flags = item_bytes("flags")[0];
-        let sk = utils::scalar_decode::<S>(&item_bytes("sk"));
-        let pk = utils::decode_point::<S>(&item_bytes("pk"));
+        let sk = codec::scalar_decode::<S>(&item_bytes("sk"));
+        let pk = codec::point_decode::<S>(&item_bytes("pk"));
         let alpha = item_bytes("alpha");
         let ad = item_bytes("ad");
-        let h = utils::decode_point::<S>(&item_bytes("h"));
-        let gamma = utils::decode_point::<S>(&item_bytes("gamma"));
+        let h = codec::point_decode::<S>(&item_bytes("h"));
+        let gamma = codec::point_decode::<S>(&item_bytes("gamma"));
         let beta = item_bytes("beta");
         Self {
             comment,
@@ -279,12 +283,12 @@ impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
         let items = [
             ("comment", self.comment.clone()),
             ("flags", hex::encode([self.flags])),
-            ("sk", hex::encode(utils::scalar_encode::<S>(&self.sk))),
-            ("pk", hex::encode(utils::encode_point::<S>(&self.pk))),
+            ("sk", hex::encode(codec::scalar_encode::<S>(&self.sk))),
+            ("pk", hex::encode(codec::point_encode::<S>(&self.pk))),
             ("alpha", hex::encode(&self.alpha)),
             ("ad", hex::encode(&self.ad)),
-            ("h", hex::encode(utils::encode_point::<S>(&self.h))),
-            ("gamma", hex::encode(utils::encode_point::<S>(&self.gamma))),
+            ("h", hex::encode(codec::point_encode::<S>(&self.h))),
+            ("gamma", hex::encode(codec::point_encode::<S>(&self.gamma))),
             ("beta", hex::encode(&self.beta)),
             // ("proof_c", hex::encode(utils::encode_scalar::<S>(&v.c))),
             // ("proof_s", hex::encode(utils::encode_scalar::<S>(&v.s))),
@@ -304,7 +308,7 @@ impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
 
         // Prepare hash_to_curve data = salt || alpha
         // Salt is defined to be pk (adjust it to make the encoding to match)
-        let pk_bytes = utils::encode_point::<S>(&pk.0);
+        let pk_bytes = codec::point_encode::<S>(&pk.0);
         let h2c_data = [&pk_bytes[..], &self.alpha[..]].concat();
 
         let h = S::data_to_point(&h2c_data).unwrap();

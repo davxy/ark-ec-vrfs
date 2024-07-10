@@ -72,7 +72,7 @@ impl Suite for P256Sha256Tai {
     }
 
     fn data_to_point(data: &[u8]) -> Option<AffinePoint> {
-        utils::hash_to_curve_tai_rfc_9381::<Self>(data, true)
+        utils::hash_to_curve_tai_rfc_9381::<Self>(data)
     }
 }
 

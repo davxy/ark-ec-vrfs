@@ -105,7 +105,7 @@ pub trait Suite: Copy + Clone {
     ///
     /// # Panics
     ///
-    /// This function panics if `Hasher` output is less than 32 bytes.
+    /// This function panics if `Hasher` output is less than 64 bytes.
     fn nonce(sk: &ScalarField<Self>, pt: Input<Self>) -> ScalarField<Self> {
         utils::nonce_rfc_8032::<Self>(sk, &pt.0)
     }
@@ -124,7 +124,7 @@ pub trait Suite: Copy + Clone {
     ///
     /// By default uses "try and increment" method described by RFC 9381.
     fn data_to_point(data: &[u8]) -> Option<AffinePoint<Self>> {
-        utils::hash_to_curve_tai_rfc_9381::<Self>(data, false)
+        utils::hash_to_curve_tai_rfc_9381::<Self>(data)
     }
 
     /// Map the point to a hash value using `Self::Hasher`.
@@ -265,12 +265,14 @@ mod tests {
     };
 
     #[test]
-    fn proof_to_hash_works() {
+    fn vrf_output_check() {
+        use ark_std::rand::SeedableRng;
+        let mut rng = rand_chacha::ChaCha20Rng::from_seed([42; 32]);
         let secret = Secret::from_seed(TEST_SEED);
-        let input = Input::from(random_val(None));
+        let input = Input::from(random_val(Some(&mut rng)));
         let output = secret.output(input);
 
-        let expected = "2eaa1a349197bb2b6c455bc5554b331162f0e9b13aea0aab28283cc30e7c6482";
+        let expected = "0245a793d85347ca3c056f8c8f42f1049a310fabff6933b9eae592541a545cb8";
         assert_eq!(expected, hex::encode(output.hash()));
     }
 }

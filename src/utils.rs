@@ -1,4 +1,4 @@
-use crate::{AffinePoint, Codec, HashOutput, ScalarField, Suite};
+use crate::*;
 
 use ark_ec::AffineRepr;
 use ark_ff::PrimeField;
@@ -63,10 +63,12 @@ pub(crate) fn hmac<H: Digest + digest::core_api::BlockSizeUser>(sk: &[u8], data:
 /// find a valid curve point after approximately two attempts on average.
 ///
 /// The input `data` is defined to be `salt || alpha` according to the RFC 9281.
-pub fn hash_to_curve_tai_rfc_9381<S: Suite>(
-    data: &[u8],
-    point_be_encoding: bool,
-) -> Option<AffinePoint<S>> {
+///
+/// # Panics
+///
+/// This function panics if `Suite::Hasher` output is less than AffinePoint base field
+/// modulus size (in bytes).
+pub fn hash_to_curve_tai_rfc_9381<S: Suite>(data: &[u8]) -> Option<AffinePoint<S>> {
     use ark_ec::AffineRepr;
     use ark_ff::Field;
     use ark_serialize::CanonicalDeserialize;
@@ -74,23 +76,24 @@ pub fn hash_to_curve_tai_rfc_9381<S: Suite>(
     const DOM_SEP_FRONT: u8 = 0x01;
     const DOM_SEP_BACK: u8 = 0x00;
 
-    let mod_size = <<crate::BaseField<S> as Field>::BasePrimeField as PrimeField>::MODULUS_BIT_SIZE
-        as usize
-        / 8;
-    if S::Hasher::output_size() < mod_size {
-        return None;
-    }
+    let mod_size =
+        <<BaseField<S> as Field>::BasePrimeField as PrimeField>::MODULUS_BIT_SIZE as usize / 8;
+
+    assert!(
+        S::Hasher::output_size() >= mod_size,
+        "Suite::Hasher output is required to be >= base field modulus size"
+    );
 
     let mut buf = [S::SUITE_ID, &[DOM_SEP_FRONT], data, &[0x00, DOM_SEP_BACK]].concat();
     let ctr_pos = buf.len() - 2;
 
     for ctr in 0..=255 {
-        // Modify the `ctr` value
         buf[ctr_pos] = ctr;
         let mut hash = hash::<S::Hasher>(&buf).to_vec();
-        if point_be_encoding {
+        if S::Codec::BIG_ENDIAN {
             hash.reverse();
         }
+        // TODO: flags? Must be pushed before reversing!
         hash.push(0x00);
 
         if let Ok(pt) = AffinePoint::<S>::deserialize_compressed_unchecked(&hash[..]) {
@@ -172,19 +175,21 @@ pub fn point_to_hash_rfc_9381<S: Suite>(pt: &AffinePoint<S>) -> HashOutput<S> {
 /// This procedure is based on section 5.1.6 of RFC 8032: "Edwards-Curve Digital
 /// Signature Algorithm (EdDSA)".
 ///
-/// The algorithm generate the nonce value in a deterministic
-/// pseudorandom fashion.
-///
-/// `Suite::Hash` is recommended to be be at least 64 bytes.
+/// The algorithm generate the nonce value in a deterministic pseudorandom fashion.
 ///
 /// # Panics
 ///
-/// This function panics if `Hash` is less than 32 bytes.
+/// This function panics if `Suite::Hasher` output is less than 64 bytes.
 pub fn nonce_rfc_8032<S: Suite>(sk: &ScalarField<S>, input: &AffinePoint<S>) -> ScalarField<S> {
-    let raw = scalar_encode::<S>(sk);
+    assert!(
+        S::Hasher::output_size() >= 64,
+        "Suite::Hasher output is required to be >= 64 bytes"
+    );
+
+    let raw = codec::scalar_encode::<S>(sk);
     let sk_hash = &hash::<S::Hasher>(&raw)[32..];
 
-    let raw = encode_point::<S>(input);
+    let raw = codec::point_encode::<S>(input);
     let v = [sk_hash, &raw[..]].concat();
     let h = &hash::<S::Hasher>(&v)[..];
 
@@ -203,14 +208,14 @@ pub fn nonce_rfc_6979<S: Suite>(sk: &ScalarField<S>, input: &AffinePoint<S>) -> 
 where
     S::Hasher: digest::core_api::BlockSizeUser,
 {
-    let raw = encode_point::<S>(input);
+    let raw = codec::point_encode::<S>(input);
     let h1 = hash::<S::Hasher>(&raw);
 
     let v = [1; 32];
     let k = [0; 32];
 
     // K = HMAC_K(V || 0x00 || int2octets(x) || bits2octets(h1))
-    let x = scalar_encode::<S>(sk);
+    let x = codec::scalar_encode::<S>(sk);
     let raw = [&v[..], &[0x00], &x[..], &h1[..]].concat();
     let k = hmac::<S::Hasher>(&k, &raw);
 
@@ -228,30 +233,6 @@ where
     let v = hmac::<S::Hasher>(&k, &v);
 
     S::Codec::scalar_decode(&v)
-}
-
-/// Point encoder wrapper using `Suite::Codec`.
-pub fn encode_point<S: Suite>(pt: &AffinePoint<S>) -> Vec<u8> {
-    let mut buf = Vec::new();
-    S::Codec::point_encode(pt, &mut buf);
-    buf
-}
-
-/// Point decoder wrapper using `Suite::Codec`.
-pub fn decode_point<S: Suite>(buf: &[u8]) -> AffinePoint<S> {
-    S::Codec::point_decode(buf)
-}
-
-/// Scalar encoder wrapper using `Suite::Codec`.
-pub fn scalar_encode<S: Suite>(sc: &ScalarField<S>) -> Vec<u8> {
-    let mut buf = Vec::new();
-    S::Codec::scalar_encode(sc, &mut buf);
-    buf
-}
-
-/// Scalar decoder wrapper using `Suite::Codec`.
-pub fn scalar_decode<S: Suite>(buf: &[u8]) -> ScalarField<S> {
-    S::Codec::scalar_decode(buf)
 }
 
 // Upcoming Arkworks features.
@@ -349,7 +330,7 @@ mod tests {
 
     #[test]
     fn hash_to_curve_tai_works() {
-        let pt = hash_to_curve_tai_rfc_9381::<TestSuite>(b"hello world", false).unwrap();
+        let pt = hash_to_curve_tai_rfc_9381::<TestSuite>(b"hello world").unwrap();
         // Check that `pt` is in the prime subgroup
         assert!(pt.is_on_curve());
         assert!(pt.is_in_correct_subgroup_assuming_on_curve())

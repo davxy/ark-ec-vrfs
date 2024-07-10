@@ -46,7 +46,10 @@ std = [
   "fflonk/std",
   "ring-proof/std",
 ]
-getrandom = [ "rand_core" ]
+getrandom = [
+  "rand_core",
+  "ark-std/getrandom"
+]
 curves = [
   "secp256r1",
   "ed25519",

@@ -110,6 +110,30 @@ where
     }
 }
 
+/// Point encoder wrapper using `Suite::Codec`.
+pub fn point_encode<S: Suite>(pt: &AffinePoint<S>) -> Vec<u8> {
+    let mut buf = Vec::new();
+    S::Codec::point_encode(pt, &mut buf);
+    buf
+}
+
+/// Point decoder wrapper using `Suite::Codec`.
+pub fn point_decode<S: Suite>(buf: &[u8]) -> AffinePoint<S> {
+    S::Codec::point_decode(buf)
+}
+
+/// Scalar encoder wrapper using `Suite::Codec`.
+pub fn scalar_encode<S: Suite>(sc: &ScalarField<S>) -> Vec<u8> {
+    let mut buf = Vec::new();
+    S::Codec::scalar_encode(sc, &mut buf);
+    buf
+}
+
+/// Scalar decoder wrapper using `Suite::Codec`.
+pub fn scalar_decode<S: Suite>(buf: &[u8]) -> ScalarField<S> {
+    S::Codec::scalar_decode(buf)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::testing::{
