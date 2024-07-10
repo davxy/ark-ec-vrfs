@@ -209,26 +209,28 @@ where
         self.piop_params.keyset_part_size
     }
 
-    pub fn prover_key(&self, pks: &[AffinePoint<S>]) -> Result<ProverKey<S>, Error> {
-        if pks.len() > self.max_ring_size() {
-            return Err(Error::InvalidData);
-        }
+    /// Construct a `ProverKey` instance for the given ring.
+    ///
+    /// Note: if `pks.len() > self.max_ring_size()` the extra keys in the tail are ignored.
+    pub fn prover_key(&self, pks: &[AffinePoint<S>]) -> ProverKey<S> {
+        let pks = &pks[..pks.len().min(self.max_ring_size())];
         #[cfg(feature = "parallel")]
-        let pks = pks.par_iter().map(|p| p.into_sw()).collect();
+        let pks: Vec<_> = pks.par_iter().map(|p| p.into_sw()).collect();
         #[cfg(not(feature = "parallel"))]
-        let pks = pks.iter().map(|p| p.into_sw()).collect();
-        Ok(ring_proof::index(self.pcs_params.clone(), &self.piop_params, pks).0)
+        let pks: Vec<_> = pks.iter().map(|p| p.into_sw()).collect();
+        ring_proof::index(&self.pcs_params, &self.piop_params, &pks).0
     }
 
-    pub fn verifier_key(&self, pks: &[AffinePoint<S>]) -> Result<VerifierKey<S>, Error> {
-        if pks.len() > self.max_ring_size() {
-            return Err(Error::InvalidData);
-        }
+    /// Construct a `VerifierKey` instance for the given ring.
+    ///
+    /// Note: if `pks.len() > self.max_ring_size()` the extra keys in the tail are ignored.
+    pub fn verifier_key(&self, pks: &[AffinePoint<S>]) -> VerifierKey<S> {
+        let pks = &pks[..pks.len().min(self.max_ring_size())];
         #[cfg(feature = "parallel")]
-        let pks = pks.par_iter().map(|p| p.into_sw()).collect();
+        let pks: Vec<_> = pks.par_iter().map(|p| p.into_sw()).collect();
         #[cfg(not(feature = "parallel"))]
-        let pks = pks.iter().map(|p| p.into_sw()).collect();
-        Ok(ring_proof::index(self.pcs_params.clone(), &self.piop_params, pks).1)
+        let pks: Vec<_> = pks.iter().map(|p| p.into_sw()).collect();
+        ring_proof::index(&self.pcs_params, &self.piop_params, &pks).1
     }
 
     pub fn prover(&self, prover_key: ProverKey<S>, key_index: usize) -> RingProver<S> {
