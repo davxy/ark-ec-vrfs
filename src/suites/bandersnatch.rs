@@ -50,7 +50,7 @@
 //!   with `h2c_suite_ID_string` = `"Bandersnatch_XMD:SHA-512_ELL2_RO_"`
 //!   and domain separation tag `DST = "ECVRF_" || h2c_suite_ID_string || suite_string`.
 
-use crate::{pedersen::PedersenSuite, utils::ark_next::*, *};
+use crate::{arkworks::te_sw_map::*, pedersen::PedersenSuite, *};
 use ark_ff::MontFp;
 
 pub mod weierstrass {
@@ -228,17 +228,17 @@ impl MapConfig for ark_ed_on_bls12_381_bandersnatch::BandersnatchConfig {
 
 #[cfg(test)]
 mod tests {
-    use crate::{testing, utils::ark_next};
+    use crate::{testing, utils::te_sw_map::*};
     use ark_ed_on_bls12_381_bandersnatch::{BandersnatchConfig, SWAffine};
 
     #[test]
     fn sw_to_te_roundtrip() {
         let org_point = testing::random_val::<SWAffine>(None);
 
-        let te_point = ark_next::map_sw_to_te::<BandersnatchConfig>(&org_point).unwrap();
+        let te_point = map_sw_to_te::<BandersnatchConfig>(&org_point).unwrap();
         assert!(te_point.is_on_curve());
 
-        let sw_point = ark_next::map_te_to_sw::<BandersnatchConfig>(&te_point).unwrap();
+        let sw_point = map_te_to_sw::<BandersnatchConfig>(&te_point).unwrap();
         assert!(sw_point.is_on_curve());
     }
 }

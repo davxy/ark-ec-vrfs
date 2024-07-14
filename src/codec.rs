@@ -1,4 +1,5 @@
 use ark_ec::short_weierstrass::SWCurveConfig;
+use arkworks::te_sw_map;
 
 use super::*;
 
@@ -53,13 +54,13 @@ impl<S: Suite> Codec<S> for Sec1Codec
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: SWCurveConfig,
-    AffinePoint<S>: utils::SWMapping<CurveConfig<S>>,
+    AffinePoint<S>: te_sw_map::SWMapping<CurveConfig<S>>,
 {
     const BIG_ENDIAN: bool = true;
 
     fn point_encode(pt: &AffinePoint<S>, buf: &mut Vec<u8>) {
         use ark_ff::biginteger::BigInteger;
-        use utils::SWMapping;
+        use te_sw_map::SWMapping;
 
         if pt.is_zero() {
             buf.push(0x00);
@@ -78,7 +79,7 @@ where
 
     fn point_decode(buf: &[u8]) -> Result<AffinePoint<S>, Error> {
         use ark_ff::biginteger::BigInteger;
-        use utils::SWMapping;
+        use te_sw_map::SWMapping;
         type SWAffine<C> = ark_ec::short_weierstrass::Affine<C>;
 
         if buf.len() == 1 && buf[0] == 0x00 {
