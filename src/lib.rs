@@ -211,12 +211,10 @@ impl<S: Suite> Secret<S> {
         Self::from_scalar(scalar)
     }
 
-    /// Construct an ephemeral `Secret` using system randomness.
-    #[cfg(feature = "getrandom")]
-    pub fn ephemeral() -> Self {
-        use rand_core::RngCore;
+    /// Construct an ephemeral `Secret` using some random generator.
+    pub fn from_rand(rng: &mut impl ark_std::rand::RngCore) -> Self {
         let mut seed = [0u8; 32];
-        rand_core::OsRng.fill_bytes(&mut seed);
+        rng.fill_bytes(&mut seed);
         Self::from_seed(&seed)
     }
 

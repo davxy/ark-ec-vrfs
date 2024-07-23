@@ -81,7 +81,7 @@ where
     use ring::{Prover, RingContext, Verifier};
 
     let rng = &mut ark_std::test_rng();
-    let ring_ctx = RingContext::<S>::new_random(512, rng);
+    let ring_ctx = RingContext::<S>::from_rand(512, rng);
 
     let secret = Secret::<S>::from_seed(TEST_SEED);
     let public = secret.public();

@@ -89,6 +89,7 @@ pub mod weierstrass {
 
         pub type PcsParams = ring_suite::PcsParams<BandersnatchSha512Tai>;
         pub type RingContext = ring_suite::RingContext<BandersnatchSha512Tai>;
+        pub type RingCommitment = ring_suite::RingCommitment<BandersnatchSha512Tai>;
         pub type VerifierKey = ring_suite::VerifierKey<BandersnatchSha512Tai>;
         pub type RingProver = ring_suite::RingProver<BandersnatchSha512Tai>;
         pub type RingVerifier = ring_suite::RingVerifier<BandersnatchSha512Tai>;
@@ -177,6 +178,7 @@ pub mod edwards {
 
         pub type PcsParams = ring_suite::PcsParams<BandersnatchSha512Ell2>;
         pub type RingContext = ring_suite::RingContext<BandersnatchSha512Ell2>;
+        pub type RingCommitment = ring_suite::RingCommitment<BandersnatchSha512Ell2>;
         pub type VerifierKey = ring_suite::VerifierKey<BandersnatchSha512Ell2>;
         pub type RingProver = ring_suite::RingProver<BandersnatchSha512Ell2>;
         pub type RingVerifier = ring_suite::RingVerifier<BandersnatchSha512Ell2>;

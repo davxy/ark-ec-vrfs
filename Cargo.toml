@@ -11,23 +11,19 @@ ark-ec = { version = "0.4", default-features = false }
 ark-ff = { version = "0.4", default-features = false }
 ark-std = { version = "0.4", default-features = false }
 ark-serialize = { version = "0.4", default-features = false }
-rand_core = { version = "0.6", default-features = false, optional = true }
+zeroize = { version = "1.8", default-features = false }
+digest = { version = "0.10", default-features = false }
+sha2 = { version = "0.10", default-features = false }
 rand_chacha = { version = "0.3", default-features = false }
 rayon = { version = "1.10", default-features = false, optional = true }
-zeroize = { version = "1.8", default-features = false }
 hmac = {version = "0.12", default-features = false, optional = true }
-digest = { version = "0.10", default-features = false }
-merlin = { version = "3.0", default-features = false, optional = true }
+# Waiting for crates.io
+ring-proof = { package = "ring", git = "https://github.com/davxy/ring-proof", branch = "extended", default-features = false, optional = true }
 # Curves
 ark-secp256r1 = { version = "0.4.0", default-features = false, optional = true }
 ark-ed25519 = { version = "0.4.0", default-features = false, optional = true }
 ark-ed-on-bls12-381-bandersnatch = { version = "0.4.0", default-features = false, optional = true }
 ark-bls12-381 = { version = "0.4.0", default-features = false, optional = true }
-# Hashing
-sha2 = { version = "0.10", default-features = false }
-# Ring VRF (waiting for crates.io)
-fflonk = { git = "https://github.com/w3f/fflonk", default-features = false, optional = true }
-ring-proof = { package = "ring", git = "https://github.com/davxy/ring-proof", branch = "extended", default-features = false, optional = true }
 
 [dev-dependencies]
 ark-ed25519 = "0.4"
@@ -39,21 +35,10 @@ indexmap = { version = "2.2.6", features = ["serde"] }
 [features]
 default = [ "std" ]
 std = [
-  "getrandom",
   "ark-std/std",
+  "ark-std/getrandom",
   "ark-ec/std",
-  "rand_core/std",
-  "fflonk/std",
   "ring-proof/std",
-]
-getrandom = [
-  "rand_core",
-  "ark-std/getrandom"
-]
-curves = [
-  "secp256r1",
-  "ed25519",
-  "bandersnatch",
 ]
 secp256r1 = [
   "ark-secp256r1",
@@ -61,26 +46,33 @@ secp256r1 = [
 ]
 ed25519 = [ "ark-ed25519" ]
 bandersnatch = [ "ark-ed-on-bls12-381-bandersnatch" ]
+ring = [
+  "bandersnatch",
+  "ring-proof",
+  "ark-bls12-381/curve",
+]
+rfc-6979 = [ "hmac" ]
+full = [
+  "secp256r1",
+  "ed25519",
+  "bandersnatch",
+  "ring",
+]
+
+# Optimizations
 parallel = [
   "ark-ec/parallel",
   "ark-ff/parallel",
   "ark-std/parallel",
   "ring-proof?/parallel",
-  "fflonk?/parallel",
   "rayon",
 ]
-ring = [
-  "bandersnatch",
-  "fflonk",
-  "ring-proof",
-  "ark-bls12-381/curve",
-  "merlin",
+asm = [
+  "ark-ff/asm",
+  "ring-proof?/asm"
 ]
-rfc-6979 = [ "hmac" ]
-full = [
-  "curves",
-  "ring",
-]
+
+# Deterministic ring-proof (unsafe)
 test-vectors = [
   "ring-proof?/test-vectors"
 ]
