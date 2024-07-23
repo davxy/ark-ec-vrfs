@@ -38,7 +38,7 @@ std = [
   "ark-std/std",
   "ark-std/getrandom",
   "ark-ec/std",
-  "ring-proof/std",
+  "ring-proof?/std",
 ]
 secp256r1 = [
   "ark-secp256r1",
