@@ -76,7 +76,7 @@ impl From<ark_serialize::SerializationError> for Error {
 ///
 /// Can be easily customized to implement more exotic VRF types by overwriting
 /// the default methods implementations.
-pub trait Suite: Copy + Clone {
+pub trait Suite: Copy {
     /// Suite identifier (aka `suite_string` in RFC-9381)
     const SUITE_ID: &'static [u8];
 
@@ -96,6 +96,9 @@ pub trait Suite: Copy + Clone {
     /// Used wherever an hash is required: nonce, challenge, MAC, etc.
     type Hasher: Digest;
 
+    /// Overarching codec.
+    ///
+    /// Used wherever we need to encode/decode points and scalars.
     type Codec: codec::Codec<Self>;
 
     /// Nonce generation as described by RFC-9381 section 5.4.2.
@@ -143,6 +146,14 @@ pub trait Suite: Copy + Clone {
     #[inline(always)]
     fn point_to_hash(pt: &AffinePoint<Self>) -> HashOutput<Self> {
         utils::point_to_hash_rfc_9381::<Self>(pt)
+    }
+
+    /// Generator used through all the suite.
+    ///
+    /// Defaults to Arkworks provided generator.
+    #[inline(always)]
+    fn generator() -> AffinePoint<Self> {
+        Self::Affine::generator()
     }
 }
 
@@ -197,8 +208,7 @@ impl<S: Suite> ark_serialize::Valid for Secret<S> {
 impl<S: Suite> Secret<S> {
     /// Construct a `Secret` from the given scalar.
     pub fn from_scalar(scalar: ScalarField<S>) -> Self {
-        let public = S::Affine::generator() * scalar;
-        let public = Public(public.into_affine());
+        let public = Public((S::generator() * scalar).into_affine());
         Self { scalar, public }
     }
 
@@ -211,7 +221,7 @@ impl<S: Suite> Secret<S> {
         Self::from_scalar(scalar)
     }
 
-    /// Construct an ephemeral `Secret` using some random generator.
+    /// Construct an ephemeral `Secret` using the provided randomness source.
     pub fn from_rand(rng: &mut impl ark_std::rand::RngCore) -> Self {
         let mut seed = [0u8; 32];
         rng.fill_bytes(&mut seed);
@@ -235,7 +245,7 @@ pub struct Public<S: Suite>(pub AffinePoint<S>);
 
 /// VRF input point generic over the cipher suite.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
-pub struct Input<S: Suite>(pub S::Affine);
+pub struct Input<S: Suite>(pub AffinePoint<S>);
 
 impl<S: Suite> Input<S> {
     /// Construct from [`Suite::data_to_point`].
@@ -251,11 +261,11 @@ impl<S: Suite> Input<S> {
 
 /// VRF output point generic over the cipher suite.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
-pub struct Output<S: Suite>(pub S::Affine);
+pub struct Output<S: Suite>(pub AffinePoint<S>);
 
 impl<S: Suite> Output<S> {
     /// Construct from inner affine point.
-    pub fn from(value: <S as Suite>::Affine) -> Self {
+    pub fn from(value: AffinePoint<S>) -> Self {
         Output(value)
     }
 
