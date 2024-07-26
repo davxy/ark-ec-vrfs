@@ -155,16 +155,9 @@ pub mod testing {
     }
 
     impl<S: IetfSuite + std::fmt::Debug> common::TestVectorTrait for TestVector<S> {
-        fn new(
-            comment: &str,
-            seed: &[u8],
-            alpha: &[u8],
-            salt: Option<&[u8]>,
-            ad: &[u8],
-            flags: u8,
-        ) -> Self {
+        fn new(comment: &str, seed: &[u8], alpha: &[u8], salt: Option<&[u8]>, ad: &[u8]) -> Self {
             use super::Prover;
-            let base = common::TestVector::new(comment, seed, alpha, salt, ad, flags);
+            let base = common::TestVector::new(comment, seed, alpha, salt, ad);
             // TODO: store constructed types in the vectors
             let input = Input::from(base.h);
             let output = Output::from(base.gamma);

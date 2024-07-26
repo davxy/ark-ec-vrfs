@@ -2,6 +2,7 @@
 
 cargo test \
   --release \
-  --features full \
+  --features full,test-vectors \
   -- \
+  --nocapture \
   --ignored

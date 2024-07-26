@@ -36,9 +36,12 @@ indexmap = { version = "2.2.6", features = ["serde"] }
 default = [ "std" ]
 std = [
   "ark-std/std",
-  "ark-std/getrandom",
   "ark-ec/std",
   "ring-proof?/std",
+  "getrandom"
+]
+getrandom = [
+  "ark-std/getrandom",
 ]
 secp256r1 = [
   "ark-secp256r1",
