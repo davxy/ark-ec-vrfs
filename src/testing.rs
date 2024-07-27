@@ -27,16 +27,6 @@ pub fn random_val<T: UniformRand>(rng: Option<&mut dyn RngCore>) -> T {
     T::rand(rng)
 }
 
-pub fn vec_to_array<T: core::fmt::Debug, const N: usize>(v: Vec<T>) -> Option<Box<[T; N]>> {
-    if v.len() != N {
-        return None;
-    }
-    // Safe because we checked the length
-    let boxed_slice = v.into_boxed_slice();
-    let boxed_array = boxed_slice.try_into().unwrap();
-    Some(boxed_array)
-}
-
 #[macro_export]
 macro_rules! suite_tests {
     ($suite:ident, $build_ring:ident) => {
@@ -53,8 +43,23 @@ macro_rules! suite_tests {
 pub struct TestVectorMap(pub indexmap::IndexMap<String, String>);
 
 impl TestVectorMap {
-    pub fn item_bytes(&self, field: &str) -> Vec<u8> {
+    pub fn get_bytes(&self, field: &str) -> Vec<u8> {
         hex::decode(self.0.get(field).unwrap()).unwrap()
+    }
+
+    pub fn set_bytes(&mut self, field: &str, buf: &[u8]) {
+        self.0.insert(field.to_string(), hex::encode(buf));
+    }
+
+    pub fn get<T: CanonicalDeserialize>(&self, field: &str) -> T {
+        let buf = self.get_bytes(field);
+        T::deserialize_compressed(&buf[..]).unwrap()
+    }
+
+    pub fn set(&mut self, field: &str, value: &impl CanonicalSerialize) {
+        let mut buf = Vec::new();
+        value.serialize_compressed(&mut buf).unwrap();
+        self.set_bytes(field, &buf);
     }
 }
 

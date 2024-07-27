@@ -389,7 +389,8 @@ pub(crate) mod testing {
         AffinePoint<S>: SWMapping<CurveConfig<S>>,
     {
         pub pedersen: pedersen::testing::TestVector<S>,
-        pub ring_pks: Box<[AffinePoint<S>; TEST_RING_SIZE]>,
+        pub ring_pks: [AffinePoint<S>; TEST_RING_SIZE],
+        pub ring_pks_com: RingCommitment<S>,
         pub ring_proof: RingProof<S>,
     }
 
@@ -435,6 +436,9 @@ pub(crate) mod testing {
             let prover = ring_ctx.prover(prover_key, prover_idx);
             let proof = secret.prove(input, output, ad, &prover);
 
+            let verifier_key = ring_ctx.verifier_key(&ring_pks);
+            let ring_pks_com = verifier_key.commitment();
+
             {
                 // Just in case...
                 let mut p = (Vec::new(), Vec::new());
@@ -446,7 +450,8 @@ pub(crate) mod testing {
             // TODO: also dump the verifier pks commitmet
             Self {
                 pedersen,
-                ring_pks: crate::testing::vec_to_array(ring_pks).unwrap(),
+                ring_pks: ring_pks.try_into().unwrap(),
+                ring_pks_com,
                 ring_proof: proof.ring_proof,
             }
         }
@@ -454,39 +459,23 @@ pub(crate) mod testing {
         fn from_map(map: &common::TestVectorMap) -> Self {
             let pedersen = pedersen::testing::TestVector::from_map(map);
 
-            let ring_pks_raw = map.item_bytes("ring_pks");
-            let ring_pks =
-                <[AffinePoint<S>; TEST_RING_SIZE]>::deserialize_compressed(&ring_pks_raw[..])
-                    .map(Box::new)
-                    .unwrap();
-
-            let ring_proof_raw = map.item_bytes("ring_proof");
-            let ring_proof = RingProof::<S>::deserialize_compressed(&ring_proof_raw[..]).unwrap();
+            let ring_pks = map.get::<[AffinePoint<S>; TEST_RING_SIZE]>("ring_pks");
+            let ring_pks_com = map.get::<RingCommitment<S>>("ring_pks_com");
+            let ring_proof = map.get::<RingProof<S>>("ring_proof");
 
             Self {
                 pedersen,
                 ring_pks,
+                ring_pks_com,
                 ring_proof,
             }
         }
 
         fn to_map(&self) -> common::TestVectorMap {
             let mut map = self.pedersen.to_map();
-
-            let mut ring_pks_raw = Vec::new();
-            self.ring_pks
-                .serialize_compressed(&mut ring_pks_raw)
-                .unwrap();
-            let ring_pks_hex = hex::encode(ring_pks_raw);
-            map.0.insert("ring_pks".to_string(), ring_pks_hex);
-
-            let mut ring_proof_raw = Vec::new();
-            self.ring_proof
-                .serialize_compressed(&mut ring_proof_raw)
-                .unwrap();
-            let ring_proof_hex = hex::encode(ring_proof_raw);
-            map.0.insert("ring_proof".to_string(), ring_proof_hex);
-
+            map.set("ring_pks", &self.ring_pks);
+            map.set("ring_pks_com", &self.ring_pks_com);
+            map.set("ring_proof", &self.ring_proof);
             map
         }
 
@@ -501,13 +490,12 @@ pub(crate) mod testing {
 
             let ring_ctx = <S as RingSuiteExt>::ring_context();
 
-            let ring_pks = &*self.ring_pks;
-            let prover_idx = ring_pks.iter().position(|&pk| pk == public.0).unwrap();
+            let prover_idx = self.ring_pks.iter().position(|&pk| pk == public.0).unwrap();
 
-            let prover_key = ring_ctx.prover_key(ring_pks);
+            let prover_key = ring_ctx.prover_key(&self.ring_pks);
             let prover = ring_ctx.prover(prover_key, prover_idx);
 
-            let verifier_key = ring_ctx.verifier_key(ring_pks);
+            let verifier_key = ring_ctx.verifier_key(&self.ring_pks);
             let verifier = ring_ctx.verifier(verifier_key);
 
             let proof = secret.prove(input, output, &self.pedersen.base.ad, &prover);

@@ -206,12 +206,12 @@ pub(crate) mod testing {
 
         fn from_map(map: &common::TestVectorMap) -> Self {
             let base = common::TestVector::from_map(map);
-            let blind = codec::scalar_decode::<S>(&map.item_bytes("blinding"));
-            let pk_com = codec::point_decode::<S>(&map.item_bytes("proof_pk_com")).unwrap();
-            let r = codec::point_decode::<S>(&map.item_bytes("proof_r")).unwrap();
-            let ok = codec::point_decode::<S>(&map.item_bytes("proof_ok")).unwrap();
-            let s = codec::scalar_decode::<S>(&map.item_bytes("proof_s"));
-            let sb = codec::scalar_decode::<S>(&map.item_bytes("proof_sb"));
+            let blind = codec::scalar_decode::<S>(&map.get_bytes("blinding"));
+            let pk_com = codec::point_decode::<S>(&map.get_bytes("proof_pk_com")).unwrap();
+            let r = codec::point_decode::<S>(&map.get_bytes("proof_r")).unwrap();
+            let ok = codec::point_decode::<S>(&map.get_bytes("proof_ok")).unwrap();
+            let s = codec::scalar_decode::<S>(&map.get_bytes("proof_s"));
+            let sb = codec::scalar_decode::<S>(&map.get_bytes("proof_sb"));
             let proof = Proof {
                 pk_com,
                 r,

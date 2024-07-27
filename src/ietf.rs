@@ -195,8 +195,8 @@ pub mod testing {
 
         fn from_map(map: &common::TestVectorMap) -> Self {
             let base = common::TestVector::from_map(map);
-            let c = codec::scalar_decode::<S>(&map.item_bytes("proof_c"));
-            let s = codec::scalar_decode::<S>(&map.item_bytes("proof_s"));
+            let c = codec::scalar_decode::<S>(&map.get_bytes("proof_c"));
+            let s = codec::scalar_decode::<S>(&map.get_bytes("proof_s"));
             Self { base, c, s }
         }
 
