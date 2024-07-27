@@ -1,3 +1,6 @@
+#[cfg(test)]
+pub(crate) mod testing;
+
 #[cfg(feature = "ed25519")]
 pub mod ed25519;
 

@@ -142,49 +142,36 @@ impl<S: PedersenSuite> Verifier<S> for Public<S> {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod testing {
     use super::*;
-    use crate::testing::{
-        random_val,
-        suite::{AffinePoint, BaseField, Input, Secret, TestSuite},
-        TEST_SEED,
-    };
-    use ark_ff::MontFp;
+    use crate::testing::{self as common, random_val, TEST_SEED};
 
-    impl PedersenSuite for TestSuite {
-        const BLINDING_BASE: AffinePoint = {
-            const X: BaseField = MontFp!(
-                "1181072390894490040170698195029164902368238760122173135634802939739986120753"
-            );
-            const Y: BaseField = MontFp!(
-                "16819438535150625131748701663066892288775529055803151482550035706857354997714"
-            );
-            AffinePoint::new_unchecked(X, Y)
-        };
-    }
+    pub fn prove_verify<S: PedersenSuite>() {
+        use pedersen::{Prover, Verifier};
 
-    #[test]
-    fn prove_verify_works() {
-        let secret = Secret::from_seed(TEST_SEED);
+        let secret = Secret::<S>::from_seed(TEST_SEED);
         let input = Input::from(random_val(None));
         let output = secret.output(input);
 
         let (proof, blinding) = secret.prove(input, output, b"foo");
-
         let result = Public::verify(input, output, b"foo", &proof);
         assert!(result.is_ok());
 
         assert_eq!(
             proof.key_commitment(),
-            secret.public().0 + TestSuite::BLINDING_BASE * blinding
+            (secret.public().0 + S::BLINDING_BASE * blinding).into()
         );
     }
-}
 
-#[cfg(test)]
-pub mod testing {
-    use super::*;
-    use crate::testing as common;
+    #[macro_export]
+    macro_rules! pedersen_suite_tests {
+        ($suite:ident) => {
+            #[test]
+            fn pedersen_prove_verify() {
+                $crate::pedersen::testing::prove_verify::<$suite>();
+            }
+        };
+    }
 
     pub struct TestVector<S: PedersenSuite> {
         pub base: common::TestVector<S>,

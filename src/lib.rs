@@ -277,11 +277,8 @@ impl<S: Suite> Output<S> {
 
 #[cfg(test)]
 mod tests {
-    use crate::testing::{
-        random_val,
-        suite::{Input, Secret},
-        TEST_SEED,
-    };
+    use crate::suites::testing::{Input, Secret};
+    use crate::testing::{random_val, TEST_SEED};
 
     #[test]
     fn vrf_output_check() {

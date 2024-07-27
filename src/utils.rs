@@ -242,7 +242,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::suite::TestSuite;
+    use crate::suites::testing::TestSuite;
 
     #[test]
     fn hash_to_curve_tai_works() {

@@ -136,6 +136,29 @@ pub mod testing {
     use super::*;
     use crate::testing as common;
 
+    pub fn prove_verify<S: IetfSuite>() {
+        use ietf::{Prover, Verifier};
+
+        let secret = Secret::<S>::from_seed(common::TEST_SEED);
+        let public = secret.public();
+        let input = Input::from(common::random_val(None));
+        let output = secret.output(input);
+
+        let proof = secret.prove(input, output, b"foo");
+        let result = public.verify(input, output, b"foo", &proof);
+        assert!(result.is_ok());
+    }
+
+    #[macro_export]
+    macro_rules! ietf_suite_tests {
+        ($suite:ident) => {
+            #[test]
+            fn ietf_prove_verify() {
+                $crate::ietf::testing::prove_verify::<$suite>();
+            }
+        };
+    }
+
     pub struct TestVector<S: IetfSuite> {
         pub base: common::TestVector<S>,
         pub c: ScalarField<S>,
@@ -208,43 +231,5 @@ pub mod testing {
             let pk = Public(self.base.pk);
             assert!(pk.verify(input, output, &self.base.ad, &proof).is_ok());
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::testing::{
-        random_val,
-        suite::{AffinePoint, Input, ScalarField, Secret, TestSuite},
-        TEST_SEED,
-    };
-
-    #[test]
-    fn prove_verify_works() {
-        let secret = Secret::from_seed(TEST_SEED);
-        let public = secret.public();
-        let input = Input::from(random_val::<AffinePoint>(None));
-        let output = secret.output(input);
-
-        let proof = secret.prove(input, output, b"foo");
-
-        let result = public.verify(input, output, b"foo", &proof);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn proof_encode_decode() {
-        let c = hex::decode("d091c00b0f5c3619d10ecea44363b5a5").unwrap();
-        let c = ScalarField::from_be_bytes_mod_order(&c[..]);
-        let s = hex::decode("99cadc5b2957e223fec62e81f7b4825fc799a771a3d7334b9186bdbee87316b1")
-            .unwrap();
-        let s = ScalarField::from_be_bytes_mod_order(&s[..]);
-
-        let proof = Proof::<TestSuite> { c, s };
-
-        let mut buf = Vec::new();
-        proof.serialize_compressed(&mut buf).unwrap();
-        assert_eq!(buf.len(), TestSuite::CHALLENGE_LEN + 32);
     }
 }

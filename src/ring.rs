@@ -305,3 +305,69 @@ where
         self.pcs_params.check()
     }
 }
+
+#[cfg(test)]
+pub(crate) mod testing {
+    use super::*;
+    use crate::testing::*;
+
+    pub fn prove_verify<S: RingSuite>()
+    where
+        BaseField<S>: ark_ff::PrimeField,
+        CurveConfig<S>: ark_ec::short_weierstrass::SWCurveConfig + Clone,
+        AffinePoint<S>: utils::te_sw_map::SWMapping<CurveConfig<S>>,
+    {
+        let rng = &mut ark_std::test_rng();
+        let ring_ctx = RingContext::<S>::from_rand(512, rng);
+
+        let secret = Secret::<S>::from_seed(TEST_SEED);
+        let public = secret.public();
+        let input = Input::from(random_val(Some(rng)));
+        let output = secret.output(input);
+
+        let ring_size = ring_ctx.max_ring_size();
+
+        let prover_idx = 3;
+        let mut pks = random_vec::<AffinePoint<S>>(ring_size, Some(rng));
+        pks[prover_idx] = public.0;
+
+        let prover_key = ring_ctx.prover_key(&pks);
+        let prover = ring_ctx.prover(prover_key, prover_idx);
+        let proof = secret.prove(input, output, b"foo", &prover);
+
+        let verifier_key = ring_ctx.verifier_key(&pks);
+        let verifier = ring_ctx.verifier(verifier_key);
+        let result = Public::verify(input, output, b"foo", &proof, &verifier);
+        assert!(result.is_ok());
+    }
+
+    pub fn check_complement_point<S: RingSuite>()
+    where
+        BaseField<S>: ark_ff::PrimeField,
+        CurveConfig<S>: ark_ec::short_weierstrass::SWCurveConfig + Clone,
+        AffinePoint<S>: utils::te_sw_map::SWMapping<CurveConfig<S>>,
+    {
+        use utils::te_sw_map::SWMapping;
+        let pt = S::COMPLEMENT_POINT.into_sw();
+        assert!(pt.is_on_curve());
+        assert!(!pt.is_in_correct_subgroup_assuming_on_curve());
+    }
+
+    #[macro_export]
+    macro_rules! ring_suite_tests {
+        ($suite:ident, true) => {
+            #[cfg(feature = "ring")]
+            #[test]
+            fn ring_prove_verify() {
+                $crate::ring::testing::prove_verify::<$suite>()
+            }
+
+            #[cfg(feature = "ring")]
+            #[test]
+            fn check_complement_point() {
+                $crate::ring::testing::check_complement_point::<$suite>()
+            }
+        };
+        ($suite:ident, false) => {};
+    }
+}

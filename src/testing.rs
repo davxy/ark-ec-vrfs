@@ -7,114 +7,18 @@ use ark_std::{rand::RngCore, UniformRand};
 
 pub const TEST_SEED: &[u8] = b"seed";
 
-pub(crate) mod suite {
-    use super::*;
-
-    #[derive(Debug, Copy, Clone, PartialEq)]
-    pub struct TestSuite;
-
-    impl Suite for TestSuite {
-        const SUITE_ID: &'static [u8] = b"ark-ec-vrfs-testing";
-        const CHALLENGE_LEN: usize = 16;
-
-        type Affine = ark_ed25519::EdwardsAffine;
-        type Hasher = sha2::Sha256;
-        type Codec = codec::ArkworksCodec;
-
-        fn nonce(_sk: &ScalarField, _pt: Input) -> ScalarField {
-            random_val(None)
-        }
-    }
-
-    suite_types!(TestSuite);
-}
-
+/// Generate a vector of random values.
 pub fn random_vec<T: UniformRand>(n: usize, rng: Option<&mut dyn RngCore>) -> Vec<T> {
     let mut local_rng = ark_std::test_rng();
     let rng = rng.unwrap_or(&mut local_rng);
     (0..n).map(|_| T::rand(rng)).collect()
 }
 
+/// Generate a vector of random values.
 pub fn random_val<T: UniformRand>(rng: Option<&mut dyn RngCore>) -> T {
     let mut local_rng = ark_std::test_rng();
     let rng = rng.unwrap_or(&mut local_rng);
     T::rand(rng)
-}
-
-pub fn ietf_prove_verify<S: ietf::IetfSuite>() {
-    use ietf::{Prover, Verifier};
-
-    let secret = Secret::<S>::from_seed(TEST_SEED);
-    let public = secret.public();
-    let input = Input::from(random_val(None));
-    let output = secret.output(input);
-
-    let proof = secret.prove(input, output, b"foo");
-    let result = public.verify(input, output, b"foo", &proof);
-    assert!(result.is_ok());
-}
-
-pub fn pedersen_prove_verify<S: pedersen::PedersenSuite>() {
-    use pedersen::{Prover, Verifier};
-
-    let secret = Secret::<S>::from_seed(TEST_SEED);
-    let input = Input::from(random_val(None));
-    let output = secret.output(input);
-
-    let (proof, blinding) = secret.prove(input, output, b"foo");
-    let result = Public::verify(input, output, b"foo", &proof);
-    assert!(result.is_ok());
-
-    assert_eq!(
-        proof.key_commitment(),
-        (secret.public().0 + S::BLINDING_BASE * blinding).into()
-    );
-}
-
-#[cfg(feature = "ring")]
-pub fn ring_prove_verify<S: ring::RingSuite>()
-where
-    BaseField<S>: ark_ff::PrimeField,
-    CurveConfig<S>: ark_ec::short_weierstrass::SWCurveConfig + Clone,
-    AffinePoint<S>: utils::te_sw_map::SWMapping<CurveConfig<S>>,
-{
-    use ring::{Prover, RingContext, Verifier};
-
-    let rng = &mut ark_std::test_rng();
-    let ring_ctx = RingContext::<S>::from_rand(512, rng);
-
-    let secret = Secret::<S>::from_seed(TEST_SEED);
-    let public = secret.public();
-    let input = Input::from(random_val(Some(rng)));
-    let output = secret.output(input);
-
-    let ring_size = ring_ctx.max_ring_size();
-
-    let prover_idx = 3;
-    let mut pks = random_vec::<AffinePoint<S>>(ring_size, Some(rng));
-    pks[prover_idx] = public.0;
-
-    let prover_key = ring_ctx.prover_key(&pks);
-    let prover = ring_ctx.prover(prover_key, prover_idx);
-    let proof = secret.prove(input, output, b"foo", &prover);
-
-    let verifier_key = ring_ctx.verifier_key(&pks);
-    let verifier = ring_ctx.verifier(verifier_key);
-    let result = Public::verify(input, output, b"foo", &proof, &verifier);
-    assert!(result.is_ok());
-}
-
-#[cfg(feature = "ring")]
-pub fn check_complement_point<S: ring::RingSuite>()
-where
-    BaseField<S>: ark_ff::PrimeField,
-    CurveConfig<S>: ark_ec::short_weierstrass::SWCurveConfig + Clone,
-    AffinePoint<S>: utils::te_sw_map::SWMapping<CurveConfig<S>>,
-{
-    use utils::te_sw_map::SWMapping;
-    let pt = S::COMPLEMENT_POINT.into_sw();
-    assert!(pt.is_on_curve());
-    assert!(!pt.is_in_correct_subgroup_assuming_on_curve());
 }
 
 #[macro_export]
@@ -124,56 +28,9 @@ macro_rules! suite_tests {
         ring_suite_tests!($suite, $build_ring);
     };
     ($suite:ident) => {
-        #[test]
-        fn ietf_prove_verify() {
-            $crate::testing::ietf_prove_verify::<$suite>();
-        }
-
-        #[test]
-        fn pedersen_prove_verify() {
-            $crate::testing::pedersen_prove_verify::<$suite>();
-        }
+        ietf_suite_tests!($suite);
+        pedersen_suite_tests!($suite);
     };
-}
-
-#[macro_export]
-macro_rules! ring_suite_tests {
-    ($suite:ident, true) => {
-        #[cfg(feature = "ring")]
-        #[test]
-        fn ring_prove_verify() {
-            $crate::testing::ring_prove_verify::<$suite>()
-        }
-
-        #[cfg(feature = "ring")]
-        #[test]
-        fn check_complement_point() {
-            $crate::testing::check_complement_point::<$suite>()
-        }
-    };
-    ($suite:ident, false) => {};
-}
-
-impl<S: Suite> core::fmt::Debug for TestVector<S> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let sk = hex::encode(codec::scalar_encode::<S>(&self.sk));
-        let pk = hex::encode(codec::point_encode::<S>(&self.pk));
-        let alpha = hex::encode(&self.alpha);
-        let ad = hex::encode(&self.ad);
-        let h = hex::encode(codec::point_encode::<S>(&self.h));
-        let gamma = hex::encode(codec::point_encode::<S>(&self.gamma));
-        let beta = hex::encode(&self.beta);
-        f.debug_struct("TestVector")
-            .field("comment", &self.comment)
-            .field("sk", &sk)
-            .field("pk", &pk)
-            .field("alpha", &alpha)
-            .field("ad", &ad)
-            .field("h", &h)
-            .field("gamma", &gamma)
-            .field("beta", &beta)
-            .finish()
-    }
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -204,6 +61,28 @@ pub struct TestVector<S: Suite> {
     pub h: AffinePoint<S>,
     pub gamma: AffinePoint<S>,
     pub beta: Vec<u8>,
+}
+
+impl<S: Suite> core::fmt::Debug for TestVector<S> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let sk = hex::encode(codec::scalar_encode::<S>(&self.sk));
+        let pk = hex::encode(codec::point_encode::<S>(&self.pk));
+        let alpha = hex::encode(&self.alpha);
+        let ad = hex::encode(&self.ad);
+        let h = hex::encode(codec::point_encode::<S>(&self.h));
+        let gamma = hex::encode(codec::point_encode::<S>(&self.gamma));
+        let beta = hex::encode(&self.beta);
+        f.debug_struct("TestVector")
+            .field("comment", &self.comment)
+            .field("sk", &sk)
+            .field("pk", &pk)
+            .field("alpha", &alpha)
+            .field("ad", &ad)
+            .field("h", &h)
+            .field("gamma", &gamma)
+            .field("beta", &beta)
+            .finish()
+    }
 }
 
 impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {

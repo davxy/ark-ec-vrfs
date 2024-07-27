@@ -139,10 +139,8 @@ pub fn scalar_decode<S: Suite>(buf: &[u8]) -> ScalarField<S> {
 
 #[cfg(test)]
 mod tests {
-    use crate::testing::{
-        suite::{Public, Secret},
-        TEST_SEED,
-    };
+    use crate::suites::testing::{Public, Secret};
+    use crate::testing::TEST_SEED;
     use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 
     #[test]
