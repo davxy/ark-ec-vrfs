@@ -53,13 +53,21 @@ pub trait TestVectorTrait {
 }
 
 pub struct TestVector<S: Suite> {
+    /// Useful info for the vector.
     pub comment: String,
+    /// Secret key scalar.
     pub sk: ScalarField<S>,
+    /// Public key point.
     pub pk: AffinePoint<S>,
+    /// VRF input raw data.
     pub alpha: Vec<u8>,
+    /// Signature additional raw data.
     pub ad: Vec<u8>,
+    /// VRF input point.
     pub h: AffinePoint<S>,
+    /// VRF output point.
     pub gamma: AffinePoint<S>,
+    /// VRF output raw data
     pub beta: Vec<u8>,
 }
 
@@ -180,23 +188,24 @@ impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
 
 pub fn test_vectors_generate<V: TestVectorTrait + std::fmt::Debug>(file: &str, identifier: &str) {
     use std::{fs::File, io::Write};
-    // ("alpha", "ad"))
-    let var_data: Vec<(&[u8], &[u8])> = vec![
-        (b"", b""),
-        (b"0a", b""),
-        (b"", b"0b8c"),
-        (b"73616D706C65", b""),
-        (b"42616E646572736E6174636820766563746F72", b""),
-        (b"42616E646572736E6174636820766563746F72", b"73616D706C65"),
+    // ("secret_seed", "vrf raw input", "additional data"))
+    let var_data: Vec<(u8, &[u8], &[u8])> = vec![
+        (1, b"", b""),
+        (2, b"0a", b""),
+        (3, b"", b"0b8c"),
+        (4, b"73616D706C65", b""),
+        (5, b"42616E646572736E6174636820766563746F72", b""),
+        (5, b"42616E646572736E6174636820766563746F72", b"1F42"),
+        (6, b"42616E646572736E6174636820766563746F72", b"1F42"),
     ];
 
     let mut vector_maps = Vec::with_capacity(var_data.len());
 
     for (i, var_data) in var_data.iter().enumerate() {
-        let alpha = hex::decode(var_data.0).unwrap();
-        let ad = hex::decode(var_data.1).unwrap();
+        let alpha = hex::decode(var_data.1).unwrap();
+        let ad = hex::decode(var_data.2).unwrap();
         let comment = format!("{} - vector-{}", identifier, i + 1);
-        let vector = V::new(&comment, &[i as u8], &alpha, None, &ad);
+        let vector = V::new(&comment, &[var_data.0], &alpha, None, &ad);
         println!("Gen test vector: {}", comment);
         vector.run();
         vector_maps.push(vector.to_map());
