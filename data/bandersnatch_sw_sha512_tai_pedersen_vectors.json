@@ -1,6 +1,6 @@
 [
   {
-    "comment": "Bandersnatch_SHA-512_TAI - vector-1",
+    "comment": "Bandersnatch_SW_SHA-512_TAI - vector-1",
     "sk": "3d6406500d4009fdf2604546093665911e753f2213570a29521fd88bc30ede18",
     "pk": "fd72a90d1eeba6733824e76bb31991b8108d6562756b85f244333e3c7205225200",
     "alpha": "",
@@ -16,7 +16,7 @@
     "proof_sb": "6b2dbc4b088b21d732cc5193439b5186cddecb4ee12f8233cbe3057c06849216"
   },
   {
-    "comment": "Bandersnatch_SHA-512_TAI - vector-2",
+    "comment": "Bandersnatch_SW_SHA-512_TAI - vector-2",
     "sk": "8b9063872331dda4c3c282f7d813fb3c13e7339b7dc9635fdc764e32cc57cb15",
     "pk": "e30eae606d21dff460cdaecfc9bfcd2e319628ccc0242f3ca21f2d5c940ba41680",
     "alpha": "0a",
@@ -32,7 +32,7 @@
     "proof_sb": "f05d631c7ae9fbc33ea4464af81188c1342f7c6aa127531e1f1bd203d608f613"
   },
   {
-    "comment": "Bandersnatch_SHA-512_TAI - vector-3",
+    "comment": "Bandersnatch_SW_SHA-512_TAI - vector-3",
     "sk": "6db187202f69e627e432296ae1d0f166ae6ac3c1222585b6ceae80ea07670b14",
     "pk": "2a00e5a32e2f097858a1a4a73cf5c2fb4e6d375a4ea4cc3ae3e91660eade850c80",
     "alpha": "",
@@ -48,7 +48,7 @@
     "proof_sb": "07a177cf9a9d08282194c8cc0d856be3de2681c642ecd0cb95a014a82f7f5c11"
   },
   {
-    "comment": "Bandersnatch_SHA-512_TAI - vector-4",
+    "comment": "Bandersnatch_SW_SHA-512_TAI - vector-4",
     "sk": "b56cc204f1b6c2323709012cb16c72f3021035ce935fbe69b600a88d842c7407",
     "pk": "4f29d79a27b9545d7223431eb6a63776949454b16e2ac0b7a959304ce3e52b6a00",
     "alpha": "73616d706c65",
@@ -64,7 +64,7 @@
     "proof_sb": "5b4d6ef3445d8dc8bcc38f44b3649d39fcb5c0b169c5085245f6903ef8ba940c"
   },
   {
-    "comment": "Bandersnatch_SHA-512_TAI - vector-5",
+    "comment": "Bandersnatch_SW_SHA-512_TAI - vector-5",
     "sk": "da36359bf1bfd1694d3ed359e7340bd02a6a5e54827d94db1384df29f5bdd302",
     "pk": "e58e8ba2e99035fb7ae11fa14e2a609d6d13679278dac63ebee64ca8612ffa1480",
     "alpha": "42616e646572736e6174636820766563746f72",
@@ -80,7 +80,7 @@
     "proof_sb": "bd365d1ff09f59a9ad885bf3f71e81151747757788f6c07387f4100842784e13"
   },
   {
-    "comment": "Bandersnatch_SHA-512_TAI - vector-6",
+    "comment": "Bandersnatch_SW_SHA-512_TAI - vector-6",
     "sk": "da36359bf1bfd1694d3ed359e7340bd02a6a5e54827d94db1384df29f5bdd302",
     "pk": "e58e8ba2e99035fb7ae11fa14e2a609d6d13679278dac63ebee64ca8612ffa1480",
     "alpha": "42616e646572736e6174636820766563746f72",
@@ -96,7 +96,7 @@
     "proof_sb": "9e989c2ae5177ef9505705cc144116f0b633693ca4fcdb85ec9b073fa06afb08"
   },
   {
-    "comment": "Bandersnatch_SHA-512_TAI - vector-7",
+    "comment": "Bandersnatch_SW_SHA-512_TAI - vector-7",
     "sk": "35b877a25c394512292b82bdf8468e98eaf03c79c7fc9d53546dadc5fb75b500",
     "pk": "7cba529a807bf602c84625fff28f4d1d836cf40a83f42d95c412f7b62ed9192900",
     "alpha": "42616e646572736e6174636820766563746f72",

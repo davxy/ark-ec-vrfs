@@ -7,6 +7,12 @@ use ark_std::{rand::RngCore, UniformRand};
 
 pub const TEST_SEED: &[u8] = b"seed";
 
+// Zcash SRS file derived from (https://zfnd.org/conclusion-of-the-powers-of-tau-ceremony).
+pub const PCS_SRS_FILE: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/data/zcash-bls12-381-srs-2-11-uncompressed.bin"
+);
+
 /// Generate a vector of random values.
 pub fn random_vec<T: UniformRand>(n: usize, rng: Option<&mut dyn RngCore>) -> Vec<T> {
     let mut local_rng = ark_std::test_rng();
@@ -19,6 +25,16 @@ pub fn random_val<T: UniformRand>(rng: Option<&mut dyn RngCore>) -> T {
     let mut local_rng = ark_std::test_rng();
     let rng = rng.unwrap_or(&mut local_rng);
     T::rand(rng)
+}
+
+pub fn vec_to_array<T: core::fmt::Debug, const N: usize>(v: Vec<T>) -> Option<Box<[T; N]>> {
+    if v.len() != N {
+        return None;
+    }
+    // Safe because we checked the length
+    let boxed_slice = v.into_boxed_slice();
+    let boxed_array = boxed_slice.try_into().unwrap();
+    Some(boxed_array)
 }
 
 #[macro_export]

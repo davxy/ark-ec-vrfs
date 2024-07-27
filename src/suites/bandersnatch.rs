@@ -293,6 +293,47 @@ mod test_vectors_pedersen_ed {
     }
 }
 
+#[cfg(all(test, feature = "ring"))]
+mod test_vectors_ring_ed {
+    use super::edwards::*;
+    use crate::testing;
+
+    type V = crate::ring::testing::TestVector<BandersnatchSha512Ell2>;
+
+    const TEST_VECTORS_FILE: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/data/bandersnatch_ed_sha512_ell2_ring_vectors.json"
+    );
+
+    impl crate::ring::testing::RingSuiteExt for BandersnatchSha512Ell2 {
+        fn ring_context() -> &'static RingContext {
+            use ark_serialize::CanonicalDeserialize;
+            use std::sync::OnceLock;
+            static RING_CTX: OnceLock<RingContext> = OnceLock::new();
+            RING_CTX.get_or_init(|| {
+                use std::{fs::File, io::Read};
+                let mut file = File::open(crate::testing::PCS_SRS_FILE).unwrap();
+                let mut buf = Vec::new();
+                file.read_to_end(&mut buf).unwrap();
+                let pcs_params =
+                    PcsParams::deserialize_uncompressed_unchecked(&mut &buf[..]).unwrap();
+                RingContext::from_srs(crate::ring::testing::TEST_RING_SIZE, pcs_params).unwrap()
+            })
+        }
+    }
+
+    #[test]
+    #[ignore = "test vectors generator"]
+    fn generate() {
+        testing::test_vectors_generate::<V>(TEST_VECTORS_FILE, "Bandersnatch_SHA-512_ELL2");
+    }
+
+    #[test]
+    fn process() {
+        testing::test_vectors_process::<V>(TEST_VECTORS_FILE);
+    }
+}
+
 #[cfg(test)]
 mod test_vectors_ietf_sw {
     use super::weierstrass::*;
@@ -332,7 +373,48 @@ mod test_vectors_pedersen_sw {
     #[test]
     #[ignore = "test vectors generator"]
     fn generate() {
-        testing::test_vectors_generate::<V>(TEST_VECTORS_FILE, "Bandersnatch_SHA-512_TAI");
+        testing::test_vectors_generate::<V>(TEST_VECTORS_FILE, "Bandersnatch_SW_SHA-512_TAI");
+    }
+
+    #[test]
+    fn process() {
+        testing::test_vectors_process::<V>(TEST_VECTORS_FILE);
+    }
+}
+
+#[cfg(all(test, feature = "ring"))]
+mod test_vectors_ring_sw {
+    use super::weierstrass::*;
+    use crate::testing;
+
+    type V = crate::ring::testing::TestVector<BandersnatchSha512Tai>;
+
+    const TEST_VECTORS_FILE: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/data/bandersnatch_sw_sha512_tai_ring_vectors.json"
+    );
+
+    impl crate::ring::testing::RingSuiteExt for BandersnatchSha512Tai {
+        fn ring_context() -> &'static RingContext {
+            use ark_serialize::CanonicalDeserialize;
+            use std::sync::OnceLock;
+            static RING_CTX: OnceLock<RingContext> = OnceLock::new();
+            RING_CTX.get_or_init(|| {
+                use std::{fs::File, io::Read};
+                let mut file = File::open(crate::testing::PCS_SRS_FILE).unwrap();
+                let mut buf = Vec::new();
+                file.read_to_end(&mut buf).unwrap();
+                let pcs_params =
+                    PcsParams::deserialize_uncompressed_unchecked(&mut &buf[..]).unwrap();
+                RingContext::from_srs(crate::ring::testing::TEST_RING_SIZE, pcs_params).unwrap()
+            })
+        }
+    }
+
+    #[test]
+    #[ignore = "test vectors generator"]
+    fn generate() {
+        testing::test_vectors_generate::<V>(TEST_VECTORS_FILE, "Bandersnatch_SW_SHA-512_TAI");
     }
 
     #[test]
