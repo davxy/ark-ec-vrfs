@@ -6,20 +6,18 @@ pub trait PedersenSuite: IetfSuite {
 
     /// Pedersen blinding factor.
     ///
-    /// Default implementation is deterministic and inspired by the RFC-9381 challenge procedure.
-    /// All parameters but `secret` are public parameters.
+    /// Default implementation is deterministic and loosely inspired by the RFC-9381
+    /// challenge procedure. All parameters but `secret` are public.
     fn blinding(
         secret: &ScalarField<Self>,
-        pts: &[&AffinePoint<Self>],
+        input: &AffinePoint<Self>,
         ad: &[u8],
     ) -> ScalarField<Self> {
         const DOM_SEP_START: u8 = 0xCC;
         const DOM_SEP_END: u8 = 0x00;
         let mut buf = [Self::SUITE_ID, &[DOM_SEP_START]].concat();
         Self::Codec::scalar_encode(secret, &mut buf);
-        pts.iter().for_each(|p| {
-            Self::Codec::point_encode(p, &mut buf);
-        });
+        Self::Codec::point_encode(input, &mut buf);
         buf.extend_from_slice(ad);
         buf.push(DOM_SEP_END);
         let hash = &utils::hash::<Self::Hasher>(&buf);
@@ -76,7 +74,7 @@ impl<S: PedersenSuite> Prover<S> for Secret<S> {
         ad: impl AsRef<[u8]>,
     ) -> (Proof<S>, ScalarField<S>) {
         // Build blinding factor
-        let blinding = S::blinding(&self.scalar, &[&input.0, &output.0], ad.as_ref());
+        let blinding = S::blinding(&self.scalar, &input.0, ad.as_ref());
 
         // Construct the nonces
         let k = S::nonce(&self.scalar, input);
