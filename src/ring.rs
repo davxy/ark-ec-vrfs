@@ -8,8 +8,11 @@ pub trait RingSuite: PedersenSuite {
     /// Pairing type.
     type Pairing: ark_ec::pairing::Pairing<ScalarField = BaseField<Self>>;
 
-    /// Complement point.
-    const COMPLEMENT_POINT: AffinePoint<Self>;
+    /// Accumulator base.
+    ///
+    /// In order for the ring-proof backend to work correctly, this is required to be
+    /// in the prime order subgroup.
+    const ACCUMULATOR_BASE: AffinePoint<Self>;
 }
 
 /// Polinomial Commitment Scheme (KZG)
@@ -189,7 +192,7 @@ where
         let piop_params = PiopParams::<S>::setup(
             ring_proof::Domain::new(domain_size, true),
             S::BLINDING_BASE.into_sw(),
-            S::COMPLEMENT_POINT.into_sw(),
+            S::ACCUMULATOR_BASE.into_sw(),
         );
 
         Ok(Self {
@@ -313,6 +316,7 @@ pub(crate) mod testing {
 
     pub const TEST_RING_SIZE: usize = 8;
 
+    #[allow(unused)]
     pub fn prove_verify<S: RingSuite>()
     where
         BaseField<S>: ark_ff::PrimeField,
@@ -343,34 +347,35 @@ pub(crate) mod testing {
         assert!(result.is_ok());
     }
 
-    pub fn check_complement_point<S: RingSuite>()
+    /// Check that complement point is not in the prime subgroup.
+    ///
+    /// This is a requirement for the correct working of ring-proof backend.
+    #[allow(unused)]
+    pub fn check_accumulator_base<S: RingSuite>()
     where
         BaseField<S>: ark_ff::PrimeField,
         CurveConfig<S>: ark_ec::short_weierstrass::SWCurveConfig + Clone,
         AffinePoint<S>: utils::te_sw_map::SWMapping<CurveConfig<S>>,
     {
         use utils::te_sw_map::SWMapping;
-        let pt = S::COMPLEMENT_POINT.into_sw();
+        let pt = S::ACCUMULATOR_BASE.into_sw();
         assert!(pt.is_on_curve());
         assert!(!pt.is_in_correct_subgroup_assuming_on_curve());
     }
 
     #[macro_export]
     macro_rules! ring_suite_tests {
-        ($suite:ident, true) => {
-            #[cfg(feature = "ring")]
+        ($suite:ident) => {
             #[test]
             fn ring_prove_verify() {
                 $crate::ring::testing::prove_verify::<$suite>()
             }
 
-            #[cfg(feature = "ring")]
             #[test]
-            fn check_complement_point() {
-                $crate::ring::testing::check_complement_point::<$suite>()
+            fn check_accumulator_base() {
+                $crate::ring::testing::check_accumulator_base::<$suite>()
             }
         };
-        ($suite:ident, false) => {};
     }
 
     pub trait RingSuiteExt: RingSuite

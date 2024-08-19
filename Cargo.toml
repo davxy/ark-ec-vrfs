@@ -50,7 +50,6 @@ secp256r1 = [
 ed25519 = [ "ark-ed25519" ]
 bandersnatch = [ "ark-ed-on-bls12-381-bandersnatch" ]
 ring = [
-  "bandersnatch",
   "ring-proof",
   "ark-bls12-381/curve",
 ]

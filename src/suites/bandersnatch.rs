@@ -101,7 +101,7 @@ pub mod weierstrass {
             /// A point on the curve not belonging to the prime order subgroup.
             ///
             /// Found using `ring_proof::find_complement_point::<Self::Config>()` function.
-            const COMPLEMENT_POINT: AffinePoint = {
+            const ACCUMULATOR_BASE: AffinePoint = {
                 const X: BaseField = MontFp!("0");
                 const Y: BaseField = MontFp!(
                     "11982629110561008531870698410380659621661946968466267969586599013782997959645"
@@ -113,8 +113,11 @@ pub mod weierstrass {
     #[cfg(feature = "ring")]
     pub use ring_defs::*;
 
+    #[cfg(all(test, feature = "ring"))]
+    ring_suite_tests!(BandersnatchSha512Tai);
+
     #[cfg(test)]
-    suite_tests!(BandersnatchSha512Tai, true);
+    suite_tests!(BandersnatchSha512Tai);
 }
 
 pub mod edwards {
@@ -143,7 +146,7 @@ pub mod edwards {
     }
 
     impl PedersenSuite for BandersnatchSha512Ell2 {
-        /// Found mapping the `BLINDING_BASE` of `weierstrass` module using the `utils::map_sw_to_te`
+        /// Found mapping `BLINDING_BASE` of `weierstrass` module using the `utils::map_sw_to_te`
         const BLINDING_BASE: AffinePoint = {
             const X: BaseField = MontFp!(
                 "14576224270591906826192118712803723445031237947873156025406837473427562701854"
@@ -190,7 +193,7 @@ pub mod edwards {
             /// A point on the curve not belonging to the prime order subgroup.
             ///
             /// Found mapping the `COMPLEMENT_POINT` of `weierstrass` module using the `utils::map_sw_to_te`
-            const COMPLEMENT_POINT: AffinePoint = {
+            const ACCUMULATOR_BASE: AffinePoint = {
                 const X: BaseField = MontFp!(
                     "3955725774225903122339172568337849452553276548604445833196164961773358506589"
                 );
@@ -204,8 +207,11 @@ pub mod edwards {
     #[cfg(feature = "ring")]
     pub use ring_defs::*;
 
+    #[cfg(all(test, feature = "ring"))]
+    ring_suite_tests!(BandersnatchSha512Ell2);
+
     #[cfg(test)]
-    suite_tests!(BandersnatchSha512Ell2, true);
+    suite_tests!(BandersnatchSha512Ell2);
 
     #[test]
     fn elligator2_hash_to_curve() {
@@ -242,6 +248,8 @@ mod tests {
 
         let sw_point = map_te_to_sw::<BandersnatchConfig>(&te_point).unwrap();
         assert!(sw_point.is_on_curve());
+
+        assert_eq!(org_point, sw_point);
     }
 }
 

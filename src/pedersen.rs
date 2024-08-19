@@ -2,6 +2,7 @@ use crate::ietf::IetfSuite;
 use crate::*;
 
 pub trait PedersenSuite: IetfSuite {
+    /// Blinding base.
     const BLINDING_BASE: AffinePoint<Self>;
 
     /// Pedersen blinding factor.
