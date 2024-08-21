@@ -174,13 +174,13 @@ where
     /// Construct a new random ring context suitable for the given ring size.
     pub fn from_rand(ring_size: usize, rng: &mut impl ark_std::rand::RngCore) -> Self {
         use ring_proof::pcs::PCS;
-        let domain_size = domain_size(ring_size);
+        let domain_size = domain_size::<S>(ring_size);
         let pcs_params = Pcs::<S>::setup(3 * domain_size, rng);
         Self::from_srs(ring_size, pcs_params).expect("PCS params is correct")
     }
 
     pub fn from_srs(ring_size: usize, mut pcs_params: PcsParams<S>) -> Result<Self, Error> {
-        let domain_size = domain_size(ring_size);
+        let domain_size = domain_size::<S>(ring_size);
         if pcs_params.powers_in_g1.len() < 3 * domain_size + 1 || pcs_params.powers_in_g2.len() < 2
         {
             return Err(Error::InvalidData);
