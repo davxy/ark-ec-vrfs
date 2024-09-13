@@ -207,6 +207,12 @@ where
         self.piop_params.keyset_part_size
     }
 
+    /// Get the padding point.
+    #[inline(always)]
+    pub fn padding_point(&self) -> AffinePoint<S> {
+        AffinePoint::<S>::from_sw(self.piop_params.padding_point())
+    }
+
     /// Construct a `ProverKey` instance for the given ring.
     ///
     /// Note: if `pks.len() > self.max_ring_size()` the extra keys in the tail are ignored.
