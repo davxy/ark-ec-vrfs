@@ -1,41 +1,11 @@
 use crate::*;
 
-#[allow(unused)]
-pub(crate) use crate::arkworks::{elligator2, te_sw_map};
-
 use ark_ec::AffineRepr;
 use ark_ff::PrimeField;
 use digest::{Digest, FixedOutputReset};
 
 #[cfg(not(feature = "std"))]
 use ark_std::vec::Vec;
-
-#[macro_export]
-macro_rules! suite_types {
-    ($suite:ident) => {
-        #[allow(dead_code)]
-        pub type Secret = $crate::Secret<$suite>;
-        #[allow(dead_code)]
-        pub type Public = $crate::Public<$suite>;
-        #[allow(dead_code)]
-        pub type Input = $crate::Input<$suite>;
-        #[allow(dead_code)]
-        pub type Output = $crate::Output<$suite>;
-        #[allow(dead_code)]
-        pub type AffinePoint = $crate::AffinePoint<$suite>;
-        #[allow(dead_code)]
-        pub type ScalarField = $crate::ScalarField<$suite>;
-        #[allow(dead_code)]
-        pub type BaseField = $crate::BaseField<$suite>;
-        #[allow(dead_code)]
-        pub type IetfProof = $crate::ietf::Proof<$suite>;
-        #[allow(dead_code)]
-        pub type PedersenProof = $crate::pedersen::Proof<$suite>;
-        #[cfg(feature = "ring")]
-        #[allow(dead_code)]
-        pub type RingProof = $crate::ring::Proof<$suite>;
-    };
-}
 
 // Generic hash wrapper.
 pub(crate) fn hash<H: Digest>(data: &[u8]) -> digest::Output<H> {
@@ -44,7 +14,7 @@ pub(crate) fn hash<H: Digest>(data: &[u8]) -> digest::Output<H> {
 
 /// Generic HMAC wrapper.
 #[cfg(feature = "rfc-6979")]
-pub(crate) fn hmac<H: Digest + digest::core_api::BlockSizeUser>(sk: &[u8], data: &[u8]) -> Vec<u8> {
+fn hmac<H: Digest + digest::core_api::BlockSizeUser>(sk: &[u8], data: &[u8]) -> Vec<u8> {
     use hmac::{Mac, SimpleHmac};
     SimpleHmac::<H>::new_from_slice(sk)
         .expect("HMAC can take key of any size")
@@ -115,6 +85,7 @@ pub fn hash_to_curve_tai_rfc_9381<S: Suite>(data: &[u8]) -> Option<AffinePoint<S
 /// is given by the h2c_suite_ID_string parameter.
 ///
 /// The input `data` is defined to be `salt || alpha` according to the RFC 9281.
+#[allow(unused)]
 pub fn hash_to_curve_ell2_rfc_9380<S: Suite>(
     data: &[u8],
     h2c_suite_id: &[u8],
@@ -122,8 +93,8 @@ pub fn hash_to_curve_ell2_rfc_9380<S: Suite>(
 where
     <S as Suite>::Hasher: Default + Clone + FixedOutputReset + 'static,
     crate::CurveConfig<S>: ark_ec::twisted_edwards::TECurveConfig,
-    crate::CurveConfig<S>: crate::arkworks::elligator2::Elligator2Config,
-    crate::arkworks::elligator2::Elligator2Map<crate::CurveConfig<S>>:
+    crate::CurveConfig<S>: crate::utils::elligator2::Elligator2Config,
+    crate::utils::elligator2::Elligator2Map<crate::CurveConfig<S>>:
         ark_ec::hashing::map_to_curve_hasher::MapToCurve<<AffinePoint<S> as AffineRepr>::Group>,
 {
     use ark_ec::hashing::HashToCurve;
@@ -140,7 +111,7 @@ where
     let hasher = ark_ec::hashing::map_to_curve_hasher::MapToCurveBasedHasher::<
         <AffinePoint<S> as AffineRepr>::Group,
         ark_ff::field_hashers::DefaultFieldHasher<<S as Suite>::Hasher, SEC_PARAM>,
-        crate::arkworks::elligator2::Elligator2Map<crate::CurveConfig<S>>,
+        crate::utils::elligator2::Elligator2Map<crate::CurveConfig<S>>,
     >::new(&dst)
     .ok()?;
 

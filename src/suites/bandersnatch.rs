@@ -48,7 +48,7 @@
 //!   with `h2c_suite_ID_string` = `"Bandersnatch_XMD:SHA-512_ELL2_RO_"`
 //!   and domain separation tag `DST = "ECVRF_" || h2c_suite_ID_string || suite_string`.
 
-use crate::{arkworks::te_sw_map::*, pedersen::PedersenSuite, *};
+use crate::{pedersen::PedersenSuite, utils::te_sw_map::*, *};
 use ark_ff::MontFp;
 
 pub mod weierstrass {
@@ -156,9 +156,7 @@ pub mod edwards {
         };
     }
 
-    impl arkworks::elligator2::Elligator2Config
-        for ark_ed_on_bls12_381_bandersnatch::BandersnatchConfig
-    {
+    impl utils::elligator2::Elligator2Config for ark_ed_on_bls12_381_bandersnatch::BandersnatchConfig {
         const Z: ark_ed_on_bls12_381_bandersnatch::Fq = MontFp!("5");
 
         /// This must be equal to 1/(MontCurveConfig::COEFF_B)^2;
@@ -234,17 +232,17 @@ impl MapConfig for ark_ed_on_bls12_381_bandersnatch::BandersnatchConfig {
 
 #[cfg(test)]
 mod tests {
-    use crate::{testing, utils::te_sw_map::*};
+    use crate::{testing, utils::*};
     use ark_ed_on_bls12_381_bandersnatch::{BandersnatchConfig, SWAffine};
 
     #[test]
     fn sw_to_te_roundtrip() {
         let org_point = testing::random_val::<SWAffine>(None);
 
-        let te_point = map_sw_to_te::<BandersnatchConfig>(&org_point).unwrap();
+        let te_point = sw_to_te::<BandersnatchConfig>(&org_point).unwrap();
         assert!(te_point.is_on_curve());
 
-        let sw_point = map_te_to_sw::<BandersnatchConfig>(&te_point).unwrap();
+        let sw_point = te_to_sw::<BandersnatchConfig>(&te_point).unwrap();
         assert!(sw_point.is_on_curve());
 
         assert_eq!(org_point, sw_point);
@@ -403,4 +401,55 @@ mod test_vectors_ring_sw {
     fn process() {
         testing::test_vectors_process::<V>(VECTOR_ID);
     }
+}
+
+#[test]
+fn blinding_base_sw_te_rountrip() {
+    use crate::utils::*;
+    let sw = weierstrass::BandersnatchSha512Tai::BLINDING_BASE;
+    let ed = sw_to_te(&sw).unwrap();
+    assert_eq!(ed, edwards::BandersnatchSha512Ell2::BLINDING_BASE);
+    let sw2 = te_to_sw(&ed).unwrap();
+    assert_eq!(sw, sw2);
+}
+
+#[cfg(all(test, feature = "ring"))]
+#[test]
+fn accumulator_base_sw_te_roundtrip() {
+    use crate::{ring::RingSuite, utils::*};
+    let sw = weierstrass::BandersnatchSha512Tai::ACCUMULATOR_BASE;
+    let ed = sw_to_te(&sw).unwrap();
+    assert_eq!(ed, edwards::BandersnatchSha512Ell2::ACCUMULATOR_BASE);
+    let sw2 = te_to_sw(&ed).unwrap();
+    assert_eq!(sw, sw2);
+}
+
+#[cfg(all(test, feature = "ring"))]
+#[test]
+fn padding_point_sw_te_roundtrip() {
+    use crate::utils::*;
+    // Fixed padding point
+    let sw = {
+        const X: weierstrass::BaseField = MontFp!(
+            "25448400713078632486748382313960039031302935774474538965225823993599751298535"
+        );
+        const Y: weierstrass::BaseField = MontFp!(
+            "24382892199244280513693545286348030912870264650402775682704689602954457435722"
+        );
+        weierstrass::AffinePoint::new_unchecked(X, Y)
+    };
+    let ed = sw_to_te(&sw).unwrap();
+    let sw2 = te_to_sw(&ed).unwrap();
+    assert_eq!(sw, sw2);
+}
+
+#[test]
+fn generator_roundtrip() {
+    use crate::utils::*;
+    let sw1 = weierstrass::AffinePoint::generator();
+    let ed1 = sw_to_te(&sw1).unwrap();
+    let ed2 = edwards::AffinePoint::generator();
+    assert_eq!(ed1, ed2);
+    let sw2 = te_to_sw(&ed1).unwrap();
+    assert_eq!(sw1, sw2);
 }

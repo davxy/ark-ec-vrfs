@@ -1,8 +1,11 @@
-//! Elligator2 has been merged upstream, still we're waiting for new version on crates.io (v.0.4.3)
+//! Elligator2 has been merged into arkworks upstream, still we're waiting
+//! for new version on crates.io (v.0.4.3)
 //!
 //! Relevant PRs:
 //! - Elligator2 hash-to-curve for Twisted Edwards curves: https://github.com/arkworks-rs/algebra/pull/659
 //! - Elligator2 hash-to-curve for Bandersnatch: https://github.com/arkworks-rs/algebra/pull/758
+//!
+//! This is mostly a verbatim copy of such PRs contribution.
 
 use ark_ec::{
     hashing::{curve_maps::swu::parity, map_to_curve_hasher::MapToCurve, HashToCurveError},

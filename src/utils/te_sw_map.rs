@@ -1,4 +1,3 @@
-use crate::*;
 use ark_ec::{
     short_weierstrass::{Affine as WeierstrassAffine, SWCurveConfig},
     twisted_edwards::{Affine as EdwardsAffine, MontCurveConfig, TECurveConfig},
@@ -13,7 +12,8 @@ pub trait MapConfig: TECurveConfig + SWCurveConfig + MontCurveConfig {
     const MONT_B_INV: <Self as CurveConfig>::BaseField;
 }
 
-pub fn map_sw_to_te<C: MapConfig>(point: &WeierstrassAffine<C>) -> Option<EdwardsAffine<C>> {
+/// Map a a point in Short Weierstrass form into its corresponding point in Twisted Edwards form.
+pub fn sw_to_te<C: MapConfig>(point: &WeierstrassAffine<C>) -> Option<EdwardsAffine<C>> {
     // First map the point from SW to Montgomery
     // (Bx - A/3, By)
     let mx = <C as MontCurveConfig>::COEFF_B * point.x - C::MONT_A_OVER_THREE;
@@ -30,7 +30,8 @@ pub fn map_sw_to_te<C: MapConfig>(point: &WeierstrassAffine<C>) -> Option<Edward
     Some(EdwardsAffine::new_unchecked(v, w))
 }
 
-pub fn map_te_to_sw<C: MapConfig>(point: &EdwardsAffine<C>) -> Option<WeierstrassAffine<C>> {
+/// Map a a point in Twisted Edwards form into its corresponding point in Short Weierstrass form.
+pub fn te_to_sw<C: MapConfig>(point: &EdwardsAffine<C>) -> Option<WeierstrassAffine<C>> {
     // Map from TE to Montgomery: (1+y)/(1-y), (1+y)/(x(1-y))
     let v_denom = <<C as CurveConfig>::BaseField as One>::one() - point.y;
     let w_denom = point.x - point.x * point.y;
@@ -79,14 +80,14 @@ impl<C: MapConfig> SWMapping<C> for EdwardsAffine<C> {
     fn from_sw(sw: WeierstrassAffine<C>) -> Self {
         const ERR_MSG: &str =
             "SW to TE is expected to be implemented only for curves supporting the mapping";
-        map_sw_to_te(&sw).expect(ERR_MSG)
+        sw_to_te(&sw).expect(ERR_MSG)
     }
 
     #[inline(always)]
     fn into_sw(self) -> WeierstrassAffine<C> {
         const ERR_MSG: &str =
             "TE to SW is expected to be implemented only for curves supporting the mapping";
-        map_te_to_sw(&self).expect(ERR_MSG)
+        te_to_sw(&self).expect(ERR_MSG)
     }
 
     #[inline(always)]

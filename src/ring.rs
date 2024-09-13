@@ -1,4 +1,4 @@
-use crate::arkworks::te_sw_map::SWMapping;
+use crate::utils::te_sw_map::SWMapping;
 use crate::*;
 use ark_ec::short_weierstrass::SWCurveConfig;
 use pedersen::{PedersenSuite, Proof as PedersenProof};

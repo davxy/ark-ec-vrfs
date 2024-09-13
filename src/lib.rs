@@ -32,12 +32,10 @@ pub mod utils;
 #[cfg(feature = "ring")]
 pub mod ring;
 
-#[allow(unused)]
-mod arkworks;
-
 #[cfg(test)]
 mod testing;
 
+// Re-export stuff that may be useful downstream
 pub mod prelude {
     pub use ark_ec;
     pub use ark_ff;

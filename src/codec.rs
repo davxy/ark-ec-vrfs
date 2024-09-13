@@ -1,5 +1,5 @@
 use ark_ec::short_weierstrass::SWCurveConfig;
-use arkworks::te_sw_map;
+use utils::te_sw_map;
 
 use super::*;
 
