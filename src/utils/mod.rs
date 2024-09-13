@@ -35,5 +35,41 @@ macro_rules! suite_types {
         #[cfg(feature = "ring")]
         #[allow(dead_code)]
         pub type RingProof = $crate::ring::Proof<$suite>;
+
+        impl From<AffinePoint> for Public {
+            fn from(p: AffinePoint) -> Self {
+                Self(p)
+            }
+        }
+
+        impl From<Public> for AffinePoint {
+            fn from(p: Public) -> Self {
+                p.0
+            }
+        }
+
+        impl From<AffinePoint> for Input {
+            fn from(p: AffinePoint) -> Self {
+                Self(p)
+            }
+        }
+
+        impl From<Input> for AffinePoint {
+            fn from(p: Input) -> Self {
+                p.0
+            }
+        }
+
+        impl From<AffinePoint> for Output {
+            fn from(p: AffinePoint) -> Self {
+                Self(p)
+            }
+        }
+
+        impl From<Output> for AffinePoint {
+            fn from(p: Output) -> Self {
+                p.0
+            }
+        }
     };
 }
