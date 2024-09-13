@@ -244,6 +244,12 @@ impl<S: Suite> Secret<S> {
 #[derive(Debug, Copy, Clone, PartialEq, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Public<S: Suite>(pub AffinePoint<S>);
 
+impl<S: Suite> Public<S> {
+    pub fn from(value: AffinePoint<S>) -> Self {
+        Public(value)
+    }
+}
+
 /// VRF input point generic over the cipher suite.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Input<S: Suite>(pub AffinePoint<S>);
