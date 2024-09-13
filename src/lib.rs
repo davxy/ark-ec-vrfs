@@ -244,6 +244,13 @@ impl<S: Suite> Secret<S> {
 #[derive(Debug, Copy, Clone, PartialEq, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Public<S: Suite>(pub AffinePoint<S>);
 
+impl<S: Suite> Public<S> {
+    /// Construct from inner affine point.
+    pub fn from(value: AffinePoint<S>) -> Self {
+        Self(value)
+    }
+}
+
 /// VRF input point generic over the cipher suite.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Input<S: Suite>(pub AffinePoint<S>);
@@ -256,7 +263,7 @@ impl<S: Suite> Input<S> {
 
     /// Construct from inner affine point.
     pub fn from(value: AffinePoint<S>) -> Self {
-        Input(value)
+        Self(value)
     }
 }
 
@@ -267,7 +274,7 @@ pub struct Output<S: Suite>(pub AffinePoint<S>);
 impl<S: Suite> Output<S> {
     /// Construct from inner affine point.
     pub fn from(value: AffinePoint<S>) -> Self {
-        Output(value)
+        Self(value)
     }
 
     /// Hash using `[Suite::point_to_hash]`.
