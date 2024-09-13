@@ -15,8 +15,6 @@
 //! *  The secret key and generation of the secret scalar and the public
 //!    key are specified in Section 5.1.5 of [RFC8032].
 //!
-//! *  encode_to_curve_salt = PK_string.
-//!
 //! *  The ECVRF_nonce_generation function is as specified in
 //!    Section 5.4.2.2.
 //!
@@ -84,21 +82,17 @@ mod test_vectors_ietf {
     use super::*;
 
     type V = crate::ietf::testing::TestVector<Ed25519Sha512Tai>;
-
-    const TEST_VECTORS_FILE: &str = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/data/ed25519_sha512_tai_ietf_vectors.json"
-    );
+    const VECTOR_ID: &str = "ed25519_sha512_tai_ietf";
 
     #[test]
     #[ignore = "test vectors generator"]
     fn generate() {
-        testing::test_vectors_generate::<V>(TEST_VECTORS_FILE, "Ed25519_SHA-512_TAI");
+        testing::test_vectors_generate::<V>(VECTOR_ID);
     }
 
     #[test]
     fn process() {
-        testing::test_vectors_process::<V>(TEST_VECTORS_FILE);
+        testing::test_vectors_process::<V>(VECTOR_ID);
     }
 }
 
@@ -107,20 +101,16 @@ mod test_vectors_pedersen {
     use super::*;
 
     type V = crate::pedersen::testing::TestVector<Ed25519Sha512Tai>;
-
-    const TEST_VECTORS_FILE: &str = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/data/ed25519_sha512_tai_pedersen_vectors.json"
-    );
+    const VECTOR_ID: &str = "ed25519_sha512_tai_pedersen";
 
     #[test]
     #[ignore = "test vectors generator"]
     fn generate() {
-        testing::test_vectors_generate::<V>(TEST_VECTORS_FILE, "Ed25519_SHA-512_TAI");
+        testing::test_vectors_generate::<V>(VECTOR_ID);
     }
 
     #[test]
     fn process() {
-        testing::test_vectors_process::<V>(TEST_VECTORS_FILE);
+        testing::test_vectors_process::<V>(VECTOR_ID);
     }
 }

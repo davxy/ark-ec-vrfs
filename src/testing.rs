@@ -13,6 +13,9 @@ pub const PCS_SRS_FILE: &str = concat!(
     "/data/zcash-bls12-381-srs-2-11-uncompressed.bin"
 );
 
+// Test vectors folder
+pub const VECTORS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/data/vectors");
+
 /// Generate a vector of random values.
 pub fn random_vec<T: UniformRand>(n: usize, rng: Option<&mut dyn RngCore>) -> Vec<T> {
     let mut local_rng = ark_std::test_rng();
@@ -64,7 +67,7 @@ impl TestVectorMap {
 }
 
 pub trait TestVectorTrait {
-    fn new(comment: &str, seed: &[u8], alpha: &[u8], salt: Option<&[u8]>, ad: &[u8]) -> Self;
+    fn new(comment: &str, seed: &[u8], alpha: &[u8], salt: &[u8], ad: &[u8]) -> Self;
 
     fn from_map(map: &TestVectorMap) -> Self;
 
@@ -82,6 +85,8 @@ pub struct TestVector<S: Suite> {
     pub pk: AffinePoint<S>,
     /// VRF input raw data.
     pub alpha: Vec<u8>,
+    /// VRF input salt.
+    pub salt: Vec<u8>,
     /// Signature additional raw data.
     pub ad: Vec<u8>,
     /// VRF input point.
@@ -97,6 +102,7 @@ impl<S: Suite> core::fmt::Debug for TestVector<S> {
         let sk = hex::encode(codec::scalar_encode::<S>(&self.sk));
         let pk = hex::encode(codec::point_encode::<S>(&self.pk));
         let alpha = hex::encode(&self.alpha);
+        let salt = hex::encode(&self.salt);
         let ad = hex::encode(&self.ad);
         let h = hex::encode(codec::point_encode::<S>(&self.h));
         let gamma = hex::encode(codec::point_encode::<S>(&self.gamma));
@@ -106,6 +112,7 @@ impl<S: Suite> core::fmt::Debug for TestVector<S> {
             .field("sk", &sk)
             .field("pk", &pk)
             .field("alpha", &alpha)
+            .field("salt", &salt)
             .field("ad", &ad)
             .field("h", &h)
             .field("gamma", &gamma)
@@ -115,15 +122,11 @@ impl<S: Suite> core::fmt::Debug for TestVector<S> {
 }
 
 impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
-    fn new(comment: &str, seed: &[u8], alpha: &[u8], salt: Option<&[u8]>, ad: &[u8]) -> Self {
+    fn new(comment: &str, seed: &[u8], alpha: &[u8], salt: &[u8], ad: &[u8]) -> Self {
         let sk = Secret::<S>::from_seed(seed);
         let pk = sk.public().0;
 
-        let salt = salt
-            .map(|v| v.to_vec())
-            .unwrap_or_else(|| codec::point_encode::<S>(&pk));
-
-        let h2c_data = [&salt[..], alpha].concat();
+        let h2c_data = [salt, alpha].concat();
         let h = <S as Suite>::data_to_point(&h2c_data).unwrap();
         let input = Input::from(h);
 
@@ -137,6 +140,7 @@ impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
             sk: sk.scalar,
             pk,
             alpha,
+            salt: salt.to_vec(),
             ad: ad.to_vec(),
             h,
             gamma,
@@ -150,6 +154,7 @@ impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
         let sk = codec::scalar_decode::<S>(&item_bytes("sk"));
         let pk = codec::point_decode::<S>(&item_bytes("pk")).unwrap();
         let alpha = item_bytes("alpha");
+        let salt = item_bytes("salt");
         let ad = item_bytes("ad");
         let h = codec::point_decode::<S>(&item_bytes("h")).unwrap();
         let gamma = codec::point_decode::<S>(&item_bytes("gamma")).unwrap();
@@ -159,6 +164,7 @@ impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
             sk,
             pk,
             alpha,
+            salt,
             ad,
             h,
             gamma,
@@ -172,6 +178,7 @@ impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
             ("sk", hex::encode(codec::scalar_encode::<S>(&self.sk))),
             ("pk", hex::encode(codec::point_encode::<S>(&self.pk))),
             ("alpha", hex::encode(&self.alpha)),
+            ("salt", hex::encode(&self.salt)),
             ("ad", hex::encode(&self.ad)),
             ("h", hex::encode(codec::point_encode::<S>(&self.h))),
             ("gamma", hex::encode(codec::point_encode::<S>(&self.gamma))),
@@ -190,11 +197,7 @@ impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
         let pk = sk.public();
         assert_eq!(self.pk, pk.0, "public key ('pk') mismatch");
 
-        // Prepare hash_to_curve data = salt || alpha
-        // Salt is defined to be pk (adjust it to make the encoding to match)
-        let pk_bytes = codec::point_encode::<S>(&pk.0);
-        let h2c_data = [&pk_bytes[..], &self.alpha[..]].concat();
-
+        let h2c_data = [&self.salt[..], &self.alpha[..]].concat();
         let h = S::data_to_point(&h2c_data).unwrap();
         assert_eq!(self.h, h, "hash-to-curve ('h') mismatch");
         let input = Input::<S>::from(h);
@@ -207,8 +210,13 @@ impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
     }
 }
 
-pub fn test_vectors_generate<V: TestVectorTrait + std::fmt::Debug>(file: &str, identifier: &str) {
+fn vector_filename(identifier: &str) -> String {
+    [VECTORS_DIR, "/", identifier, ".json"].concat()
+}
+
+pub fn test_vectors_generate<V: TestVectorTrait + std::fmt::Debug>(identifier: &str) {
     use std::{fs::File, io::Write};
+
     // ("secret_seed", "vrf raw input", "additional data"))
     let var_data: Vec<(u8, &[u8], &[u8])> = vec![
         (1, b"", b""),
@@ -226,21 +234,21 @@ pub fn test_vectors_generate<V: TestVectorTrait + std::fmt::Debug>(file: &str, i
         let alpha = hex::decode(var_data.1).unwrap();
         let ad = hex::decode(var_data.2).unwrap();
         let comment = format!("{} - vector-{}", identifier, i + 1);
-        let vector = V::new(&comment, &[var_data.0], &alpha, None, &ad);
+        let vector = V::new(&comment, &[var_data.0], &alpha, b"", &ad);
         println!("Gen test vector: {}", comment);
         vector.run();
         vector_maps.push(vector.to_map());
     }
 
-    let mut file = File::create(file).unwrap();
+    let mut file = File::create(vector_filename(identifier)).unwrap();
     let json = serde_json::to_string_pretty(&vector_maps).unwrap();
     file.write_all(json.as_bytes()).unwrap();
 }
 
-pub fn test_vectors_process<V: TestVectorTrait>(file: &str) {
+pub fn test_vectors_process<V: TestVectorTrait>(identifier: &str) {
     use std::{fs::File, io::BufReader};
 
-    let file = File::open(file).unwrap();
+    let file = File::open(vector_filename(identifier)).unwrap();
     let reader = BufReader::new(file);
 
     let vector_maps: Vec<TestVectorMap> = serde_json::from_reader(reader).unwrap();

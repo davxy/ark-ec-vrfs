@@ -16,8 +16,6 @@
 //!    and Q in Section 3.2.1 of [SECG1]).  In this ciphersuite, the
 //!    secret scalar x is equal to the secret key SK.
 //!
-//! *  encode_to_curve_salt = PK_string.
-//!
 //! *  The ECVRF_nonce_generation function is as specified in
 //!    Section 5.4.2.1.
 //!
@@ -93,32 +91,24 @@ mod test_vectors_ietf {
     use super::*;
 
     type V = crate::ietf::testing::TestVector<P256Sha256Tai>;
-
-    const TEST_VECTORS_FILE: &str = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/data/secp256_sha256_tai_ietf_vectors.json"
-    );
-
+    const VECTOR_ID: &str = "secp256_sha256_tai_ietf";
     // Vectors from RFC-9381
-    const TEST_VECTORS_FILE_RFC_9381: &str = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/data/secp256_sha256_tai_ietf_vectors_rfc_9381.json"
-    );
+    const VECTOR_ID_RFC_9381: &str = "secp256_sha256_tai_ietf_rfc_9381";
 
     #[test]
     #[ignore = "test vectors generator"]
     fn generate() {
-        testing::test_vectors_generate::<V>(TEST_VECTORS_FILE, "secp256r1_SHA-256_TAI");
+        testing::test_vectors_generate::<V>(VECTOR_ID);
     }
 
     #[test]
     fn process() {
-        testing::test_vectors_process::<V>(TEST_VECTORS_FILE);
+        testing::test_vectors_process::<V>(VECTOR_ID);
     }
 
     #[test]
     fn process_rfc_9381() {
-        testing::test_vectors_process::<V>(TEST_VECTORS_FILE_RFC_9381);
+        testing::test_vectors_process::<V>(VECTOR_ID_RFC_9381);
     }
 }
 
@@ -127,20 +117,16 @@ mod test_vectors_pedersen {
     use super::*;
 
     type V = crate::pedersen::testing::TestVector<P256Sha256Tai>;
-
-    const TEST_VECTORS_FILE: &str = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/data/secp256r1_sha256_tai_pedersen_vectors.json"
-    );
+    const VECTOR_ID: &str = "secp256r1_sha256_tai_pedersen";
 
     #[test]
     #[ignore = "test vectors generator"]
     fn generate() {
-        testing::test_vectors_generate::<V>(TEST_VECTORS_FILE, "secp256r1_SHA-256_TAI");
+        testing::test_vectors_generate::<V>(VECTOR_ID);
     }
 
     #[test]
     fn process() {
-        testing::test_vectors_process::<V>(TEST_VECTORS_FILE);
+        testing::test_vectors_process::<V>(VECTOR_ID);
     }
 }

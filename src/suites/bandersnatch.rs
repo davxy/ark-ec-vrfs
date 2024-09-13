@@ -20,8 +20,6 @@
 //!   key scalar and `G` the group generator. In this ciphersuite, the secret
 //!   scalar x is equal to the secret key scalar sk.
 //!
-//! * encode_to_curve_salt = PS_string (point_to_string(PK)).
-//!
 //! * The ECVRF_nonce_generation function is as specified in Section 5.4.2.2
 //!   of RFC-9381.
 //!
@@ -259,21 +257,17 @@ mod test_vectors_ietf_ed {
     use crate::testing;
 
     type V = crate::ietf::testing::TestVector<BandersnatchSha512Ell2>;
-
-    const TEST_VECTORS_FILE: &str = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/data/bandersnatch_ed_sha512_ell2_ietf_vectors.json"
-    );
+    const VECTOR_ID: &str = "bandersnatch_ed_sha512_ell2_ietf";
 
     #[test]
     #[ignore = "test vectors generator"]
     fn generate() {
-        testing::test_vectors_generate::<V>(TEST_VECTORS_FILE, "Bandersnatch_SHA-512_ELL2");
+        testing::test_vectors_generate::<V>(VECTOR_ID);
     }
 
     #[test]
     fn process() {
-        testing::test_vectors_process::<V>(TEST_VECTORS_FILE);
+        testing::test_vectors_process::<V>(VECTOR_ID);
     }
 }
 
@@ -283,21 +277,17 @@ mod test_vectors_pedersen_ed {
     use crate::testing;
 
     type V = crate::pedersen::testing::TestVector<BandersnatchSha512Ell2>;
-
-    const TEST_VECTORS_FILE: &str = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/data/bandersnatch_ed_sha512_ell2_pedersen_vectors.json"
-    );
+    const VECTOR_ID: &str = "bandersnatch_ed_sha512_ell2_pedersen";
 
     #[test]
     #[ignore = "test vectors generator"]
     fn generate() {
-        testing::test_vectors_generate::<V>(TEST_VECTORS_FILE, "Bandersnatch_SHA-512_ELL2");
+        testing::test_vectors_generate::<V>(VECTOR_ID);
     }
 
     #[test]
     fn process() {
-        testing::test_vectors_process::<V>(TEST_VECTORS_FILE);
+        testing::test_vectors_process::<V>(VECTOR_ID);
     }
 }
 
@@ -307,11 +297,7 @@ mod test_vectors_ring_ed {
     use crate::testing;
 
     type V = crate::ring::testing::TestVector<BandersnatchSha512Ell2>;
-
-    const TEST_VECTORS_FILE: &str = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/data/bandersnatch_ed_sha512_ell2_ring_vectors.json"
-    );
+    const VECTOR_ID: &str = "bandersnatch_ed_sha512_ell2_ring";
 
     impl crate::ring::testing::RingSuiteExt for BandersnatchSha512Ell2 {
         fn ring_context() -> &'static RingContext {
@@ -333,12 +319,12 @@ mod test_vectors_ring_ed {
     #[test]
     #[ignore = "test vectors generator"]
     fn generate() {
-        testing::test_vectors_generate::<V>(TEST_VECTORS_FILE, "Bandersnatch_SHA-512_ELL2");
+        testing::test_vectors_generate::<V>(VECTOR_ID);
     }
 
     #[test]
     fn process() {
-        testing::test_vectors_process::<V>(TEST_VECTORS_FILE);
+        testing::test_vectors_process::<V>(VECTOR_ID);
     }
 }
 
@@ -348,21 +334,17 @@ mod test_vectors_ietf_sw {
     use crate::testing;
 
     type V = crate::ietf::testing::TestVector<BandersnatchSha512Tai>;
-
-    const TEST_VECTORS_FILE: &str = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/data/bandersnatch_sw_sha512_tai_ietf_vectors.json"
-    );
+    const VECTOR_ID: &str = "bandersnatch_sw_sha512_tai_ietf";
 
     #[test]
     #[ignore = "test vectors generator"]
     fn generate() {
-        testing::test_vectors_generate::<V>(TEST_VECTORS_FILE, "Bandersnatch_SW_SHA-512_TAI");
+        testing::test_vectors_generate::<V>(VECTOR_ID);
     }
 
     #[test]
     fn process() {
-        testing::test_vectors_process::<V>(TEST_VECTORS_FILE);
+        testing::test_vectors_process::<V>(VECTOR_ID);
     }
 }
 
@@ -372,21 +354,17 @@ mod test_vectors_pedersen_sw {
     use crate::testing;
 
     type V = crate::pedersen::testing::TestVector<BandersnatchSha512Tai>;
-
-    const TEST_VECTORS_FILE: &str = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/data/bandersnatch_sw_sha512_tai_pedersen_vectors.json"
-    );
+    const VECTOR_ID: &str = "bandersnatch_sw_sha512_tai_pedersen";
 
     #[test]
     #[ignore = "test vectors generator"]
     fn generate() {
-        testing::test_vectors_generate::<V>(TEST_VECTORS_FILE, "Bandersnatch_SW_SHA-512_TAI");
+        testing::test_vectors_generate::<V>(VECTOR_ID);
     }
 
     #[test]
     fn process() {
-        testing::test_vectors_process::<V>(TEST_VECTORS_FILE);
+        testing::test_vectors_process::<V>(VECTOR_ID);
     }
 }
 
@@ -396,11 +374,7 @@ mod test_vectors_ring_sw {
     use crate::testing;
 
     type V = crate::ring::testing::TestVector<BandersnatchSha512Tai>;
-
-    const TEST_VECTORS_FILE: &str = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/data/bandersnatch_sw_sha512_tai_ring_vectors.json"
-    );
+    const VECTOR_ID: &str = "bandersnatch_sw_sha512_tai_ring";
 
     impl crate::ring::testing::RingSuiteExt for BandersnatchSha512Tai {
         fn ring_context() -> &'static RingContext {
@@ -422,11 +396,11 @@ mod test_vectors_ring_sw {
     #[test]
     #[ignore = "test vectors generator"]
     fn generate() {
-        testing::test_vectors_generate::<V>(TEST_VECTORS_FILE, "Bandersnatch_SW_SHA-512_TAI");
+        testing::test_vectors_generate::<V>(VECTOR_ID);
     }
 
     #[test]
     fn process() {
-        testing::test_vectors_process::<V>(TEST_VECTORS_FILE);
+        testing::test_vectors_process::<V>(VECTOR_ID);
     }
 }

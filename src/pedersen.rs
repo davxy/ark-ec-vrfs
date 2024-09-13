@@ -193,7 +193,7 @@ pub(crate) mod testing {
     }
 
     impl<S: PedersenSuite + std::fmt::Debug> common::TestVectorTrait for TestVector<S> {
-        fn new(comment: &str, seed: &[u8], alpha: &[u8], salt: Option<&[u8]>, ad: &[u8]) -> Self {
+        fn new(comment: &str, seed: &[u8], alpha: &[u8], salt: &[u8], ad: &[u8]) -> Self {
             use super::Prover;
             let base = common::TestVector::new(comment, seed, alpha, salt, ad);
             let input = Input::<S>::from(base.h);

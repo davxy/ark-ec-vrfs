@@ -419,7 +419,7 @@ pub(crate) mod testing {
         CurveConfig<S>: SWCurveConfig + Clone,
         AffinePoint<S>: SWMapping<CurveConfig<S>>,
     {
-        fn new(comment: &str, seed: &[u8], alpha: &[u8], salt: Option<&[u8]>, ad: &[u8]) -> Self {
+        fn new(comment: &str, seed: &[u8], alpha: &[u8], salt: &[u8], ad: &[u8]) -> Self {
             use super::Prover;
             let pedersen = pedersen::testing::TestVector::new(comment, seed, alpha, salt, ad);
 

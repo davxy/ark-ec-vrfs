@@ -135,6 +135,9 @@ pub trait Suite: Copy {
     /// Hash data to a curve point.
     ///
     /// By default uses "try and increment" method described by RFC 9381.
+    ///
+    /// The input `data` is assumed to be `[salt||]alpha` according to the RFC 9381.
+    /// In other words, salt is not applied by this function.
     #[inline(always)]
     fn data_to_point(data: &[u8]) -> Option<AffinePoint<Self>> {
         utils::hash_to_curve_tai_rfc_9381::<Self>(data)

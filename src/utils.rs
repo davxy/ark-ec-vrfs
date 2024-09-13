@@ -65,8 +65,6 @@ pub(crate) fn hmac<H: Digest + digest::core_api::BlockSizeUser>(sk: &[u8], data:
 /// ciphersuites specified in Section 5.5, this algorithm is expected to
 /// find a valid curve point after approximately two attempts on average.
 ///
-/// The input `data` is defined to be `salt || alpha` according to the RFC 9281.
-///
 /// # Panics
 ///
 /// This function panics if `Suite::Hasher` output is less than AffinePoint base field
