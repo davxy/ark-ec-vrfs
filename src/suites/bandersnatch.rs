@@ -431,14 +431,24 @@ fn padding_point_sw_te_roundtrip() {
     // Fixed padding point
     let sw = {
         const X: weierstrass::BaseField = MontFp!(
-            "25448400713078632486748382313960039031302935774474538965225823993599751298535"
+            "25353312785503880631115876544961443547556511355876709037985429927235015446936"
         );
         const Y: weierstrass::BaseField = MontFp!(
-            "24382892199244280513693545286348030912870264650402775682704689602954457435722"
+            "48034916494481689813223622984827694955476028581467743482028403440447916980403"
         );
         weierstrass::AffinePoint::new_unchecked(X, Y)
     };
-    let ed = sw_to_te(&sw).unwrap();
+    let ed = {
+        const X: edwards::BaseField = MontFp!(
+            "23942223917106120326220291257397678561637131227432899006603244452561725937075"
+        );
+        const Y: edwards::BaseField =
+            MontFp!("1605027200774560580022502723165578671697794116420567297367317898913080293877");
+        edwards::AffinePoint::new_unchecked(X, Y)
+    };
+
+    let ed2 = sw_to_te(&sw).unwrap();
+    assert_eq!(ed, ed2);
     let sw2 = te_to_sw(&ed).unwrap();
     assert_eq!(sw, sw2);
 }
