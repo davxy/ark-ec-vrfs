@@ -230,7 +230,7 @@ where
             prover_key,
             self.piop_params.clone(),
             key_index,
-            ring_proof::Transcript::new(b""),
+            ring_proof::ArkTranscript::new(S::SUITE_ID),
         )
     }
 
@@ -258,7 +258,7 @@ where
         RingVerifier::<S>::init(
             verifier_key,
             self.piop_params.clone(),
-            ring_proof::Transcript::new(b""),
+            ring_proof::ArkTranscript::new(S::SUITE_ID),
         )
     }
 }
