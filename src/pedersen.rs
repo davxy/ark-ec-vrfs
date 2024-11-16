@@ -143,7 +143,7 @@ impl<S: PedersenSuite> Verifier<S> for Public<S> {
 #[cfg(test)]
 pub(crate) mod testing {
     use super::*;
-    use crate::testing::{self as common, random_val, TEST_SEED};
+    use crate::testing::{self as common, random_val, PEDERSEN_BASE_SEED, TEST_SEED};
 
     pub fn prove_verify<S: PedersenSuite>() {
         use pedersen::{Prover, Verifier};
@@ -162,12 +162,24 @@ pub(crate) mod testing {
         );
     }
 
+    pub fn blinding_base_check<S: PedersenSuite>() {
+        assert_eq!(
+            S::data_to_point(PEDERSEN_BASE_SEED).unwrap(),
+            S::BLINDING_BASE
+        );
+    }
+
     #[macro_export]
     macro_rules! pedersen_suite_tests {
         ($suite:ident) => {
             #[test]
             fn pedersen_prove_verify() {
                 $crate::pedersen::testing::prove_verify::<$suite>();
+            }
+
+            #[test]
+            fn pedersen_blinding_base_check() {
+                $crate::pedersen::testing::blinding_base_check::<$suite>();
             }
         };
     }
