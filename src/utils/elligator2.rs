@@ -166,6 +166,8 @@ impl<P: Elligator2Config> MapToCurve<Projective<P>> for Elligator2Map<P> {
 
 #[cfg(test)]
 mod tests {
+    #![allow(non_local_definitions)]
+
     use super::*;
     use ark_ec::hashing::{map_to_curve_hasher::MapToCurveBasedHasher, HashToCurve};
     use ark_ff::{field_hashers::DefaultFieldHasher, Fp64, MontBackend, MontFp};

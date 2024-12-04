@@ -18,7 +18,7 @@ rand_chacha = { version = "0.3", default-features = false }
 rayon = { version = "1.10", default-features = false, optional = true }
 hmac = {version = "0.12", default-features = false, optional = true }
 # Waiting for crates.io
-ring-proof = { package = "ring", git = "https://github.com/davxy/ring-proof", rev = "d3e37f9", default-features = false, optional = true }
+ring-proof = { package = "ring", git = "https://github.com/davxy/ring-proof", rev = "db13482", default-features = false, optional = true }
 # Curves
 ark-secp256r1 = { version = "0.4.0", default-features = false, optional = true }
 ark-ed25519 = { version = "0.4.0", default-features = false, optional = true }
