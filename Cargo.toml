@@ -2,8 +2,9 @@
 name = "ark-ec-vrfs"
 version = "0.1.0"
 edition = "2021"
-authors = [ "Davide Galassi" ]
-description = "EC VRFs with arkworks"
+authors = [ "Davide Galassi <davxy@datawok.net>" ]
+description = "Elliptic curve VRF with additional data"
+keywords = [ "cryptography", "vrf", "ring-vrf", "zk-snark" ]
 repository = "https://github.com/davxy/ark-ecvrf"
 
 [dependencies]
