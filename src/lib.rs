@@ -1,15 +1,17 @@
 //! # Elliptic Curve VRFs.
 //!
-//! Provides:
-//! - IETF VRF as described by [RFC 9381](https://datatracker.ietf.org/doc/rfc9381).
-//! - Pedersen VRF as described by [Burdges](https://eprint.iacr.org/2023/002).
-//! - Ring VRF as described by [Vasilyev](https://eprint.iacr.org/2023/002).
+//! This library provides flexible and efficient implementations of Verifiable
+//! Random Functions with Additional Data (VRF-AD), a cryptographic construct
+//! that augments a standard VRF scheme by incorporating auxiliary information
+//! into its signature.
 //!
-//! Primitives description is further elaborated in the
-//! [technical spec](https://github.com/davxy/bandersnatch-vrfs-spec).
+//! It leverages the [Arkworks](https://github.com/arkworks-rs) framework and
+//! supports customization of scheme parameters.
 //!
-//! The implementation is built using Arkworks and is quite flexible to further
-//! customization.
+//! Supported VRFs:
+//! - **IETF VRF**: Complies with ECVRF described in [RFC9381](https://datatracker.ietf.org/doc/rfc9381).
+//! - **Pedersen VRF**: Described in [BCHSV23](https://eprint.iacr.org/2023/002).
+//! - **Ring VRF**: A zero-knowledge-based inspired by [BCHSV23](https://eprint.iacr.org/2023/002).
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(unsafe_code)]
