@@ -3,9 +3,9 @@ use crate::*;
 
 /// Magic spell for [`PedersenSuite::BLINDING_BASE`] generation in built-in implementations.
 ///
-/// *"The blinding foundation of hidden light, which eludes the mind and creates darkness for those who see"*
+/// (en) *"the blinding foundation of hidden light which eludes the mind and creates darkness for those who see"*
 pub const PEDERSEN_BASE_SEED: &[u8] =
-    b"basis caecans lucis occultae, quae mentem fugit et tenebras iis qui vident creat";
+    b"basis caecans lucis occultae quae mentem fugit et tenebras iis qui vident creat";
 
 pub trait PedersenSuite: IetfSuite {
     /// Blinding base.
