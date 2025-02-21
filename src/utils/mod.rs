@@ -1,15 +1,21 @@
 //! Features expected to land into Arkworks at some point in the future
 
-/// Elligator 2 hash-to-curve.
-pub(crate) mod elligator2;
+/// Common utilities
+pub(crate) mod common;
 /// Twisted Edwards to Short Weierstrass mapping.
 pub(crate) mod te_sw_map;
-// Common utilities
-pub(crate) mod common;
 
 pub(crate) use common::*;
 
-pub use te_sw_map::{sw_to_te, te_to_sw, SWMapping};
+pub use te_sw_map::{sw_to_te, te_to_sw, SWMapping, TEMapping};
+
+// Prevents downstream warnings when `ring` feature is not enabled.
+#[doc(hidden)]
+#[cfg(feature = "ring")]
+pub type RingProof<S> = crate::ring::Proof<S>;
+#[doc(hidden)]
+#[cfg(not(feature = "ring"))]
+pub type RingProof<S> = core::marker::PhantomData<S>;
 
 #[macro_export]
 macro_rules! suite_types {
@@ -32,8 +38,7 @@ macro_rules! suite_types {
         pub type IetfProof = $crate::ietf::Proof<$suite>;
         #[allow(dead_code)]
         pub type PedersenProof = $crate::pedersen::Proof<$suite>;
-        #[cfg(feature = "ring")]
         #[allow(dead_code)]
-        pub type RingProof = $crate::ring::Proof<$suite>;
+        pub type RingProof = $crate::utils::RingProof<$suite>;
     };
 }

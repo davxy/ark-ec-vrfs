@@ -1,6 +1,10 @@
 use crate::*;
-
-use ark_ec::AffineRepr;
+use ark_ec::{
+    hashing::curve_maps::elligator2::{Elligator2Config, Elligator2Map},
+    short_weierstrass::{self, SWCurveConfig},
+    twisted_edwards::{self, TECurveConfig},
+    AffineRepr,
+};
 use ark_ff::PrimeField;
 use digest::{Digest, FixedOutputReset};
 
@@ -92,12 +96,14 @@ pub fn hash_to_curve_ell2_rfc_9380<S: Suite>(
 ) -> Option<AffinePoint<S>>
 where
     <S as Suite>::Hasher: Default + Clone + FixedOutputReset + 'static,
-    crate::CurveConfig<S>: ark_ec::twisted_edwards::TECurveConfig,
-    crate::CurveConfig<S>: crate::utils::elligator2::Elligator2Config,
-    crate::utils::elligator2::Elligator2Map<crate::CurveConfig<S>>:
+    CurveConfig<S>: ark_ec::twisted_edwards::TECurveConfig,
+    CurveConfig<S>: Elligator2Config,
+    Elligator2Map<CurveConfig<S>>:
         ark_ec::hashing::map_to_curve_hasher::MapToCurve<<AffinePoint<S> as AffineRepr>::Group>,
 {
-    use ark_ec::hashing::HashToCurve;
+    use ark_ec::hashing::{map_to_curve_hasher::MapToCurveBasedHasher, HashToCurve};
+    use ark_ff::field_hashers::DefaultFieldHasher;
+
     const SEC_PARAM: usize = 128;
 
     // Domain Separation Tag := "ECVRF_" || h2c_suite_ID_string || suite_string
@@ -108,10 +114,10 @@ where
         .cloned()
         .collect();
 
-    let hasher = ark_ec::hashing::map_to_curve_hasher::MapToCurveBasedHasher::<
+    let hasher = MapToCurveBasedHasher::<
         <AffinePoint<S> as AffineRepr>::Group,
-        ark_ff::field_hashers::DefaultFieldHasher<<S as Suite>::Hasher, SEC_PARAM>,
-        crate::utils::elligator2::Elligator2Map<crate::CurveConfig<S>>,
+        DefaultFieldHasher<<S as Suite>::Hasher, SEC_PARAM>,
+        Elligator2Map<CurveConfig<S>>,
     >::new(&dst)
     .ok()?;
 
@@ -208,10 +214,74 @@ where
     S::Codec::scalar_decode(&v)
 }
 
+trait FindComplementPoint<C: ark_ec::CurveConfig>: Sized {
+    fn try_from(r: C::BaseField) -> Option<Self>;
+
+    /// Get a point outside the prime order group.
+    ///
+    /// Panics if cofactor is one, which means there is no such point.
+    fn find_complement_point() -> Self {
+        use ark_ff::{One, Zero};
+        assert!(!C::cofactor_is_one());
+        let mut r = C::BaseField::zero();
+        loop {
+            if let Some(p) = Self::try_from(r) {
+                return p;
+            }
+            r += C::BaseField::one();
+        }
+    }
+}
+
+impl<C: SWCurveConfig> FindComplementPoint<C> for short_weierstrass::Affine<C> {
+    fn try_from(r: C::BaseField) -> Option<Self> {
+        Self::get_point_from_x_unchecked(r, false)
+            .filter(|p| !p.is_in_correct_subgroup_assuming_on_curve())
+    }
+}
+
+impl<C: TECurveConfig> FindComplementPoint<C> for twisted_edwards::Affine<C> {
+    fn try_from(r: C::BaseField) -> Option<Self> {
+        Self::get_point_from_y_unchecked(r, false)
+            .filter(|p| !p.is_in_correct_subgroup_assuming_on_curve())
+    }
+}
+
+pub trait FindAccumulatorBase<S: Suite>: Sized {
+    #[allow(dead_code)]
+    fn find_accumulator_base(data: &[u8]) -> Option<Self>;
+}
+
+impl<S, C> FindAccumulatorBase<S> for short_weierstrass::Affine<C>
+where
+    C: SWCurveConfig,
+    S: Suite<Affine = Self>,
+{
+    fn find_accumulator_base(data: &[u8]) -> Option<Self> {
+        let p = S::data_to_point(data)?;
+        let c = Self::find_complement_point();
+        let res = (p + c).into_affine();
+        debug_assert!(!res.is_in_correct_subgroup_assuming_on_curve());
+        Some(res)
+    }
+}
+
+impl<S, C> FindAccumulatorBase<S> for twisted_edwards::Affine<C>
+where
+    C: TECurveConfig,
+    S: Suite<Affine = Self>,
+{
+    fn find_accumulator_base(data: &[u8]) -> Option<Self> {
+        let res = S::data_to_point(data)?;
+        debug_assert!(res.is_in_correct_subgroup_assuming_on_curve());
+        Some(res)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::suites::testing::TestSuite;
+    use suites::testing::TestSuite;
 
     #[test]
     fn hash_to_curve_tai_works() {

@@ -1,7 +1,7 @@
 //! EC-VRF as specified by [RFC-9381](https://datatracker.ietf.org/doc/rfc9381).
 //!
 //! The implementation extends RFC9381 to allow to sign additional user data together
-//! with the VRF input. Refer to https://github.com/davxy/bandersnatch-vrfs-spec for
+//! with the VRF input. Refer to <https://github.com/davxy/bandersnatch-vrfs-spec> for
 //! specification extension details.
 
 use super::*;

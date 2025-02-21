@@ -105,3 +105,61 @@ impl<C: MapConfig> SWMapping<C> for EdwardsAffine<C> {
         Cow::Owned(pks)
     }
 }
+
+pub trait TEMapping<C: TECurveConfig> {
+    fn from_te(te: EdwardsAffine<C>) -> Self;
+
+    fn into_te(self) -> EdwardsAffine<C>;
+
+    fn to_te_slice(slice: &[Self]) -> Cow<[EdwardsAffine<C>]>
+    where
+        Self: Sized;
+}
+
+impl<C: TECurveConfig> TEMapping<C> for EdwardsAffine<C> {
+    #[inline(always)]
+    fn from_te(te: EdwardsAffine<C>) -> Self {
+        te
+    }
+
+    #[inline(always)]
+    fn into_te(self) -> EdwardsAffine<C> {
+        self
+    }
+
+    #[inline(always)]
+    fn to_te_slice(slice: &[Self]) -> Cow<[EdwardsAffine<C>]> {
+        Cow::Borrowed(slice)
+    }
+}
+
+impl<C: MapConfig> TEMapping<C> for WeierstrassAffine<C> {
+    #[inline(always)]
+    fn from_te(te: EdwardsAffine<C>) -> Self {
+        const ERR_MSG: &str =
+            "TE to SW is expected to be implemented only for curves supporting the mapping";
+        te_to_sw(&te).expect(ERR_MSG)
+    }
+
+    #[inline(always)]
+    fn into_te(self) -> EdwardsAffine<C> {
+        const ERR_MSG: &str =
+            "SW to TE is expected to be implemented only for curves supporting the mapping";
+        sw_to_te(&self).expect(ERR_MSG)
+    }
+
+    #[inline(always)]
+    fn to_te_slice(slice: &[Self]) -> Cow<[EdwardsAffine<C>]> {
+        let pks;
+        #[cfg(feature = "parallel")]
+        {
+            use rayon::prelude::*;
+            pks = slice.par_iter().map(|p| p.into_te()).collect();
+        }
+        #[cfg(not(feature = "parallel"))]
+        {
+            pks = slice.iter().map(|p| p.into_te()).collect();
+        }
+        Cow::Owned(pks)
+    }
+}

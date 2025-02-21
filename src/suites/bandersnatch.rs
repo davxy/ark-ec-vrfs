@@ -71,10 +71,10 @@ pub mod weierstrass {
     impl PedersenSuite for BandersnatchSha512Tai {
         const BLINDING_BASE: AffinePoint = {
             const X: BaseField = MontFp!(
-                "4956610287995045830459834427365747411162584416641336688940534788579455781570"
+                "2786133011787754314337355768726781346657410178846871760484458839259174143819"
             );
             const Y: BaseField = MontFp!(
-                "52360910621642801549936840538960627498114783432181489929217988668068368626761"
+                "45091380107337827264009149842055668325926237630986280293235738371137471984708"
             );
             AffinePoint::new_unchecked(X, Y)
         };
@@ -96,13 +96,22 @@ pub mod weierstrass {
         impl ring_suite::RingSuite for BandersnatchSha512Tai {
             type Pairing = ark_bls12_381::Bls12_381;
 
-            /// A point on the curve not belonging to the prime order subgroup.
-            ///
-            /// Found using `ring_proof::find_complement_point::<Self::Config>()` function.
             const ACCUMULATOR_BASE: AffinePoint = {
-                const X: BaseField = MontFp!("0");
+                const X: BaseField = MontFp!(
+                    "48254995375637847364575048247607461744443247628042484657436772027212435529113"
+                );
                 const Y: BaseField = MontFp!(
-                    "11982629110561008531870698410380659621661946968466267969586599013782997959645"
+                    "3224576081978774412520073113719553166447520787618456623424200075705218636234"
+                );
+                AffinePoint::new_unchecked(X, Y)
+            };
+
+            const PADDING: AffinePoint = {
+                const X: weierstrass::BaseField = MontFp!(
+                    "35708930000861830245548017565786725469855815091650767855130736125157313721963"
+                );
+                const Y: weierstrass::BaseField = MontFp!(
+                    "6338347876957125643073931899147877399239458581517971209321056997700389681947"
                 );
                 AffinePoint::new_unchecked(X, Y)
             };
@@ -144,30 +153,15 @@ pub mod edwards {
     }
 
     impl PedersenSuite for BandersnatchSha512Ell2 {
-        /// Found mapping `BLINDING_BASE` of `weierstrass` module using the `utils::map_sw_to_te`
         const BLINDING_BASE: AffinePoint = {
             const X: BaseField = MontFp!(
-                "14576224270591906826192118712803723445031237947873156025406837473427562701854"
+                "18052262123084741752455948684150064373355593391329117224969085991125280703899"
             );
             const Y: BaseField = MontFp!(
-                "38436873314098705092845609371301773715650206984323659492499960072785679638442"
+                "18784055160076939116080959996226112562356442880134706822948812359863029976827"
             );
             AffinePoint::new_unchecked(X, Y)
         };
-    }
-
-    impl utils::elligator2::Elligator2Config for ark_ed_on_bls12_381_bandersnatch::BandersnatchConfig {
-        const Z: ark_ed_on_bls12_381_bandersnatch::Fq = MontFp!("5");
-
-        /// This must be equal to 1/(MontCurveConfig::COEFF_B)^2;
-        const ONE_OVER_COEFF_B_SQUARE: ark_ed_on_bls12_381_bandersnatch::Fq = MontFp!(
-            "35484827650731063748396669747216844996598387089274032563585525486049249153249"
-        );
-
-        /// This must be equal to MontCurveConfig::COEFF_A/MontCurveConfig::COEFF_B;
-        const COEFF_A_OVER_COEFF_B: ark_ed_on_bls12_381_bandersnatch::Fq = MontFp!(
-            "22511181562295907836254750456843438087744031914659733450388350895537307167857"
-        );
     }
 
     #[cfg(feature = "ring")]
@@ -186,18 +180,33 @@ pub mod edwards {
         impl ring_suite::RingSuite for BandersnatchSha512Ell2 {
             type Pairing = ark_bls12_381::Bls12_381;
 
-            /// A point on the curve not belonging to the prime order subgroup.
-            ///
-            /// Found mapping the `COMPLEMENT_POINT` of `weierstrass` module using the `utils::map_sw_to_te`
             const ACCUMULATOR_BASE: AffinePoint = {
                 const X: BaseField = MontFp!(
-                    "3955725774225903122339172568337849452553276548604445833196164961773358506589"
+                    "33870485529716508774519539584554309058480326151538172489903869946516174753586"
                 );
                 const Y: BaseField = MontFp!(
-                    "29870564530691725960104983716673293929719207405660860235233811770612192692323"
+                    "22934609319023779541266115294616310383924028855106103977339848105082549291539"
                 );
                 AffinePoint::new_unchecked(X, Y)
             };
+
+            const PADDING: AffinePoint = {
+                const X: edwards::BaseField = MontFp!(
+                    "28750114660840472435108695402615748045574467283805097196439027458114890954346"
+                );
+                const Y: edwards::BaseField = MontFp!(
+                    "28681665303008045500432480596307870740664482088334198476809598411704602209439"
+                );
+                AffinePoint::new_unchecked(X, Y)
+            };
+        }
+
+        #[test]
+        fn check_assumptions() {
+            use crate::ring::RingSuite;
+            check_point(BandersnatchSha512Ell2::BLINDING_BASE);
+            check_point(BandersnatchSha512Ell2::ACCUMULATOR_BASE);
+            check_point(BandersnatchSha512Ell2::PADDING);
         }
     }
     #[cfg(feature = "ring")]
@@ -209,11 +218,16 @@ pub mod edwards {
     #[cfg(test)]
     suite_tests!(BandersnatchSha512Ell2);
 
+    #[cfg(test)]
+    fn check_point(p: AffinePoint) {
+        assert!(p.is_on_curve());
+        assert!(p.is_in_correct_subgroup_assuming_on_curve());
+    }
+
     #[test]
     fn elligator2_hash_to_curve() {
-        let point = BandersnatchSha512Ell2::data_to_point(b"foo").unwrap();
-        assert!(point.is_on_curve());
-        assert!(point.is_in_correct_subgroup_assuming_on_curve());
+        let p = BandersnatchSha512Ell2::data_to_point(b"foo").unwrap();
+        check_point(p);
     }
 }
 
@@ -404,57 +418,7 @@ mod test_vectors_ring_sw {
 }
 
 #[test]
-fn blinding_base_sw_te_rountrip() {
-    use crate::utils::*;
-    let sw = weierstrass::BandersnatchSha512Tai::BLINDING_BASE;
-    let ed = sw_to_te(&sw).unwrap();
-    assert_eq!(ed, edwards::BandersnatchSha512Ell2::BLINDING_BASE);
-    let sw2 = te_to_sw(&ed).unwrap();
-    assert_eq!(sw, sw2);
-}
-
-#[cfg(all(test, feature = "ring"))]
-#[test]
-fn accumulator_base_sw_te_roundtrip() {
-    use crate::{ring::RingSuite, utils::*};
-    let sw = weierstrass::BandersnatchSha512Tai::ACCUMULATOR_BASE;
-    let ed = sw_to_te(&sw).unwrap();
-    assert_eq!(ed, edwards::BandersnatchSha512Ell2::ACCUMULATOR_BASE);
-    let sw2 = te_to_sw(&ed).unwrap();
-    assert_eq!(sw, sw2);
-}
-
-#[cfg(all(test, feature = "ring"))]
-#[test]
-fn padding_point_sw_te_roundtrip() {
-    use crate::utils::*;
-    // Fixed padding point
-    let sw = {
-        const X: weierstrass::BaseField = MontFp!(
-            "25353312785503880631115876544961443547556511355876709037985429927235015446936"
-        );
-        const Y: weierstrass::BaseField = MontFp!(
-            "48034916494481689813223622984827694955476028581467743482028403440447916980403"
-        );
-        weierstrass::AffinePoint::new_unchecked(X, Y)
-    };
-    let ed = {
-        const X: edwards::BaseField = MontFp!(
-            "23942223917106120326220291257397678561637131227432899006603244452561725937075"
-        );
-        const Y: edwards::BaseField =
-            MontFp!("1605027200774560580022502723165578671697794116420567297367317898913080293877");
-        edwards::AffinePoint::new_unchecked(X, Y)
-    };
-
-    let ed2 = sw_to_te(&sw).unwrap();
-    assert_eq!(ed, ed2);
-    let sw2 = te_to_sw(&ed).unwrap();
-    assert_eq!(sw, sw2);
-}
-
-#[test]
-fn generator_roundtrip() {
+fn generator_te_sw_roundtrip() {
     use crate::utils::*;
     let sw1 = weierstrass::AffinePoint::generator();
     let ed1 = sw_to_te(&sw1).unwrap();

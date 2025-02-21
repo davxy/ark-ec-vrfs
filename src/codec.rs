@@ -45,7 +45,7 @@ impl<S: Suite> Codec<S> for ArkworksCodec {
     }
 }
 
-/// SEC 1 codec (https://www.secg.org/sec1-v2.pdf)
+/// SEC 1 codec (<https://www.secg.org/sec1-v2.pdf>)
 ///
 /// Big endian. Points flags in LSB. Compression enabled.
 pub struct Sec1Codec;
