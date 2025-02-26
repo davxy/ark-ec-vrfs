@@ -9,3 +9,5 @@ pub mod secp256;
 
 #[cfg(feature = "bandersnatch")]
 pub mod bandersnatch;
+#[cfg(feature = "bandersnatch")]
+pub mod bandersnatch_sw;

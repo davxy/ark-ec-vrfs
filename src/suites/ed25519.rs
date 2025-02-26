@@ -49,10 +49,8 @@
 use crate::{pedersen::PedersenSuite, *};
 use ark_ff::MontFp;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Ed25519Sha512Tai;
-
-suite_types!(Ed25519Sha512Tai);
 
 impl Suite for Ed25519Sha512Tai {
     const SUITE_ID: &'static [u8] = b"Ed25519_SHA-512_TAI";
@@ -74,6 +72,8 @@ impl PedersenSuite for Ed25519Sha512Tai {
         AffinePoint::new_unchecked(X, Y)
     };
 }
+
+suite_types!(Ed25519Sha512Tai);
 
 #[cfg(test)]
 suite_tests!(Ed25519Sha512Tai);

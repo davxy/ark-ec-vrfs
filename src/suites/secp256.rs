@@ -50,13 +50,8 @@
 use crate::{pedersen::PedersenSuite, *};
 use ark_ff::MontFp;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct P256Sha256Tai;
-
-suite_types!(P256Sha256Tai);
-
-#[cfg(test)]
-suite_tests!(P256Sha256Tai);
 
 impl Suite for P256Sha256Tai {
     const SUITE_ID: &'static [u8] = &[0x01];
@@ -86,6 +81,11 @@ impl PedersenSuite for P256Sha256Tai {
         AffinePoint::new_unchecked(X, Y)
     };
 }
+
+suite_types!(P256Sha256Tai);
+
+#[cfg(test)]
+suite_tests!(P256Sha256Tai);
 
 #[cfg(test)]
 mod test_vectors_ietf {

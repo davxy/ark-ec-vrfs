@@ -9,14 +9,6 @@ pub(crate) use common::*;
 
 pub use te_sw_map::{sw_to_te, te_to_sw, SWMapping, TEMapping};
 
-// Prevents downstream warnings when `ring` feature is not enabled.
-#[doc(hidden)]
-#[cfg(feature = "ring")]
-pub type RingProof<S> = crate::ring::Proof<S>;
-#[doc(hidden)]
-#[cfg(not(feature = "ring"))]
-pub type RingProof<S> = core::marker::PhantomData<S>;
-
 #[macro_export]
 macro_rules! suite_types {
     ($suite:ident) => {
@@ -38,7 +30,5 @@ macro_rules! suite_types {
         pub type IetfProof = $crate::ietf::Proof<$suite>;
         #[allow(dead_code)]
         pub type PedersenProof = $crate::pedersen::Proof<$suite>;
-        #[allow(dead_code)]
-        pub type RingProof = $crate::utils::RingProof<$suite>;
     };
 }

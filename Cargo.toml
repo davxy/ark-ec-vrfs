@@ -40,6 +40,12 @@ std = [
   "ark-ec/std",
   "ring-proof?/std",
 ]
+full = [
+  "secp256r1",
+  "ed25519",
+  "bandersnatch",
+  "ring",
+]
 # Curves
 ed25519 = [ "ark-ed25519" ]
 bandersnatch = [ "ark-ed-on-bls12-381-bandersnatch", "ark-bls12-381/curve" ]
@@ -47,12 +53,6 @@ secp256r1 = [ "ark-secp256r1", "rfc-6979" ]
 # Miscellanea
 ring = [ "ring-proof" ]
 rfc-6979 = [ "hmac" ]
-full = [
-  "secp256r1",
-  "ed25519",
-  "bandersnatch",
-  "ring",
-]
 # Optimizations
 parallel = [
   "ark-ec/parallel",
@@ -64,3 +64,6 @@ parallel = [
 asm = [ "ark-ff/asm", "ring-proof?/asm" ]
 # Deterministic, no-zk, ring-proof (unsafe)
 test-vectors = [ "ring-proof?/test-vectors" ]
+
+[package.metadata.docs.rs]
+features = [ "full" ]
