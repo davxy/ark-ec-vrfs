@@ -39,21 +39,13 @@ std = [
   "ark-std/std",
   "ark-ec/std",
   "ring-proof?/std",
-  "getrandom"
 ]
-getrandom = [
-  "ark-std/getrandom",
-]
-secp256r1 = [
-  "ark-secp256r1",
-  "rfc-6979",
-]
+# Curves
 ed25519 = [ "ark-ed25519" ]
-bandersnatch = [ "ark-ed-on-bls12-381-bandersnatch" ]
-ring = [
-  "ring-proof",
-  "ark-bls12-381/curve",
-]
+bandersnatch = [ "ark-ed-on-bls12-381-bandersnatch", "ark-bls12-381/curve" ]
+secp256r1 = [ "ark-secp256r1", "rfc-6979" ]
+# Miscellanea
+ring = [ "ring-proof" ]
 rfc-6979 = [ "hmac" ]
 full = [
   "secp256r1",
@@ -61,7 +53,6 @@ full = [
   "bandersnatch",
   "ring",
 ]
-
 # Optimizations
 parallel = [
   "ark-ec/parallel",
@@ -70,12 +61,6 @@ parallel = [
   "ring-proof?/parallel",
   "rayon",
 ]
-asm = [
-  "ark-ff/asm",
-  "ring-proof?/asm"
-]
-
-# Deterministic ring-proof (unsafe)
-test-vectors = [
-  "ring-proof?/test-vectors"
-]
+asm = [ "ark-ff/asm", "ring-proof?/asm" ]
+# Deterministic, no-zk, ring-proof (unsafe)
+test-vectors = [ "ring-proof?/test-vectors" ]

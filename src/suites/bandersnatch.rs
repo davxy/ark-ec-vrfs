@@ -51,7 +51,7 @@
 use crate::{pedersen::PedersenSuite, utils::te_sw_map::*, *};
 use ark_ff::MontFp;
 
-pub mod weierstrass {
+pub mod sw {
     use super::*;
 
     #[derive(Debug, Copy, Clone)]
@@ -107,10 +107,10 @@ pub mod weierstrass {
             };
 
             const PADDING: AffinePoint = {
-                const X: weierstrass::BaseField = MontFp!(
+                const X: sw::BaseField = MontFp!(
                     "8207061359626985806593416771596963300097557497392401672976542127083785954233"
                 );
-                const Y: weierstrass::BaseField = MontFp!(
+                const Y: sw::BaseField = MontFp!(
                     "45333580719994708944464512022272093444100012168218634411811045976720128467452"
                 );
                 AffinePoint::new_unchecked(X, Y)
@@ -127,7 +127,7 @@ pub mod weierstrass {
     suite_tests!(BandersnatchSha512Tai);
 }
 
-pub mod edwards {
+pub mod te {
     use super::*;
 
     #[derive(Debug, Copy, Clone)]
@@ -191,10 +191,10 @@ pub mod edwards {
             };
 
             const PADDING: AffinePoint = {
-                const X: edwards::BaseField = MontFp!(
+                const X: te::BaseField = MontFp!(
                     "26287722405578650394504321825321286533153045350760430979437739593351290020913"
                 );
-                const Y: edwards::BaseField = MontFp!(
+                const Y: te::BaseField = MontFp!(
                     "19058981610000167534379068105702216971787064146691007947119244515951752366738"
                 );
                 AffinePoint::new_unchecked(X, Y)
@@ -265,7 +265,7 @@ mod tests {
 
 #[cfg(test)]
 mod test_vectors_ietf_ed {
-    use super::edwards::*;
+    use super::te::*;
     use crate::testing;
 
     type V = crate::ietf::testing::TestVector<BandersnatchSha512Ell2>;
@@ -285,7 +285,7 @@ mod test_vectors_ietf_ed {
 
 #[cfg(test)]
 mod test_vectors_pedersen_ed {
-    use super::edwards::*;
+    use super::te::*;
     use crate::testing;
 
     type V = crate::pedersen::testing::TestVector<BandersnatchSha512Ell2>;
@@ -305,7 +305,7 @@ mod test_vectors_pedersen_ed {
 
 #[cfg(all(test, feature = "ring"))]
 mod test_vectors_ring_ed {
-    use super::edwards::*;
+    use super::te::*;
     use crate::testing;
 
     type V = crate::ring::testing::TestVector<BandersnatchSha512Ell2>;
@@ -342,7 +342,7 @@ mod test_vectors_ring_ed {
 
 #[cfg(test)]
 mod test_vectors_ietf_sw {
-    use super::weierstrass::*;
+    use super::sw::*;
     use crate::testing;
 
     type V = crate::ietf::testing::TestVector<BandersnatchSha512Tai>;
@@ -362,7 +362,7 @@ mod test_vectors_ietf_sw {
 
 #[cfg(test)]
 mod test_vectors_pedersen_sw {
-    use super::weierstrass::*;
+    use super::sw::*;
     use crate::testing;
 
     type V = crate::pedersen::testing::TestVector<BandersnatchSha512Tai>;
@@ -382,7 +382,7 @@ mod test_vectors_pedersen_sw {
 
 #[cfg(all(test, feature = "ring"))]
 mod test_vectors_ring_sw {
-    use super::weierstrass::*;
+    use super::sw::*;
     use crate::testing;
 
     type V = crate::ring::testing::TestVector<BandersnatchSha512Tai>;
@@ -420,9 +420,9 @@ mod test_vectors_ring_sw {
 #[test]
 fn generator_te_sw_roundtrip() {
     use crate::utils::*;
-    let sw1 = weierstrass::AffinePoint::generator();
+    let sw1 = sw::AffinePoint::generator();
     let ed1 = sw_to_te(&sw1).unwrap();
-    let ed2 = edwards::AffinePoint::generator();
+    let ed2 = te::AffinePoint::generator();
     assert_eq!(ed1, ed2);
     let sw2 = te_to_sw(&ed1).unwrap();
     assert_eq!(sw1, sw2);

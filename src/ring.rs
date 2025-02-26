@@ -351,8 +351,56 @@ pub(crate) mod testing {
     use super::*;
     use crate::pedersen;
     use crate::testing::{self as common, TEST_SEED};
+    use ark_ec::{
+        short_weierstrass::{Affine as SWAffine, SWCurveConfig},
+        twisted_edwards::{Affine as TEAffine, TECurveConfig},
+    };
 
     pub const TEST_RING_SIZE: usize = 8;
+
+    fn find_complement_point<C: SWCurveConfig>() -> SWAffine<C> {
+        use ark_ff::{One, Zero};
+        assert!(!C::cofactor_is_one());
+        let mut x = C::BaseField::zero();
+        loop {
+            if let Some(p) = SWAffine::get_point_from_x_unchecked(x, false)
+                .filter(|p| !p.is_in_correct_subgroup_assuming_on_curve())
+            {
+                return p;
+            }
+            x += C::BaseField::one();
+        }
+    }
+
+    pub trait FindAccumulatorBase<S: Suite>: Sized {
+        fn find_accumulator_base(data: &[u8]) -> Option<Self>;
+    }
+
+    impl<S, C> FindAccumulatorBase<S> for SWAffine<C>
+    where
+        C: SWCurveConfig,
+        S: Suite<Affine = Self>,
+    {
+        fn find_accumulator_base(data: &[u8]) -> Option<Self> {
+            let p = S::data_to_point(data)?;
+            let c = find_complement_point();
+            let res = (p + c).into_affine();
+            debug_assert!(!res.is_in_correct_subgroup_assuming_on_curve());
+            Some(res)
+        }
+    }
+
+    impl<S, C> FindAccumulatorBase<S> for TEAffine<C>
+    where
+        C: TECurveConfig,
+        S: Suite<Affine = Self>,
+    {
+        fn find_accumulator_base(data: &[u8]) -> Option<Self> {
+            let res = S::data_to_point(data)?;
+            debug_assert!(res.is_in_correct_subgroup_assuming_on_curve());
+            Some(res)
+        }
+    }
 
     #[allow(unused)]
     pub fn prove_verify<S: RingSuite>()
@@ -401,9 +449,8 @@ pub(crate) mod testing {
     where
         BaseField<S>: ark_ff::PrimeField,
         CurveConfig<S>: TECurveConfig + Clone,
-        AffinePoint<S>: TEMapping<CurveConfig<S>> + utils::common::FindAccumulatorBase<S>,
+        AffinePoint<S>: TEMapping<CurveConfig<S>> + FindAccumulatorBase<S>,
     {
-        use utils::common::FindAccumulatorBase;
         let p = AffinePoint::<S>::find_accumulator_base(ACCUMULATOR_BASE_SEED).unwrap();
         assert_eq!(S::ACCUMULATOR_BASE, p);
     }
