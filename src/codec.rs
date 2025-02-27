@@ -7,14 +7,28 @@ use super::*;
 pub trait Codec<S: Suite> {
     const BIG_ENDIAN: bool;
 
+    /// Point encode into the given buffer.
+    fn point_encode_into(pt: &AffinePoint<S>, buf: &mut Vec<u8>);
+
     /// Point encode.
-    fn point_encode(pt: &AffinePoint<S>, buf: &mut Vec<u8>);
+    fn point_encode(pt: &AffinePoint<S>) -> Vec<u8> {
+        let mut buf = Vec::new();
+        Self::point_encode_into(pt, &mut buf);
+        buf
+    }
 
     /// Point decode.
     fn point_decode(buf: &[u8]) -> Result<AffinePoint<S>, Error>;
 
-    /// Scalar encode
-    fn scalar_encode(sc: &ScalarField<S>, buf: &mut Vec<u8>);
+    /// Scalar encode into the given buffer.
+    fn scalar_encode_into(sc: &ScalarField<S>, buf: &mut Vec<u8>);
+
+    /// Scalar encode.
+    fn scalar_encode(sc: &ScalarField<S>) -> Vec<u8> {
+        let mut buf = Vec::new();
+        Self::scalar_encode_into(sc, &mut buf);
+        buf
+    }
 
     /// Scalar decode.
     fn scalar_decode(buf: &[u8]) -> ScalarField<S>;
@@ -28,7 +42,7 @@ pub struct ArkworksCodec;
 impl<S: Suite> Codec<S> for ArkworksCodec {
     const BIG_ENDIAN: bool = false;
 
-    fn point_encode(pt: &AffinePoint<S>, buf: &mut Vec<u8>) {
+    fn point_encode_into(pt: &AffinePoint<S>, buf: &mut Vec<u8>) {
         pt.serialize_compressed(buf).unwrap();
     }
 
@@ -36,7 +50,7 @@ impl<S: Suite> Codec<S> for ArkworksCodec {
         AffinePoint::<S>::deserialize_compressed_unchecked(buf).map_err(Into::into)
     }
 
-    fn scalar_encode(sc: &ScalarField<S>, buf: &mut Vec<u8>) {
+    fn scalar_encode_into(sc: &ScalarField<S>, buf: &mut Vec<u8>) {
         sc.serialize_compressed(buf).unwrap();
     }
 
@@ -58,7 +72,7 @@ where
 {
     const BIG_ENDIAN: bool = true;
 
-    fn point_encode(pt: &AffinePoint<S>, buf: &mut Vec<u8>) {
+    fn point_encode_into(pt: &AffinePoint<S>, buf: &mut Vec<u8>) {
         use ark_ff::biginteger::BigInteger;
         use te_sw_map::SWMapping;
 
@@ -101,7 +115,7 @@ where
         Ok(AffinePoint::<S>::from_sw(sw))
     }
 
-    fn scalar_encode(sc: &ScalarField<S>, buf: &mut Vec<u8>) {
+    fn scalar_encode_into(sc: &ScalarField<S>, buf: &mut Vec<u8>) {
         let mut tmp = Vec::new();
         sc.serialize_compressed(&mut tmp).unwrap();
         tmp.reverse();
@@ -115,9 +129,7 @@ where
 
 /// Point encoder wrapper using `Suite::Codec`.
 pub fn point_encode<S: Suite>(pt: &AffinePoint<S>) -> Vec<u8> {
-    let mut buf = Vec::new();
-    S::Codec::point_encode(pt, &mut buf);
-    buf
+    S::Codec::point_encode(pt)
 }
 
 /// Point decoder wrapper using `Suite::Codec`.
@@ -127,9 +139,7 @@ pub fn point_decode<S: Suite>(buf: &[u8]) -> Result<AffinePoint<S>, Error> {
 
 /// Scalar encoder wrapper using `Suite::Codec`.
 pub fn scalar_encode<S: Suite>(sc: &ScalarField<S>) -> Vec<u8> {
-    let mut buf = Vec::new();
-    S::Codec::scalar_encode(sc, &mut buf);
-    buf
+    S::Codec::scalar_encode(sc)
 }
 
 /// Scalar decoder wrapper using `Suite::Codec`.

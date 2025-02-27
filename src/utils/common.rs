@@ -120,7 +120,7 @@ pub fn challenge_rfc_9381<S: Suite>(pts: &[&AffinePoint<S>], ad: &[u8]) -> Scala
     const DOM_SEP_END: u8 = 0x00;
     let mut buf = [S::SUITE_ID, &[DOM_SEP_START]].concat();
     pts.iter().for_each(|p| {
-        S::Codec::point_encode(p, &mut buf);
+        S::Codec::point_encode_into(p, &mut buf);
     });
     buf.extend_from_slice(ad);
     buf.push(DOM_SEP_END);
@@ -133,7 +133,7 @@ pub fn point_to_hash_rfc_9381<S: Suite>(pt: &AffinePoint<S>) -> HashOutput<S> {
     const DOM_SEP_START: u8 = 0x03;
     const DOM_SEP_END: u8 = 0x00;
     let mut buf = [S::SUITE_ID, &[DOM_SEP_START]].concat();
-    S::Codec::point_encode(pt, &mut buf);
+    S::Codec::point_encode_into(pt, &mut buf);
     buf.push(DOM_SEP_END);
     hash::<S::Hasher>(&buf)
 }

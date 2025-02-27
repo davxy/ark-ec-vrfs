@@ -53,7 +53,7 @@ impl<S: IetfSuite> CanonicalDeserialize for Proof<S> {
         if reader.read_exact(&mut c_buf[..]).is_err() {
             return Err(ark_serialize::SerializationError::InvalidData);
         }
-        let c = codec::scalar_decode::<S>(&c_buf);
+        let c = S::Codec::scalar_decode(&c_buf);
         let s = <ScalarField<S> as CanonicalDeserialize>::deserialize_with_mode(
             &mut reader,
             compress,
@@ -192,8 +192,8 @@ pub mod testing {
 
         fn from_map(map: &common::TestVectorMap) -> Self {
             let base = common::TestVector::from_map(map);
-            let c = codec::scalar_decode::<S>(&map.get_bytes("proof_c"));
-            let s = codec::scalar_decode::<S>(&map.get_bytes("proof_s"));
+            let c = S::Codec::scalar_decode(&map.get_bytes("proof_c"));
+            let s = S::Codec::scalar_decode(&map.get_bytes("proof_s"));
             Self { base, c, s }
         }
 

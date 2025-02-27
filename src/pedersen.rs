@@ -23,8 +23,8 @@ pub trait PedersenSuite: IetfSuite {
         const DOM_SEP_START: u8 = 0xCC;
         const DOM_SEP_END: u8 = 0x00;
         let mut buf = [Self::SUITE_ID, &[DOM_SEP_START]].concat();
-        Self::Codec::scalar_encode(secret, &mut buf);
-        Self::Codec::point_encode(input, &mut buf);
+        Self::Codec::scalar_encode_into(secret, &mut buf);
+        Self::Codec::point_encode_into(input, &mut buf);
         buf.extend_from_slice(ad);
         buf.push(DOM_SEP_END);
         let hash = &utils::hash::<Self::Hasher>(&buf);
@@ -224,12 +224,12 @@ pub(crate) mod testing {
 
         fn from_map(map: &common::TestVectorMap) -> Self {
             let base = common::TestVector::from_map(map);
-            let blind = codec::scalar_decode::<S>(&map.get_bytes("blinding"));
-            let pk_com = codec::point_decode::<S>(&map.get_bytes("proof_pk_com")).unwrap();
+            let blind = S::Codec::scalar_decode(&map.get_bytes("blinding"));
+            let pk_com = S::Codec::point_decode(&map.get_bytes("proof_pk_com")).unwrap();
             let r = codec::point_decode::<S>(&map.get_bytes("proof_r")).unwrap();
             let ok = codec::point_decode::<S>(&map.get_bytes("proof_ok")).unwrap();
-            let s = codec::scalar_decode::<S>(&map.get_bytes("proof_s"));
-            let sb = codec::scalar_decode::<S>(&map.get_bytes("proof_sb"));
+            let s = S::Codec::scalar_decode(&map.get_bytes("proof_s"));
+            let sb = S::Codec::scalar_decode(&map.get_bytes("proof_sb"));
             let proof = Proof {
                 pk_com,
                 r,
