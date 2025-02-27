@@ -149,7 +149,7 @@ mod test_vectors_ietf {
     use crate::testing;
 
     type V = crate::ietf::testing::TestVector<BandersnatchSha512Ell2>;
-    const VECTOR_ID: &str = "bandersnatch_ed_sha512_ell2_ietf";
+    const VECTOR_ID: &str = "bandersnatch_sha512_ell2_ietf";
 
     #[test]
     #[ignore = "test vectors generator"]
@@ -169,7 +169,7 @@ mod test_vectors_pedersen {
     use crate::testing;
 
     type V = crate::pedersen::testing::TestVector<BandersnatchSha512Ell2>;
-    const VECTOR_ID: &str = "bandersnatch_ed_sha512_ell2_pedersen";
+    const VECTOR_ID: &str = "bandersnatch_sha512_ell2_pedersen";
 
     #[test]
     #[ignore = "test vectors generator"]
@@ -189,7 +189,7 @@ mod test_vectors_ring {
     use crate::testing;
 
     type V = crate::ring::testing::TestVector<BandersnatchSha512Ell2>;
-    const VECTOR_ID: &str = "bandersnatch_ed_sha512_ell2_ring";
+    const VECTOR_ID: &str = "bandersnatch_sha512_ell2_ring";
 
     impl crate::ring::testing::RingSuiteExt for BandersnatchSha512Ell2 {
         fn ring_context() -> &'static RingContext {
