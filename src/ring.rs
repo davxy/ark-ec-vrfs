@@ -50,16 +50,16 @@ pub type PcsParams<S> = ring_proof::pcs::kzg::urs::URS<<S as RingSuite>::Pairing
 ///
 /// Basically all the application specific parameters required to construct and
 /// verify the ring proof.
-type PiopParams<S> = ring_proof::PiopParams<BaseField<S>, CurveConfig<S>>;
+pub type PiopParams<S> = ring_proof::PiopParams<BaseField<S>, CurveConfig<S>>;
 
 /// Ring keys commitment.
 pub type RingCommitment<S> = ring_proof::FixedColumnsCommitted<BaseField<S>, PcsCommitment<S>>;
 
 /// Ring prover key.
-pub type ProverKey<S> = ring_proof::ProverKey<BaseField<S>, Pcs<S>, TEAffine<CurveConfig<S>>>;
+pub type RingProverKey<S> = ring_proof::ProverKey<BaseField<S>, Pcs<S>, TEAffine<CurveConfig<S>>>;
 
 /// Ring verifier key.
-pub type VerifierKey<S> = ring_proof::VerifierKey<BaseField<S>, Pcs<S>>;
+pub type RingVerifierKey<S> = ring_proof::VerifierKey<BaseField<S>, Pcs<S>>;
 
 /// Ring prover.
 pub type RingProver<S> = ring_proof::ring_prover::RingProver<BaseField<S>, Pcs<S>, CurveConfig<S>>;
@@ -68,32 +68,13 @@ pub type RingProver<S> = ring_proof::ring_prover::RingProver<BaseField<S>, Pcs<S
 pub type RingVerifier<S> =
     ring_proof::ring_verifier::RingVerifier<BaseField<S>, Pcs<S>, CurveConfig<S>>;
 
-/// Actual ring proof.
-pub type RingProof<S> = ring_proof::RingProof<BaseField<S>, Pcs<S>>;
-
-#[macro_export]
-macro_rules! ring_suite_types {
-    ($suite:ident) => {
-        #[allow(dead_code)]
-        pub type PcsParams = $crate::ring::PcsParams<$suite>;
-        #[allow(dead_code)]
-        pub type RingContext = $crate::ring::RingContext<$suite>;
-        #[allow(dead_code)]
-        pub type RingCommitment = $crate::ring::RingCommitment<$suite>;
-        #[allow(dead_code)]
-        pub type RingVerifierKey = $crate::ring::VerifierKey<$suite>;
-        #[allow(dead_code)]
-        pub type RingProver = $crate::ring::RingProver<$suite>;
-        #[allow(dead_code)]
-        pub type RingVerifier = $crate::ring::RingVerifier<$suite>;
-        #[allow(dead_code)]
-        pub type RingProof = $crate::ring::Proof<$suite>;
-    };
-}
-
-/// Ring proof bundled together with a Pedersen proof.
+/// Raw ring proof.
 ///
-/// Pedersen proof is used to provide VRF capability.
+/// This is the primitive ring proof used in conjunction with Pedersen proof to
+/// construct the actual ring vrf proof [`Proof`].
+pub type RingBareProof<S> = ring_proof::RingProof<BaseField<S>, Pcs<S>>;
+
+/// Ring VRF proof.
 #[derive(Clone, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Proof<S: RingSuite>
 where
@@ -102,16 +83,17 @@ where
     AffinePoint<S>: TEMapping<CurveConfig<S>>,
 {
     pub pedersen_proof: PedersenProof<S>,
-    pub ring_proof: RingProof<S>,
+    pub ring_proof: RingBareProof<S>,
 }
 
+/// Ring VRF prover.
 pub trait Prover<S: RingSuite>
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: TECurveConfig,
     AffinePoint<S>: TEMapping<CurveConfig<S>>,
 {
-    /// Generate a proof for the given input/output and user additional data.
+    /// Generate a proof for the given input/output and additional data.
     fn prove(
         &self,
         input: Input<S>,
@@ -145,6 +127,7 @@ where
     }
 }
 
+/// Ring VRF verifier.
 pub trait Verifier<S: RingSuite>
 where
     BaseField<S>: ark_ff::PrimeField,
@@ -272,19 +255,19 @@ where
         self.piop_params.keyset_part_size
     }
 
-    /// Construct a `ProverKey` instance for the given ring.
+    /// Construct [`RingProverKey`] for the given ring.
     ///
     /// Note: if `pks.len() > self.max_ring_size()` the extra keys in the tail are ignored.
-    pub fn prover_key(&self, pks: &[AffinePoint<S>]) -> ProverKey<S> {
+    pub fn prover_key(&self, pks: &[AffinePoint<S>]) -> RingProverKey<S> {
         let pks = TEMapping::to_te_slice(&pks[..pks.len().min(self.max_ring_size())]);
         ring_proof::index(&self.pcs_params, &self.piop_params, &pks).0
     }
 
-    /// Construct `RingProver` from `ProverKey` for the prover implied by `key_index`.
+    /// Construct [`RingProver`] from [`RingProverKey`] for the prover implied by `key_index`.
     ///
     /// Key index is the prover index within the `pks` sequence passed to construct the
-    /// `ProverKey` via the `prover_key` method.
-    pub fn prover(&self, prover_key: ProverKey<S>, key_index: usize) -> RingProver<S> {
+    /// [`RingProverKey`] via the `prover_key` method.
+    pub fn prover(&self, prover_key: RingProverKey<S>, key_index: usize) -> RingProver<S> {
         RingProver::<S>::init(
             prover_key,
             self.piop_params.clone(),
@@ -293,27 +276,30 @@ where
         )
     }
 
-    /// Construct a `VerifierKey` instance for the given ring.
+    /// Construct a `RingVerifierKey` instance for the given ring.
     ///
     /// Note: if `pks.len() > self.max_ring_size()` the extra keys in the tail are ignored.
-    pub fn verifier_key(&self, pks: &[AffinePoint<S>]) -> VerifierKey<S> {
+    pub fn verifier_key(&self, pks: &[AffinePoint<S>]) -> RingVerifierKey<S> {
         let pks = TEMapping::to_te_slice(&pks[..pks.len().min(self.max_ring_size())]);
         ring_proof::index(&self.pcs_params, &self.piop_params, &pks).1
     }
 
-    /// Construct `VerifierKey` instance for the ring previously committed.
+    /// Construct `RingVerifierKey` instance for the ring previously committed.
     ///
     /// The `RingCommitment` instance can be obtained via the `VerifierKey::commitment()` method.
     ///
     /// This allows to quickly reconstruct the verifier key without having to recompute the
     /// keys commitment.
-    pub fn verifier_key_from_commitment(&self, commitment: RingCommitment<S>) -> VerifierKey<S> {
+    pub fn verifier_key_from_commitment(
+        &self,
+        commitment: RingCommitment<S>,
+    ) -> RingVerifierKey<S> {
         use ring_proof::pcs::PcsParams;
-        VerifierKey::<S>::from_commitment_and_kzg_vk(commitment, self.pcs_params.raw_vk())
+        RingVerifierKey::<S>::from_commitment_and_kzg_vk(commitment, self.pcs_params.raw_vk())
     }
 
-    /// Construct `RingVerifier` from `VerifierKey`.
-    pub fn verifier(&self, verifier_key: VerifierKey<S>) -> RingVerifier<S> {
+    /// Construct `RingVerifier` from `RingVerifierKey`.
+    pub fn verifier(&self, verifier_key: RingVerifierKey<S>) -> RingVerifier<S> {
         RingVerifier::<S>::init(
             verifier_key,
             self.piop_params.clone(),
@@ -321,14 +307,17 @@ where
         )
     }
 
-    /// Constructs a `RingVerifier` from a `VerifierKey` without a `RingContext` instance.
+    /// Constructs a `RingVerifier` from `RingVerifierKey` without no `RingContext`.
     ///
     /// While this approach is slightly less efficient than using a pre-constructed `RingContext`,
     /// as some parameters need to be computed on-the-fly, it is beneficial in memory or
     /// storage constrained environments. This avoids the need to retain the full `RingContext` for
     /// ring signature verification. Instead, the `VerifierKey` contains only the essential information
     /// needed to verify ring proofs.
-    pub fn verifier_no_context(verifier_key: VerifierKey<S>, ring_size: usize) -> RingVerifier<S> {
+    pub fn verifier_no_context(
+        verifier_key: RingVerifierKey<S>,
+        ring_size: usize,
+    ) -> RingVerifier<S> {
         RingVerifier::<S>::init(
             verifier_key,
             piop_params::<S>(domain_size::<S>(ring_size)),
@@ -398,6 +387,29 @@ where
     fn check(&self) -> Result<(), ark_serialize::SerializationError> {
         self.pcs_params.check()
     }
+}
+
+/// Define type aliases for the given ring suite.
+#[macro_export]
+macro_rules! ring_suite_types {
+    ($suite:ident) => {
+        #[allow(dead_code)]
+        pub type PcsParams = $crate::ring::PcsParams<$suite>;
+        #[allow(dead_code)]
+        pub type RingContext = $crate::ring::RingContext<$suite>;
+        #[allow(dead_code)]
+        pub type RingProverKey = $crate::ring::RingProverKey<$suite>;
+        #[allow(dead_code)]
+        pub type RingVerifierKey = $crate::ring::RingVerifierKey<$suite>;
+        #[allow(dead_code)]
+        pub type RingCommitment = $crate::ring::RingCommitment<$suite>;
+        #[allow(dead_code)]
+        pub type RingProver = $crate::ring::RingProver<$suite>;
+        #[allow(dead_code)]
+        pub type RingVerifier = $crate::ring::RingVerifier<$suite>;
+        #[allow(dead_code)]
+        pub type Proof = $crate::ring::Proof<$suite>;
+    };
 }
 
 #[cfg(test)]
@@ -547,7 +559,7 @@ pub(crate) mod testing {
         pub pedersen: pedersen::testing::TestVector<S>,
         pub ring_pks: [AffinePoint<S>; TEST_RING_SIZE],
         pub ring_pks_com: RingCommitment<S>,
-        pub ring_proof: RingProof<S>,
+        pub ring_proof: RingBareProof<S>,
     }
 
     impl<S: RingSuite> core::fmt::Debug for TestVector<S>
@@ -617,7 +629,7 @@ pub(crate) mod testing {
 
             let ring_pks = map.get::<[AffinePoint<S>; TEST_RING_SIZE]>("ring_pks");
             let ring_pks_com = map.get::<RingCommitment<S>>("ring_pks_com");
-            let ring_proof = map.get::<RingProof<S>>("ring_proof");
+            let ring_proof = map.get::<RingBareProof<S>>("ring_proof");
 
             Self {
                 pedersen,

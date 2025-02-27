@@ -10,10 +10,7 @@ pub trait IetfSuite: Suite {}
 
 impl<T> IetfSuite for T where T: Suite {}
 
-/// VRF proof generic over the cipher suite.
-///
-/// An output point which can be used to derive the actual output together
-/// with the actual proof of the input point and the associated data.
+/// IETF VRF proof.
 #[derive(Debug, Clone)]
 pub struct Proof<S: IetfSuite> {
     pub c: ScalarField<S>,
@@ -24,7 +21,7 @@ impl<S: IetfSuite> CanonicalSerialize for Proof<S> {
     fn serialize_with_mode<W: ark_serialize::Write>(
         &self,
         mut writer: W,
-        _compress_always: ark_serialize::Compress,
+        compress: ark_serialize::Compress,
     ) -> Result<(), ark_serialize::SerializationError> {
         let c_buf = codec::scalar_encode::<S>(&self.c);
         if c_buf.len() < S::CHALLENGE_LEN {
@@ -37,7 +34,7 @@ impl<S: IetfSuite> CanonicalSerialize for Proof<S> {
             &c_buf[..S::CHALLENGE_LEN]
         };
         writer.write_all(buf)?;
-        self.s.serialize_compressed(&mut writer)?;
+        self.s.serialize_with_mode(&mut writer, compress)?;
         Ok(())
     }
 
@@ -49,7 +46,7 @@ impl<S: IetfSuite> CanonicalSerialize for Proof<S> {
 impl<S: IetfSuite> CanonicalDeserialize for Proof<S> {
     fn deserialize_with_mode<R: ark_serialize::Read>(
         mut reader: R,
-        _compress_always: ark_serialize::Compress,
+        compress: ark_serialize::Compress,
         validate: ark_serialize::Validate,
     ) -> Result<Self, ark_serialize::SerializationError> {
         let mut c_buf = ark_std::vec![0; S::CHALLENGE_LEN];
@@ -59,7 +56,7 @@ impl<S: IetfSuite> CanonicalDeserialize for Proof<S> {
         let c = codec::scalar_decode::<S>(&c_buf);
         let s = <ScalarField<S> as CanonicalDeserialize>::deserialize_with_mode(
             &mut reader,
-            ark_serialize::Compress::No,
+            compress,
             validate,
         )?;
         Ok(Proof { c, s })

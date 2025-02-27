@@ -32,6 +32,7 @@ pub trait PedersenSuite: IetfSuite {
     }
 }
 
+/// Pedersen proof.
 #[derive(Debug, Clone, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Proof<S: PedersenSuite> {
     pk_com: AffinePoint<S>,
