@@ -6,7 +6,7 @@ authors = [ "Davide Galassi <davxy@datawok.net>" ]
 license = "MIT"
 description = "Elliptic curve VRF with additional data"
 keywords = [ "cryptography", "vrf", "ring-vrf", "zk-snark" ]
-repository = "https://github.com/davxy/ark-ecvrf"
+repository = "https://github.com/davxy/ark-ec-vrfs"
 
 [dependencies]
 ark-ec = { version = "0.5", default-features = false }
