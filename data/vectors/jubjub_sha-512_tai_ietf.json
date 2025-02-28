@@ -1,0 +1,93 @@
+[
+  {
+    "comment": "jubjub_sha-512_tai_ietf - vector-1",
+    "sk": "2e5fcb767f3f6528c6ff5304168c79bff667f830156433d7660fb98d72bc5a01",
+    "pk": "30f478ac3c74e78188193194fed53fb95ab9a5e3bb0b5177540d0e3668bfb4d6",
+    "alpha": "",
+    "salt": "",
+    "ad": "",
+    "h": "deb13729d88f7003e094dcef981aa8e62ce35d7dff20143c1ece67335dd23257",
+    "gamma": "33d5f173ef131ffa7cd137ced05e2374a78d085f8e0d0a8c2f64b5488e535ceb",
+    "beta": "0b5d3619b606a30f43d0b80f9b72d619caca4ae6c86afd6a7a54dd1a892ff34559279ca1341f177a2909cb97a2593ffc92399507867d29cb86615b83a4061d31",
+    "proof_c": "2b870aabdbe252ed892a6e1c35a8e879f3fa900aa74b0158a3baef1888e54e02",
+    "proof_s": "d7dc8916c042374ed5601171f7c3db1ac65e7528efd56894fc0b6e9754449801"
+  },
+  {
+    "comment": "jubjub_sha-512_tai_ietf - vector-2",
+    "sk": "ca48b2a3649f62e7c240e22851cb514b57ca1dfad8de5e6d79f06329357bd008",
+    "pk": "308996eb46e494d162f29bd6abacf14685bd204eeaeefd78d226da240dab9e3c",
+    "alpha": "0a",
+    "salt": "",
+    "ad": "",
+    "h": "0602a39a45b8b51b28f4489367e3215d8886e650a7dcd8a21e7365a2bfa1994e",
+    "gamma": "703fa7dce4f7acd51a92b5e845af77babee0c9cf9a680901c621ff98b0637821",
+    "beta": "282c8073be0faba5ec8d75b7c69790d4032be1af17b00d32d44b1d23a5b0d4935333e66481a212c42a0c6165c7ba568c6203a6b7e687bf513559b998af718fa0",
+    "proof_c": "b88f4c1462bc7bdd70e51a28e4bc8d9f34bbf0a9a7c12aedbbc7a34193890e0c",
+    "proof_s": "51b8f86737125e2f58ad1ea56d3c6cf09fcda65e6435fbed57e75bf762673f09"
+  },
+  {
+    "comment": "jubjub_sha-512_tai_ietf - vector-3",
+    "sk": "d0286e69edde875b7d5587068d03ffda50d2af165574c7b29136962b81796603",
+    "pk": "b818097374bdcec279c69356de3398a240f2542bfbe07b339d56d0b452c16cc6",
+    "alpha": "",
+    "salt": "",
+    "ad": "0b8c",
+    "h": "deb13729d88f7003e094dcef981aa8e62ce35d7dff20143c1ece67335dd23257",
+    "gamma": "28e78b819a6449ebeaa94866dbb93290177bb4c58fe9ac9dc5a82a8c871afd1a",
+    "beta": "d882d5ca4549f669da6c325957914bb19f0b7ee9eda29a8012cc2fde2b0e2f21ad321f6e6c2096582cae71af42f2ca345fb2dc3bf55cdabda35b9d937f54f89e",
+    "proof_c": "a6cd47823711a71bd8851d2ce0254f40bfa51d496067892b73805b50a9bda206",
+    "proof_s": "73e1521fdf993ce4f4b09d8d376509a65668102f1bb0b34e2fc5de58d9a24104"
+  },
+  {
+    "comment": "jubjub_sha-512_tai_ietf - vector-4",
+    "sk": "0e141badfe43931575e134862426bc47b86440d2b2e643862c1250a1464a2203",
+    "pk": "205db8f7d735e7df59410f974e39d0c6797119034b090f749f0306ce7c27fb40",
+    "alpha": "73616d706c65",
+    "salt": "",
+    "ad": "",
+    "h": "d9151cdd64a5d16bf3149694f13dfcbc7df5b3657f70e3aa8daa2f67b0e75ccf",
+    "gamma": "5014e883d3c7994ecac93af9e6a95aeca4d5fc3be5e77fac8d8af1f313b0b12a",
+    "beta": "6035d22c8348614fb393c2910e81412711ff1defcfd1939e5744cbec10600489979bbe25a47f1738cb4937d9a3a16914cef65563a57b9142638a151d4ea459ff",
+    "proof_c": "3fc38d46d8dcbc9827aedbc3e0febc2f6cc3bc67db31fb66a23e4167ee41690b",
+    "proof_s": "e270d00318f80a6b75253ec475685ecf73c748b9209fb189159309d160160f07"
+  },
+  {
+    "comment": "jubjub_sha-512_tai_ietf - vector-5",
+    "sk": "c5b89638ae4eb16237a1d6f39d48687e9bf12733eb74c6b21edf871ca576fa02",
+    "pk": "8146083de63a51ca4c8c28126e5bed6439e3a2ad6c23307b96c030d3dabaffd6",
+    "alpha": "42616e646572736e6174636820766563746f72",
+    "salt": "",
+    "ad": "",
+    "h": "4faa81c497e007f695dceca4d92abddf2f9d79aa298b5fad477079907fabe033",
+    "gamma": "b6014d3da5289c81014b6b5fb077183f4fc67370d589b04703f331d497c21b5a",
+    "beta": "bb1f90f574cac7deaac1a52fab802e4305cceababa4d874fcf1e0c122f13ee966c05b375f7d48df5ae7d286cb470f26a0f10ff19abe4f3d90d568c27621b4f0b",
+    "proof_c": "c27de8ec3e87d002e2721d77ebf51b6d96122be70b9558f24a72a40c9dfe9a0c",
+    "proof_s": "cdeda57bd86400ac1444ce44a0f6ab107bb8a4c26c24e9d35d91b1cf005c800c"
+  },
+  {
+    "comment": "jubjub_sha-512_tai_ietf - vector-6",
+    "sk": "c5b89638ae4eb16237a1d6f39d48687e9bf12733eb74c6b21edf871ca576fa02",
+    "pk": "8146083de63a51ca4c8c28126e5bed6439e3a2ad6c23307b96c030d3dabaffd6",
+    "alpha": "42616e646572736e6174636820766563746f72",
+    "salt": "",
+    "ad": "1f42",
+    "h": "4faa81c497e007f695dceca4d92abddf2f9d79aa298b5fad477079907fabe033",
+    "gamma": "b6014d3da5289c81014b6b5fb077183f4fc67370d589b04703f331d497c21b5a",
+    "beta": "bb1f90f574cac7deaac1a52fab802e4305cceababa4d874fcf1e0c122f13ee966c05b375f7d48df5ae7d286cb470f26a0f10ff19abe4f3d90d568c27621b4f0b",
+    "proof_c": "c55a0a2f5da77f4df3c98d8971256481d49ce7e00eb6d0373c850b0ac6b91706",
+    "proof_s": "31f283a6d0b632a43a72e856f5c1c2d0db108611564966b354ec9f0c5dd4610d"
+  },
+  {
+    "comment": "jubjub_sha-512_tai_ietf - vector-7",
+    "sk": "d742adcfce2a341263158af472d390d680eef01422290420cc61107497597005",
+    "pk": "a1014ce47c0acb248907b95d8cac8427d56ec88f6b88e6efa85e9953a2ef2e6b",
+    "alpha": "42616e646572736e6174636820766563746f72",
+    "salt": "",
+    "ad": "1f42",
+    "h": "4faa81c497e007f695dceca4d92abddf2f9d79aa298b5fad477079907fabe033",
+    "gamma": "ef00ace4b541a74d06b05d03aa8447cb66a3a11aea47f26a0197ab7ff0498bb8",
+    "beta": "9b5d9daf0ae53d37fa2d1458005194e14c20520ede7fb12cb76b4b27743104bcbc71e6815708bf6136360c667515f5707ad68037b6efd32e59e17df962c8d10a",
+    "proof_c": "ae387564a8455de2aba2a274ed2f06291764fadf6687ce67b463c1e28f7a660d",
+    "proof_s": "8d0e61ed17d9e14a8e53800cb69cea7df6072aa3d5974c010f05ecd22c961707"
+  }
+]

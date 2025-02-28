@@ -1,16 +1,16 @@
-//! `ECVRF Baby-JubJub SHA-512 Try and Increment H2C` suite.
+//! `ECVRF JubJub SHA-512 Try and Increment H2C` suite.
 //!
 //! Configuration:
 //!
-//! * `suite_string` = b"Baby-JubJub_SHA-512_TAI".
+//! * `suite_string` = b"JubJub_SHA-512_TAI".
 //!
-//! - The EC group is the prime subgroup of the Baby-JubJub elliptic curve
-//!   as defined by <https://github.com/barryWhiteHat/baby_jubjub>.
+//! - The EC group is the prime subgroup of the JubJub elliptic curve
+//!   as defined by <https://github.com/zkcrypto/jubjub>.
 //!   For this group, `fLen` = `qLen` = $32$ and `cofactor` = $8$.
 //!
 //! - The prime subgroup generator G is defined as follows:
-//!   - G.x = 19698561148652590122159747500897617769866003486955115824547446575314762165298
-//!   - G.y = 19298250018296453272277890825869354524455968081175474282777126169995084727839
+//!   - G.x = 8076246640662884909881801758704306714034609987455869804520522091855516602923
+//!   - G.y = 13262374693698910701929044844600465831413122818447359594527400194675274060458
 //!
 //! * `cLen` = 32.
 //!
@@ -47,27 +47,28 @@ use crate::{pedersen::PedersenSuite, *};
 use ark_ff::MontFp;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct BabyJubJubSha512Ell2;
+pub struct JubJubSha512Ell2;
 
-type ThisSuite = BabyJubJubSha512Ell2;
+type ThisSuite = JubJubSha512Ell2;
 
 suite_types!(ThisSuite);
 
 impl Suite for ThisSuite {
-    const SUITE_ID: &'static [u8] = b"Baby-JubJub_SHA-512_TAI";
+    const SUITE_ID: &'static [u8] = b"JubJub_SHA-512_TAI";
     const CHALLENGE_LEN: usize = 32;
 
-    type Affine = ark_ed_on_bn254::EdwardsAffine;
+    type Affine = ark_ed_on_bls12_381::EdwardsAffine;
     type Hasher = sha2::Sha512;
     type Codec = codec::ArkworksCodec;
 }
 
 impl PedersenSuite for ThisSuite {
     const BLINDING_BASE: AffinePoint = {
-        const X: BaseField =
-            MontFp!("8170247200255741810297410022472365370979789984587637609570347196251706043122");
+        const X: BaseField = MontFp!(
+            "42257337814662035284373945156525735092765968053982822992704750832078779438788"
+        );
         const Y: BaseField = MontFp!(
-            "16313972569917201570489077828713531620741538540099917729994937953803219324220"
+            "47476395315228831116309413527962830333178159651930104661512857647213254194102"
         );
         AffinePoint::new_unchecked(X, Y)
     };
@@ -75,23 +76,25 @@ impl PedersenSuite for ThisSuite {
 
 #[cfg(feature = "ring")]
 impl crate::ring::RingSuite for ThisSuite {
-    type Pairing = ark_bn254::Bn254;
+    type Pairing = ark_bls12_381::Bls12_381;
 
     const ACCUMULATOR_BASE: AffinePoint = {
-        const X: BaseField =
-            MontFp!("8334029725957642160470284944665621666856984888124906457551833753516275522323");
+        const X: BaseField = MontFp!(
+            "46194868970636137215665291958977045607402791989805288388161474094918623165215"
+        );
         const Y: BaseField = MontFp!(
-            "10237605137497358696282308894975345705288586061295962071480054416003035883897"
+            "25076105280846228970329523770418275693120076470674973696258471026983323652479"
         );
         AffinePoint::new_unchecked(X, Y)
     };
 
     const PADDING: AffinePoint = {
         const X: BaseField = MontFp!(
-            "10484439290244840696730961435280619956348075205101200681758384175205680775242"
+            "29457445426702359580423699774559186616331674592397285916231493776142609373871"
         );
-        const Y: BaseField =
-            MontFp!("5384531613284628456735220777464884060069689105521477227482728298235083800530");
+        const Y: BaseField = MontFp!(
+            "35786798678243451862860591331740861701769099764458806489168460821196579577970"
+        );
         AffinePoint::new_unchecked(X, Y)
     };
 }
@@ -114,7 +117,7 @@ pub(crate) mod tests {
 
     #[cfg(feature = "ring")]
     impl crate::ring::testing::RingSuiteExt for ThisSuite {
-        const SRS_FILE: &str = crate::testing::BN254_PCS_SRS_FILE;
+        const SRS_FILE: &str = crate::testing::BLS12_381_PCS_SRS_FILE;
 
         fn context() -> &'static RingContext {
             use std::sync::OnceLock;

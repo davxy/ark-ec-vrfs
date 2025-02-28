@@ -66,10 +66,6 @@ impl Suite for ThisSuite {
     fn nonce(sk: &ScalarField, pt: Input) -> ScalarField {
         utils::nonce_rfc_6979::<Self>(sk, &pt.0)
     }
-
-    fn data_to_point(data: &[u8]) -> Option<AffinePoint> {
-        utils::hash_to_curve_tai_rfc_9381::<Self>(data)
-    }
 }
 
 impl PedersenSuite for ThisSuite {
