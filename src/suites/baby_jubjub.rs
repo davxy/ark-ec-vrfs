@@ -1,17 +1,16 @@
-//! `ECVRF Bandersnatch SHA-512 Elligator2` suite.
+//! `ECVRF Baby-JubJub SHA-512 Try and Increment H2C` suite.
 //!
 //! Configuration:
 //!
-//! * `suite_string` = b"Bandersnatch_SHA-512_ELL2" for Twisted Edwards form.
+//! * `suite_string` = b"Baby-JubJub_SHA-512_TAI".
 //!
-//! - The EC group is the prime subgroup of the Bandersnatch elliptic curve,
-//!   in Twisted Edwards form, with finite field and curve parameters as specified in
-//!   [MSZ21](https://eprint.iacr.org/2021/1152).
-//!   For this group, `fLen` = `qLen` = $32$ and `cofactor` = $4$.
+//! - The EC group is the prime subgroup of the Baby-JubJub elliptic curve
+//!   as defined by <https://github.com/barryWhiteHat/baby_jubjub>.
+//!   For this group, `fLen` = `qLen` = $32$ and `cofactor` = $8$.
 //!
 //! - The prime subgroup generator G is defined as follows:
-//!   - G.x = 18886178867200960497001835917649091219057080094937609519140440539760939937304
-//!   - G.y = 19188667384257783945677642223292697773471335439753913231509108946878080696678
+//!   - G.x = 19698561148652590122159747500897617769866003486955115824547446575314762165298
+//!   - G.y = 19298250018296453272277890825869354524455968081175474282777126169995084727839
 //!
 //! * `cLen` = 32.
 //!
@@ -41,45 +40,35 @@
 //! * The hash function Hash is SHA-512 as specified in
 //!   [RFC6234](https://www.rfc-editor.org/rfc/rfc6234), with hLen = 64.
 //!
-//! * The `ECVRF_encode_to_curve` function uses *Elligator2* method described in
-//!   section 6.8.2 of [RFC-9380](https://datatracker.ietf.org/doc/rfc9380) and is
-//!   described in section 5.4.1.2 of [RFC-9381](https://datatracker.ietf.org/doc/rfc9381),
-//!   with `h2c_suite_ID_string` = `"Bandersnatch_XMD:SHA-512_ELL2_RO_"`
+//! * The `ECVRF_encode_to_curve` function uses try and increment.
+//!   with `h2c_suite_ID_string` = `"BabyJubJub:SHA-512_TAI_RO_"`
 //!   and domain separation tag `DST = "ECVRF_" || h2c_suite_ID_string || suite_string`.
 
 use crate::{pedersen::PedersenSuite, *};
 use ark_ff::MontFp;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct BandersnatchSha512Ell2;
+pub struct BabyJubJubSha512Ell2;
 
-type ThisSuite = BandersnatchSha512Ell2;
+type ThisSuite = BabyJubJubSha512Ell2;
 
 suite_types!(ThisSuite);
 
 impl Suite for ThisSuite {
-    const SUITE_ID: &'static [u8] = b"Bandersnatch_SHA-512_ELL2";
+    const SUITE_ID: &'static [u8] = b"Baby-JubJub_SHA-512_TAI";
     const CHALLENGE_LEN: usize = 32;
 
-    type Affine = ark_ed_on_bls12_381_bandersnatch::EdwardsAffine;
+    type Affine = ark_ed_on_bn254::EdwardsAffine;
     type Hasher = sha2::Sha512;
     type Codec = codec::ArkworksCodec;
-
-    /// Hash data to a curve point using Elligator2 method described by RFC 9380.
-    fn data_to_point(data: &[u8]) -> Option<AffinePoint> {
-        // "XMD" for expand_message_xmd (Section 5.3.1).
-        // "RO" for random oracle (Section 3 - hash_to_curve method)
-        let h2c_suite_id = b"Bandersnatch_XMD:SHA-512_ELL2_RO_";
-        utils::hash_to_curve_ell2_rfc_9380::<Self>(data, h2c_suite_id)
-    }
 }
 
 impl PedersenSuite for ThisSuite {
     const BLINDING_BASE: AffinePoint = {
         const X: BaseField =
-            MontFp!("6150229251051246713677296363717454238956877613358614224171740096471278798312");
+            MontFp!("8170247200255741810297410022472365370979789984587637609570347196251706043122");
         const Y: BaseField = MontFp!(
-            "28442734166467795856797249030329035618871580593056783094884474814923353898473"
+            "16313972569917201570489077828713531620741538540099917729994937953803219324220"
         );
         AffinePoint::new_unchecked(X, Y)
     };
@@ -87,25 +76,23 @@ impl PedersenSuite for ThisSuite {
 
 #[cfg(feature = "ring")]
 impl crate::ring::RingSuite for ThisSuite {
-    type Pairing = ark_bls12_381::Bls12_381;
+    type Pairing = ark_bn254::Bn254;
 
     const ACCUMULATOR_BASE: AffinePoint = {
-        const X: BaseField = MontFp!(
-            "37805570861274048643170021838972902516980894313648523898085159469000338764576"
-        );
+        const X: BaseField =
+            MontFp!("8334029725957642160470284944665621666856984888124906457551833753516275522323");
         const Y: BaseField = MontFp!(
-            "14738305321141000190236674389841754997202271418876976886494444739226156422510"
+            "10237605137497358696282308894975345705288586061295962071480054416003035883897"
         );
         AffinePoint::new_unchecked(X, Y)
     };
 
     const PADDING: AffinePoint = {
         const X: BaseField = MontFp!(
-            "26287722405578650394504321825321286533153045350760430979437739593351290020913"
+            "10484439290244840696730961435280619956348075205101200681758384175205680775242"
         );
-        const Y: BaseField = MontFp!(
-            "19058981610000167534379068105702216971787064146691007947119244515951752366738"
-        );
+        const Y: BaseField =
+            MontFp!("5384531613284628456735220777464884060069689105521477227482728298235083800530");
         AffinePoint::new_unchecked(X, Y)
     };
 }
@@ -128,21 +115,12 @@ pub(crate) mod tests {
 
     #[cfg(feature = "ring")]
     impl crate::ring::testing::RingSuiteExt for ThisSuite {
-        const SRS_FILE: &str = crate::testing::BLS12_381_PCS_SRS_FILE;
+        const SRS_FILE: &str = crate::testing::BN254_PCS_SRS_FILE;
 
         fn context() -> &'static RingContext {
             use std::sync::OnceLock;
             static RING_CTX: OnceLock<RingContext> = OnceLock::new();
             RING_CTX.get_or_init(Self::load_context)
         }
-    }
-
-    #[test]
-    fn elligator2_hash_to_curve() {
-        use crate::testing::CheckPoint;
-        let raw = crate::testing::random_vec(42, None);
-        assert!(ThisSuite::data_to_point(&raw)
-            .map(|p| p.check(true).ok())
-            .is_some());
     }
 }

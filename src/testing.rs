@@ -7,10 +7,22 @@ use ark_std::{rand::RngCore, UniformRand};
 
 pub const TEST_SEED: &[u8] = b"seed";
 
-// Zcash SRS file derived from (https://zfnd.org/conclusion-of-the-powers-of-tau-ceremony).
-pub const PCS_SRS_FILE: &str = concat!(
+/// Zcash SRS file.
+///
+/// Derived from <https://zfnd.org/conclusion-of-the-powers-of-tau-ceremony>.
+/// Domain size: 2^11.
+pub const BLS12_381_PCS_SRS_FILE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/data/zcash-bls12-381-srs-2-11-uncompressed.bin"
+    "/data/srs/bls12-381-srs-2-11-uncompressed-zcash.bin"
+);
+
+/// Pure testing SRS file
+///
+/// Derived from seed `[0_u8; 32]`.
+/// Domain size 2^9.
+pub const BN254_PCS_SRS_FILE: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/data/srs/bn245-testing-2-9-uncompressed.bin"
 );
 
 // Test vectors folder

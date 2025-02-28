@@ -19,9 +19,19 @@ supports customization of scheme parameters.
 - [VRF Schemes Details](https://github.com/davxy/bandersnatch-vrfs-spec)
 - [Ring VRF ZK Proof](https://github.com/davxy/ring-proof-spec)
 
+### Built-In suites
+
+The library includes the following pre-configured suites:
+
+- **Ed25519-SHA-512-TAI**: Supports IETF and Pedersen VRFs.
+- **Secp256r1-SHA-256-TAI**: Supports IETF and Pedersen VRFs.
+- **Bandersnatch** (_Edwards curve on BLS12-381_): Supports IETF, Pedersen, and Ring VRFs.
+- **Baby-JubJub** (_Edwards curve on BN254_): Supports IETF, Pedersen, and Ring VRFs.
+
 ### Basic Usage
 
 ```rust
+use ark_ec_vrfs::suites::bandersnatch::*;
 let secret = Secret::from_seed(b"example seed");
 let public = secret.public();
 let input = Input::new(b"example input");
@@ -39,7 +49,7 @@ let proof = secret.prove(input, output, aux_data);
 Verify
 ```rust
 use ark_ec_vrfs::ietf::Verifier;
-let result = public.verify(input, output, aux_data);
+let result = public.verify(input, output, aux_data, &proof);
 ```
 
 #### Ring-VRF

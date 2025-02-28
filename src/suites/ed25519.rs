@@ -1,4 +1,4 @@
-//! `ECVRF-EDWARDS25519-SHA512-TAI` suite.
+//! `ECVRF-EDWARDS25519-SHA-512-TAI` suite.
 //!
 //! Configuration (RFC-9381 with some compromises):
 //!

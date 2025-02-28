@@ -82,8 +82,8 @@ pub trait Verifier<S: IetfSuite> {
         &self,
         input: Input<S>,
         output: Output<S>,
-        ad: impl AsRef<[u8]>,
-        sig: &Proof<S>,
+        aux: impl AsRef<[u8]>,
+        proof: &Proof<S>,
     ) -> Result<(), Error>;
 }
 
@@ -108,7 +108,7 @@ impl<S: IetfSuite> Verifier<S> for Public<S> {
         &self,
         input: Input<S>,
         output: Output<S>,
-        ad: impl AsRef<[u8]>,
+        aux: impl AsRef<[u8]>,
         proof: &Proof<S>,
     ) -> Result<(), Error> {
         let Proof { c, s } = proof;
@@ -121,7 +121,7 @@ impl<S: IetfSuite> Verifier<S> for Public<S> {
         let c_o = output.0 * c;
         let v = (s_h - c_o).into_affine();
 
-        let c_exp = S::challenge(&[&self.0, &input.0, &output.0, &u, &v], ad.as_ref());
+        let c_exp = S::challenge(&[&self.0, &input.0, &output.0, &u, &v], aux.as_ref());
         (&c_exp == c)
             .then_some(())
             .ok_or(Error::VerificationFailure)

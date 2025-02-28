@@ -21,10 +21,12 @@ rayon = { version = "1.10", default-features = false, optional = true }
 hmac = {version = "0.12", default-features = false, optional = true }
 ring-proof = { package = "w3f-ring-proof", version = "0.0.2", default-features = false, optional = true }
 # Curves
-ark-secp256r1 = { version = "0.5.0", default-features = false, optional = true }
-ark-ed25519 = { version = "0.5.0", default-features = false, optional = true }
-ark-ed-on-bls12-381-bandersnatch = { version = "0.5.0", default-features = false, optional = true }
-ark-bls12-381 = { version = "0.5.0", default-features = false, optional = true }
+ark-secp256r1 = { version = "0.5", default-features = false, optional = true }
+ark-ed25519 = { version = "0.5", default-features = false, optional = true }
+ark-ed-on-bls12-381-bandersnatch = { version = "0.5", default-features = false, optional = true }
+ark-bls12-381 = { version = "0.5", default-features = false, optional = true }
+ark-ed-on-bn254 = { version = "0.5", default-features = false, optional = true }
+ark-bn254 = { version = "0.5", default-features = false, optional = true }
 
 [dev-dependencies]
 ark-ed25519 = "0.5"
@@ -44,11 +46,13 @@ full = [
   "secp256r1",
   "ed25519",
   "bandersnatch",
+  "baby-jubjub",
   "ring",
 ]
 # Curves
 ed25519 = [ "ark-ed25519" ]
 bandersnatch = [ "ark-ed-on-bls12-381-bandersnatch", "ark-bls12-381/curve" ]
+baby-jubjub = [ "ark-ed-on-bn254", "ark-bn254/curve" ]
 secp256r1 = [ "ark-secp256r1", "rfc-6979" ]
 # Miscellanea
 ring = [ "ring-proof" ]

@@ -1,17 +1,17 @@
-//! `ECVRF Bandersnatch SHA-512 Try and Increment` suite.
+//! `ECVRF Bandersnatch-SW SHA-512 Try and Increment` suite.
 //!
 //! Configuration:
 //!
 //! * `suite_string` = b"Bandersnatch_SW_SHA-512_TAI" for Short Weierstrass form.
 //!
-//! - The EC group <G> is the prime subgroup of the Bandersnatch elliptic curve,
-//!   in Twisted Edwards form, with finite field and curve parameters as specified in
+//! - The EC group is the prime subgroup of the Bandersnatch elliptic curve,
+//!   in Short Weierstrass form, with finite field and curve parameters as specified in
 //!   [MSZ21](https://eprint.iacr.org/2021/1152).
 //!   For this group, `fLen` = `qLen` = $32$ and `cofactor` = $4$.
 //!
-//! - The prime subgroup generator G in <G> is defined as follows:
-//!   - G.x = 0x29c132cc2c0b34c5743711777bbe42f32b79c022ad998465e1e71866a252ae18
-//!   - G.y = 0x2a6c669eda123e0f157d8b50badcd586358cad81eee464605e3167b6cc974166
+//! - The prime subgroup generator G is defined as follows:
+//!   - G.x = 30900340493481298850216505686589334086208278925799850409469406976849338430199
+//!   - G.y = 12663882780877899054958035777720958383845500985908634476792678820121468453298
 //!
 //! * `cLen` = 32.
 //!
@@ -134,7 +134,7 @@ mod tests {
 
     #[cfg(feature = "ring")]
     impl crate::ring::testing::RingSuiteExt for ThisSuite {
-        const SRS_FILE: &str = crate::testing::PCS_SRS_FILE;
+        const SRS_FILE: &str = crate::testing::BLS12_381_PCS_SRS_FILE;
 
         fn context() -> &'static RingContext {
             use std::sync::OnceLock;

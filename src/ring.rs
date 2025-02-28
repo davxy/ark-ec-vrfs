@@ -512,8 +512,7 @@ pub(crate) mod testing {
         AffinePoint<S>: TEMapping<CurveConfig<S>> + CheckPoint,
     {
         // Check that point has been computed using the magic spell.
-        let p = S::data_to_point(PADDING_SEED).unwrap();
-        assert_eq!(S::PADDING, p);
+        assert_eq!(S::PADDING, S::data_to_point(PADDING_SEED).unwrap());
 
         // Check that the point is on curve.
         assert!(S::PADDING.check(true).is_ok());
@@ -527,8 +526,10 @@ pub(crate) mod testing {
         AffinePoint<S>: TEMapping<CurveConfig<S>> + FindAccumulatorBase<S> + CheckPoint,
     {
         // Check that point has been computed using the magic spell.
-        let p = AffinePoint::<S>::find_accumulator_base(ACCUMULATOR_BASE_SEED).unwrap();
-        assert_eq!(S::ACCUMULATOR_BASE, p);
+        assert_eq!(
+            S::ACCUMULATOR_BASE,
+            AffinePoint::<S>::find_accumulator_base(ACCUMULATOR_BASE_SEED).unwrap()
+        );
 
         // SW form requires accumulator seed to be outside prime order subgroup.
         // TE form requires accumulator seed to be in prime order subgroup.
@@ -575,14 +576,23 @@ pub(crate) mod testing {
         #[allow(unused)]
         fn load_context() -> RingContext<Self> {
             use ark_serialize::CanonicalDeserialize;
-
             use std::{fs::File, io::Read};
-            let mut file = File::open(crate::testing::PCS_SRS_FILE).unwrap();
+            let mut file = File::open(Self::SRS_FILE).unwrap();
             let mut buf = Vec::new();
             file.read_to_end(&mut buf).unwrap();
             let pcs_params =
                 PcsParams::<Self>::deserialize_uncompressed_unchecked(&mut &buf[..]).unwrap();
             RingContext::from_srs(crate::ring::testing::TEST_RING_SIZE, pcs_params).unwrap()
+        }
+
+        #[allow(unused)]
+        fn write_context(ctx: &RingContext<Self>) {
+            use ark_serialize::CanonicalSerialize;
+            use std::{fs::File, io::Write};
+            let mut file = File::create(Self::SRS_FILE).unwrap();
+            let mut buf = Vec::new();
+            ctx.pcs_params.serialize_uncompressed(&mut buf).unwrap();
+            file.write_all(&buf).unwrap();
         }
     }
 

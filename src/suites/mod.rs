@@ -11,3 +11,6 @@ pub mod secp256r1;
 pub mod bandersnatch;
 #[cfg(feature = "bandersnatch")]
 pub mod bandersnatch_sw;
+
+#[cfg(feature = "baby-jubjub")]
+pub mod baby_jubjub;
