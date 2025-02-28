@@ -26,6 +26,7 @@ The library includes the following pre-configured suites:
 - **Ed25519-SHA-512-TAI**: Supports IETF and Pedersen VRFs.
 - **Secp256r1-SHA-256-TAI**: Supports IETF and Pedersen VRFs.
 - **Bandersnatch** (_Edwards curve on BLS12-381_): Supports IETF, Pedersen, and Ring VRFs.
+- **JubJub** (_Edwards curve on BLS12-381_): Supports IETF, Pedersen, and Ring VRFs.
 - **Baby-JubJub** (_Edwards curve on BN254_): Supports IETF, Pedersen, and Ring VRFs.
 
 ### Basic Usage
