@@ -10,7 +10,7 @@ use digest::{Digest, FixedOutputReset};
 use ark_std::vec::Vec;
 
 // Generic hash wrapper.
-pub(crate) fn hash<H: Digest>(data: &[u8]) -> digest::Output<H> {
+pub fn hash<H: Digest>(data: &[u8]) -> digest::Output<H> {
     H::new().chain_update(data).finalize()
 }
 
