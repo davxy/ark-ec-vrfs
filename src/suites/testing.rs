@@ -1,6 +1,5 @@
 //! Suite for testing
 
-use crate::testing as common;
 use crate::{pedersen::PedersenSuite, *};
 use ark_ff::MontFp;
 
@@ -8,29 +7,38 @@ use ark_ff::MontFp;
 pub struct TestSuite;
 
 impl Suite for TestSuite {
-    const SUITE_ID: &'static [u8] = b"ark-ec-vrfs-testing";
+    const SUITE_ID: &'static [u8] = b"Testing_SHA-256_TAI";
     const CHALLENGE_LEN: usize = 16;
 
+    // TODO: babyjubjub?
     type Affine = ark_ed25519::EdwardsAffine;
     type Hasher = sha2::Sha256;
     type Codec = codec::ArkworksCodec;
 
     fn nonce(_sk: &ScalarField, _pt: Input) -> ScalarField {
-        common::random_val(None)
+        crate::testing::random_val(None)
     }
 }
 
 impl PedersenSuite for TestSuite {
     const BLINDING_BASE: AffinePoint = {
         const X: BaseField = MontFp!(
-            "20870640245832614559435460659272399530811417054267810733865573336979009868811"
+            "22908039810913044136917741489726647027277366293258891749889809241450460853949"
         );
         const Y: BaseField = MontFp!(
-            "21341130365651426216304862251442826527876511149341376200039038224911826378113"
+            "49264587079666684025030007335154795146762108024019949463673115011651474636151"
         );
         AffinePoint::new_unchecked(X, Y)
     };
 }
 
 suite_types!(TestSuite);
-suite_tests!(TestSuite);
+
+impl crate::testing::SuiteExt for TestSuite {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    ietf_suite_tests!(TestSuite);
+    pedersen_suite_tests!(TestSuite);
+}

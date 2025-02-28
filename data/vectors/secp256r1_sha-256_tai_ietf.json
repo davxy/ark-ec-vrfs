@@ -1,6 +1,6 @@
 [
   {
-    "comment": "secp256_sha256_tai_ietf - vector-1",
+    "comment": "secp256r1_sha-256_tai_ietf - vector-1",
     "sk": "9a4585773ce2ccd7a585c331d60a60d1e3b7d28cbb2ede3bc55445342f12f54b",
     "pk": "0218e11f9ef92fa3929aa8f078d2e73b58f0ac7d6f274e222b8515c7b0140138be",
     "alpha": "",
@@ -13,7 +13,7 @@
     "proof_s": "18da92d89d92aae8f418ed54eaa7495f5e04cc8835bcfff2210ae6c1b9bf753e"
   },
   {
-    "comment": "secp256_sha256_tai_ietf - vector-2",
+    "comment": "secp256r1_sha-256_tai_ietf - vector-2",
     "sk": "86d9576498ea764b49243efeb05df625010438c6a55d5b578de4ff00c9b4c1db",
     "pk": "03a47366bc18483e02261117304cdf77cc95f234c16d11a8356dc4514a7adaf120",
     "alpha": "0a",
@@ -26,7 +26,7 @@
     "proof_s": "3060920a0e67c660f459e0bab6f3f71e865aae07296eb114434072f95210bdc4"
   },
   {
-    "comment": "secp256_sha256_tai_ietf - vector-3",
+    "comment": "secp256r1_sha-256_tai_ietf - vector-3",
     "sk": "c529ffad9a5ab61162b11d616b639e00586ba846746a197d4daf78b908ed4f08",
     "pk": "02d984ff7d61ba3a11d8ade6cea6ba949fba3bbcf841506cf8c3a7b6e1bd67b926",
     "alpha": "",
@@ -39,7 +39,7 @@
     "proof_s": "3f9e45b6a85f0e77fd57697c1eb92d00088d84226bc717945e2fb9e45f86da84"
   },
   {
-    "comment": "secp256_sha256_tai_ietf - vector-4",
+    "comment": "secp256r1_sha-256_tai_ietf - vector-4",
     "sk": "719ec881a39ca062f09262ff75fc8a06d6cb91ad078c4d344723508c509c2de5",
     "pk": "02c8f77b17ec60330366b9e148dfa565a7c8d6a0768e5737786722e3c85a5ff054",
     "alpha": "73616d706c65",
@@ -52,7 +52,7 @@
     "proof_s": "77cdda834d27790d337f1fc6ff81d794fb399ed3bd98ab5b28f10d9a8383d568"
   },
   {
-    "comment": "secp256_sha256_tai_ietf - vector-5",
+    "comment": "secp256r1_sha-256_tai_ietf - vector-5",
     "sk": "db43b75a9c05eb89ae926b7b1d5081e79def64a210f5b6bd0d0be3e99a9a7be7",
     "pk": "03c443ab7bbb42585044551b7efac1d9c3c8f007bdf0c325d35fde5417bbb8e11d",
     "alpha": "42616e646572736e6174636820766563746f72",
@@ -65,7 +65,7 @@
     "proof_s": "fe9838493a71efff78d4f1d406fccb3e874eeb39b4e901b773ddfcab85050f94"
   },
   {
-    "comment": "secp256_sha256_tai_ietf - vector-6",
+    "comment": "secp256r1_sha-256_tai_ietf - vector-6",
     "sk": "db43b75a9c05eb89ae926b7b1d5081e79def64a210f5b6bd0d0be3e99a9a7be7",
     "pk": "03c443ab7bbb42585044551b7efac1d9c3c8f007bdf0c325d35fde5417bbb8e11d",
     "alpha": "42616e646572736e6174636820766563746f72",
@@ -78,7 +78,7 @@
     "proof_s": "098191c8fe8b2c814fc83e9570b1811916492312e7488b5d1cdac6d5f5c8b781"
   },
   {
-    "comment": "secp256_sha256_tai_ietf - vector-7",
+    "comment": "secp256r1_sha-256_tai_ietf - vector-7",
     "sk": "f6ecc50886479df8bea823e5b8b939c934efa139c08b96b9a07dd2fa986e5867",
     "pk": "0224d2dd7a97395b03103acb7ec1ae80743f453ff0711e6ad81bd9d59b7217809a",
     "alpha": "42616e646572736e6174636820766563746f72",

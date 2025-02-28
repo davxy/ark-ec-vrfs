@@ -1,6 +1,6 @@
 [
   {
-    "comment": "bandersnatch_sha512_ell2_ietf - vector-1",
+    "comment": "bandersnatch_sha-512_ell2_ietf - vector-1",
     "sk": "3d6406500d4009fdf2604546093665911e753f2213570a29521fd88bc30ede18",
     "pk": "a1b1da71cc4682e159b7da23050d8b6261eb11a3247c89b07ef56ccd002fd38b",
     "alpha": "",
@@ -13,7 +13,7 @@
     "proof_s": "828bedd2ad95380b11f67a05ea0a76f0c3fef2bee9f043f4dffdddde09f55c01"
   },
   {
-    "comment": "bandersnatch_sha512_ell2_ietf - vector-2",
+    "comment": "bandersnatch_sha-512_ell2_ietf - vector-2",
     "sk": "8b9063872331dda4c3c282f7d813fb3c13e7339b7dc9635fdc764e32cc57cb15",
     "pk": "5ebfe047f421e1a3e1d9bbb163839812657bbb3e4ffe9856a725b2b405844cf3",
     "alpha": "0a",
@@ -26,7 +26,7 @@
     "proof_s": "18c74ffd67e6abc658e2d05ecd3101ddc0c33623823f2395538cf8d39e654f12"
   },
   {
-    "comment": "bandersnatch_sha512_ell2_ietf - vector-3",
+    "comment": "bandersnatch_sha-512_ell2_ietf - vector-3",
     "sk": "6db187202f69e627e432296ae1d0f166ae6ac3c1222585b6ceae80ea07670b14",
     "pk": "9d97151298a5339866ddd3539d16696e19e6b68ac731562c807fe63a1ca49506",
     "alpha": "",
@@ -39,7 +39,7 @@
     "proof_s": "54e5d38a76f309ce63ca82465160abd8d75b78805a0b499e60c26436de4a8e01"
   },
   {
-    "comment": "bandersnatch_sha512_ell2_ietf - vector-4",
+    "comment": "bandersnatch_sha-512_ell2_ietf - vector-4",
     "sk": "b56cc204f1b6c2323709012cb16c72f3021035ce935fbe69b600a88d842c7407",
     "pk": "dc2de7312c2850a9f6c103289c64fbd76e2ebd2fa8b5734708eb2c76c0fb2d99",
     "alpha": "73616d706c65",
@@ -52,7 +52,7 @@
     "proof_s": "e8e34ad3131388a88eb7f80bd874f3421c378d4ad45911c4bc16e4cdc17b5716"
   },
   {
-    "comment": "bandersnatch_sha512_ell2_ietf - vector-5",
+    "comment": "bandersnatch_sha-512_ell2_ietf - vector-5",
     "sk": "da36359bf1bfd1694d3ed359e7340bd02a6a5e54827d94db1384df29f5bdd302",
     "pk": "decb0151cbeb49f76f10419ab6a96242bdc87baac8a474e5161123de4304ac29",
     "alpha": "42616e646572736e6174636820766563746f72",
@@ -65,7 +65,7 @@
     "proof_s": "4c1269d9d161dabd082fc606af979eca7f6c3ab68e78261dc6fb9fbbb98c9704"
   },
   {
-    "comment": "bandersnatch_sha512_ell2_ietf - vector-6",
+    "comment": "bandersnatch_sha-512_ell2_ietf - vector-6",
     "sk": "da36359bf1bfd1694d3ed359e7340bd02a6a5e54827d94db1384df29f5bdd302",
     "pk": "decb0151cbeb49f76f10419ab6a96242bdc87baac8a474e5161123de4304ac29",
     "alpha": "42616e646572736e6174636820766563746f72",
@@ -78,7 +78,7 @@
     "proof_s": "0f7f9bee9077427f547e69b919cf8d63823c14b20085fd9516768e0f5e3d3f0e"
   },
   {
-    "comment": "bandersnatch_sha512_ell2_ietf - vector-7",
+    "comment": "bandersnatch_sha-512_ell2_ietf - vector-7",
     "sk": "35b877a25c394512292b82bdf8468e98eaf03c79c7fc9d53546dadc5fb75b500",
     "pk": "b0e1f208f9d6e5b310b92014ea7ef3011e649dab038804759f3766e01029d623",
     "alpha": "42616e646572736e6174636820766563746f72",

@@ -5,7 +5,7 @@ pub(crate) mod testing;
 pub mod ed25519;
 
 #[cfg(feature = "secp256r1")]
-pub mod secp256;
+pub mod secp256r1;
 
 #[cfg(feature = "bandersnatch")]
 pub mod bandersnatch;

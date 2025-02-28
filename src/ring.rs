@@ -103,6 +103,23 @@ where
     ) -> Proof<S>;
 }
 
+/// Ring VRF verifier.
+pub trait Verifier<S: RingSuite>
+where
+    BaseField<S>: ark_ff::PrimeField,
+    CurveConfig<S>: TECurveConfig,
+    AffinePoint<S>: TEMapping<CurveConfig<S>>,
+{
+    /// Verify a proof for the given input/output and user additional data.
+    fn verify(
+        input: Input<S>,
+        output: Output<S>,
+        ad: impl AsRef<[u8]>,
+        sig: &Proof<S>,
+        verifier: &RingVerifier<S>,
+    ) -> Result<(), Error>;
+}
+
 impl<S: RingSuite> Prover<S> for Secret<S>
 where
     BaseField<S>: ark_ff::PrimeField,
@@ -125,23 +142,6 @@ where
             ring_proof,
         }
     }
-}
-
-/// Ring VRF verifier.
-pub trait Verifier<S: RingSuite>
-where
-    BaseField<S>: ark_ff::PrimeField,
-    CurveConfig<S>: TECurveConfig,
-    AffinePoint<S>: TEMapping<CurveConfig<S>>,
-{
-    /// Verify a proof for the given input/output and user additional data.
-    fn verify(
-        input: Input<S>,
-        output: Output<S>,
-        ad: impl AsRef<[u8]>,
-        sig: &Proof<S>,
-        verifier: &RingVerifier<S>,
-    ) -> Result<(), Error>;
 }
 
 impl<S: RingSuite> Verifier<S> for Public<S>
@@ -180,7 +180,7 @@ where
 
 /// Evaluation domain size required for the given ring size.
 ///
-/// This determines the size of the [PcsParams] required to construct.
+/// This determines the size of the [`PcsParams`] multiples of g1.
 #[inline(always)]
 pub fn domain_size<S: RingSuite>(ring_size: usize) -> usize
 where
@@ -408,7 +408,7 @@ macro_rules! ring_suite_types {
         #[allow(dead_code)]
         pub type RingVerifier = $crate::ring::RingVerifier<$suite>;
         #[allow(dead_code)]
-        pub type Proof = $crate::ring::Proof<$suite>;
+        pub type RingProof = $crate::ring::Proof<$suite>;
     };
 }
 
@@ -416,7 +416,7 @@ macro_rules! ring_suite_types {
 pub(crate) mod testing {
     use super::*;
     use crate::pedersen;
-    use crate::testing::{self as common, TEST_SEED};
+    use crate::testing::{self as common, CheckPoint, TEST_SEED};
     use ark_ec::{
         short_weierstrass::{Affine as SWAffine, SWCurveConfig},
         twisted_edwards::{Affine as TEAffine, TECurveConfig},
@@ -439,6 +439,7 @@ pub(crate) mod testing {
     }
 
     pub trait FindAccumulatorBase<S: Suite>: Sized {
+        const IN_PRIME_ORDER_SUBGROUP: bool;
         fn find_accumulator_base(data: &[u8]) -> Option<Self>;
     }
 
@@ -447,6 +448,8 @@ pub(crate) mod testing {
         C: SWCurveConfig,
         S: Suite<Affine = Self>,
     {
+        const IN_PRIME_ORDER_SUBGROUP: bool = false;
+
         fn find_accumulator_base(data: &[u8]) -> Option<Self> {
             let p = S::data_to_point(data)?;
             let c = find_complement_point();
@@ -461,6 +464,8 @@ pub(crate) mod testing {
         C: TECurveConfig,
         S: Suite<Affine = Self>,
     {
+        const IN_PRIME_ORDER_SUBGROUP: bool = true;
+
         fn find_accumulator_base(data: &[u8]) -> Option<Self> {
             let res = S::data_to_point(data)?;
             debug_assert!(res.is_in_correct_subgroup_assuming_on_curve());
@@ -504,10 +509,14 @@ pub(crate) mod testing {
     where
         BaseField<S>: ark_ff::PrimeField,
         CurveConfig<S>: TECurveConfig + Clone,
-        AffinePoint<S>: TEMapping<CurveConfig<S>>,
+        AffinePoint<S>: TEMapping<CurveConfig<S>> + CheckPoint,
     {
+        // Check that point has been computed using the magic spell.
         let p = S::data_to_point(PADDING_SEED).unwrap();
         assert_eq!(S::PADDING, p);
+
+        // Check that the point is on curve.
+        assert!(S::PADDING.check(true).is_ok());
     }
 
     #[allow(unused)]
@@ -515,39 +524,66 @@ pub(crate) mod testing {
     where
         BaseField<S>: ark_ff::PrimeField,
         CurveConfig<S>: TECurveConfig + Clone,
-        AffinePoint<S>: TEMapping<CurveConfig<S>> + FindAccumulatorBase<S>,
+        AffinePoint<S>: TEMapping<CurveConfig<S>> + FindAccumulatorBase<S> + CheckPoint,
     {
+        // Check that point has been computed using the magic spell.
         let p = AffinePoint::<S>::find_accumulator_base(ACCUMULATOR_BASE_SEED).unwrap();
         assert_eq!(S::ACCUMULATOR_BASE, p);
+
+        // SW form requires accumulator seed to be outside prime order subgroup.
+        // TE form requires accumulator seed to be in prime order subgroup.
+        let in_prime_subgroup = <AffinePoint<S> as FindAccumulatorBase<S>>::IN_PRIME_ORDER_SUBGROUP;
+        assert!(S::ACCUMULATOR_BASE.check(in_prime_subgroup).is_ok());
     }
 
     #[macro_export]
     macro_rules! ring_suite_tests {
-        ($suite:ident) => {
-            #[test]
-            fn prove_verify() {
-                $crate::ring::testing::prove_verify::<$suite>()
-            }
+        ($suite:ty) => {
+            mod ring {
+                use super::*;
 
-            #[test]
-            fn padding_check() {
-                $crate::ring::testing::padding_check::<$suite>()
-            }
+                #[test]
+                fn prove_verify() {
+                    $crate::ring::testing::prove_verify::<$suite>()
+                }
 
-            #[test]
-            fn accumulator_base_check() {
-                $crate::ring::testing::accumulator_base_check::<$suite>()
+                #[test]
+                fn padding_check() {
+                    $crate::ring::testing::padding_check::<$suite>()
+                }
+
+                #[test]
+                fn accumulator_base_check() {
+                    $crate::ring::testing::accumulator_base_check::<$suite>()
+                }
+
+                $crate::test_vectors!($crate::ring::testing::TestVector<$suite>);
             }
         };
     }
 
-    pub trait RingSuiteExt: RingSuite
+    pub trait RingSuiteExt: RingSuite + crate::testing::SuiteExt
     where
         BaseField<Self>: ark_ff::PrimeField,
         CurveConfig<Self>: TECurveConfig + Clone,
         AffinePoint<Self>: TEMapping<CurveConfig<Self>>,
     {
-        fn ring_context() -> &'static RingContext<Self>;
+        const SRS_FILE: &str;
+
+        fn context() -> &'static RingContext<Self>;
+
+        #[allow(unused)]
+        fn load_context() -> RingContext<Self> {
+            use ark_serialize::CanonicalDeserialize;
+
+            use std::{fs::File, io::Read};
+            let mut file = File::open(crate::testing::PCS_SRS_FILE).unwrap();
+            let mut buf = Vec::new();
+            file.read_to_end(&mut buf).unwrap();
+            let pcs_params =
+                PcsParams::<Self>::deserialize_uncompressed_unchecked(&mut &buf[..]).unwrap();
+            RingContext::from_srs(crate::ring::testing::TEST_RING_SIZE, pcs_params).unwrap()
+        }
     }
 
     pub struct TestVector<S: RingSuite>
@@ -576,12 +612,17 @@ pub(crate) mod testing {
         }
     }
 
-    impl<S: RingSuiteExt + std::fmt::Debug + 'static> common::TestVectorTrait for TestVector<S>
+    impl<S> common::TestVectorTrait for TestVector<S>
     where
+        S: RingSuiteExt + std::fmt::Debug + 'static,
         BaseField<S>: ark_ff::PrimeField,
         CurveConfig<S>: TECurveConfig + Clone,
         AffinePoint<S>: TEMapping<CurveConfig<S>>,
     {
+        fn name() -> String {
+            S::suite_name() + "_ring"
+        }
+
         fn new(comment: &str, seed: &[u8], alpha: &[u8], salt: &[u8], ad: &[u8]) -> Self {
             use super::Prover;
             let pedersen = pedersen::testing::TestVector::new(comment, seed, alpha, salt, ad);
@@ -592,7 +633,7 @@ pub(crate) mod testing {
             let input = Input::<S>::from(pedersen.base.h);
             let output = Output::from(pedersen.base.gamma);
 
-            let ring_ctx = <S as RingSuiteExt>::ring_context();
+            let ring_ctx = <S as RingSuiteExt>::context();
 
             use ark_std::rand::SeedableRng;
             let rng = &mut rand_chacha::ChaCha20Rng::from_seed([0x11; 32]);
@@ -656,7 +697,7 @@ pub(crate) mod testing {
             let public = secret.public();
             assert_eq!(public.0, self.pedersen.base.pk);
 
-            let ring_ctx = <S as RingSuiteExt>::ring_context();
+            let ring_ctx = <S as RingSuiteExt>::context();
 
             let prover_idx = self.ring_pks.iter().position(|&pk| pk == public.0).unwrap();
 

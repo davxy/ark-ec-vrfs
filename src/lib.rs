@@ -285,10 +285,35 @@ impl<S: Suite> Output<S> {
     }
 }
 
+#[macro_export]
+macro_rules! suite_types {
+    ($suite:ident) => {
+        #[allow(dead_code)]
+        pub type Secret = $crate::Secret<$suite>;
+        #[allow(dead_code)]
+        pub type Public = $crate::Public<$suite>;
+        #[allow(dead_code)]
+        pub type Input = $crate::Input<$suite>;
+        #[allow(dead_code)]
+        pub type Output = $crate::Output<$suite>;
+        #[allow(dead_code)]
+        pub type AffinePoint = $crate::AffinePoint<$suite>;
+        #[allow(dead_code)]
+        pub type ScalarField = $crate::ScalarField<$suite>;
+        #[allow(dead_code)]
+        pub type BaseField = $crate::BaseField<$suite>;
+        #[allow(dead_code)]
+        pub type IetfProof = $crate::ietf::Proof<$suite>;
+        #[allow(dead_code)]
+        pub type PedersenProof = $crate::pedersen::Proof<$suite>;
+    };
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::suites::testing::{Input, Secret};
-    use crate::testing::{random_val, TEST_SEED};
+    use super::*;
+    use suites::testing::{Input, Secret};
+    use testing::{random_val, TEST_SEED};
 
     #[test]
     fn vrf_output_check() {
@@ -298,7 +323,7 @@ mod tests {
         let input = Input::from(random_val(Some(&mut rng)));
         let output = secret.output(input);
 
-        let expected = "0245a793d85347ca3c056f8c8f42f1049a310fabff6933b9eae592541a545cb8";
+        let expected = "71c1b2ee6e46c59e3bd0e2f0e2852b90ab56abb223180b00bd6c8ec6b11af18c";
         assert_eq!(expected, hex::encode(output.hash()));
     }
 }

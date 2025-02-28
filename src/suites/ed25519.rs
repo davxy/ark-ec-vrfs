@@ -49,10 +49,13 @@
 use crate::{pedersen::PedersenSuite, *};
 use ark_ff::MontFp;
 
+/// Ed25519_SHA-512_TAI Suite.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Ed25519Sha512Tai;
 
-impl Suite for Ed25519Sha512Tai {
+type ThisSuite = Ed25519Sha512Tai;
+
+impl Suite for ThisSuite {
     const SUITE_ID: &'static [u8] = b"Ed25519_SHA-512_TAI";
     const CHALLENGE_LEN: usize = 16;
 
@@ -61,7 +64,7 @@ impl Suite for Ed25519Sha512Tai {
     type Codec = codec::ArkworksCodec;
 }
 
-impl PedersenSuite for Ed25519Sha512Tai {
+impl PedersenSuite for ThisSuite {
     const BLINDING_BASE: AffinePoint = {
         const X: BaseField = MontFp!(
             "52417091031015867055192825304177001039906336859819158874861527659737645967040"
@@ -73,45 +76,14 @@ impl PedersenSuite for Ed25519Sha512Tai {
     };
 }
 
-suite_types!(Ed25519Sha512Tai);
+suite_types!(ThisSuite);
 
 #[cfg(test)]
-suite_tests!(Ed25519Sha512Tai);
-
-#[cfg(test)]
-mod test_vectors_ietf {
+mod tests {
     use super::*;
 
-    type V = crate::ietf::testing::TestVector<Ed25519Sha512Tai>;
-    const VECTOR_ID: &str = "ed25519_sha512_tai_ietf";
+    impl crate::testing::SuiteExt for ThisSuite {}
 
-    #[test]
-    #[ignore = "test vectors generator"]
-    fn generate() {
-        testing::test_vectors_generate::<V>(VECTOR_ID);
-    }
-
-    #[test]
-    fn process() {
-        testing::test_vectors_process::<V>(VECTOR_ID);
-    }
-}
-
-#[cfg(test)]
-mod test_vectors_pedersen {
-    use super::*;
-
-    type V = crate::pedersen::testing::TestVector<Ed25519Sha512Tai>;
-    const VECTOR_ID: &str = "ed25519_sha512_tai_pedersen";
-
-    #[test]
-    #[ignore = "test vectors generator"]
-    fn generate() {
-        testing::test_vectors_generate::<V>(VECTOR_ID);
-    }
-
-    #[test]
-    fn process() {
-        testing::test_vectors_process::<V>(VECTOR_ID);
-    }
+    ietf_suite_tests!(ThisSuite);
+    pedersen_suite_tests!(ThisSuite);
 }

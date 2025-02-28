@@ -30,16 +30,40 @@ pub fn random_val<T: UniformRand>(rng: Option<&mut dyn RngCore>) -> T {
     T::rand(rng)
 }
 
-#[macro_export]
-macro_rules! suite_tests {
-    ($suite:ident, $build_ring:expr) => {
-        suite_tests!($suite);
-        ring_suite_tests!($suite, $build_ring);
-    };
-    ($suite:ident) => {
-        ietf_suite_tests!($suite);
-        pedersen_suite_tests!($suite);
-    };
+pub trait CheckPoint {
+    fn check(&self, in_prime_subgroup: bool) -> Result<(), &'static str>;
+}
+
+use ark_ec::short_weierstrass::{Affine as SWAffine, SWCurveConfig};
+impl<C> CheckPoint for SWAffine<C>
+where
+    C: SWCurveConfig,
+{
+    fn check(&self, in_prime_subgroup: bool) -> Result<(), &'static str> {
+        if !self.is_on_curve() {
+            return Err("Point out of curve group");
+        }
+        if self.is_in_correct_subgroup_assuming_on_curve() != in_prime_subgroup {
+            return Err("Point outside the expected curve subgroup");
+        }
+        Ok(())
+    }
+}
+
+use ark_ec::twisted_edwards::{Affine as TEAffine, TECurveConfig};
+impl<C> CheckPoint for TEAffine<C>
+where
+    C: TECurveConfig,
+{
+    fn check(&self, in_prime_subgroup: bool) -> Result<(), &'static str> {
+        if !self.is_on_curve() {
+            return Err("Point out of curve group");
+        }
+        if self.is_in_correct_subgroup_assuming_on_curve() != in_prime_subgroup {
+            return Err("Point outside the expected curve subgroup");
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -67,6 +91,8 @@ impl TestVectorMap {
 }
 
 pub trait TestVectorTrait {
+    fn name() -> String;
+
     fn new(comment: &str, seed: &[u8], alpha: &[u8], salt: &[u8], ad: &[u8]) -> Self;
 
     fn from_map(map: &TestVectorMap) -> Self;
@@ -121,7 +147,22 @@ impl<S: Suite> core::fmt::Debug for TestVector<S> {
     }
 }
 
-impl<S: Suite + std::fmt::Debug> TestVectorTrait for TestVector<S> {
+pub trait SuiteExt: Suite {
+    fn suite_name() -> String {
+        std::str::from_utf8(Self::SUITE_ID)
+            .ok()
+            .filter(|s| s.chars().all(|c| c.is_ascii_graphic()))
+            .map(|s| s.to_owned())
+            .unwrap_or_else(|| hex::encode(Self::SUITE_ID))
+            .to_lowercase()
+    }
+}
+
+impl<S: SuiteExt + std::fmt::Debug> TestVectorTrait for TestVector<S> {
+    fn name() -> String {
+        S::suite_name() + "_base"
+    }
+
     fn new(comment: &str, seed: &[u8], alpha: &[u8], salt: &[u8], ad: &[u8]) -> Self {
         let sk = Secret::<S>::from_seed(seed);
         let pk = sk.public().0;
@@ -257,4 +298,25 @@ pub fn test_vectors_process<V: TestVectorTrait>(identifier: &str) {
         let vector = V::from_map(vector_map);
         vector.run();
     }
+}
+
+#[macro_export]
+macro_rules! test_vectors {
+    ($vector_type:ty) => {
+        #[allow(unused)]
+        use $crate::testing::TestVectorTrait as _;
+        $crate::test_vectors!($vector_type, &<$vector_type>::name());
+    };
+    ($vector_type:ty, $vector_name:expr) => {
+        #[test]
+        #[ignore = "test vectors generator"]
+        fn vectors_generate() {
+            $crate::testing::test_vectors_generate::<$vector_type>($vector_name);
+        }
+
+        #[test]
+        fn vectors_process() {
+            $crate::testing::test_vectors_process::<$vector_type>($vector_name);
+        }
+    };
 }

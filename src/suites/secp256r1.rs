@@ -51,9 +51,11 @@ use crate::{pedersen::PedersenSuite, *};
 use ark_ff::MontFp;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct P256Sha256Tai;
+pub struct Secp256r1Sha256Tai;
 
-impl Suite for P256Sha256Tai {
+type ThisSuite = Secp256r1Sha256Tai;
+
+impl Suite for ThisSuite {
     const SUITE_ID: &'static [u8] = &[0x01];
     const CHALLENGE_LEN: usize = 16;
 
@@ -70,7 +72,7 @@ impl Suite for P256Sha256Tai {
     }
 }
 
-impl PedersenSuite for P256Sha256Tai {
+impl PedersenSuite for ThisSuite {
     const BLINDING_BASE: AffinePoint = {
         const X: BaseField = MontFp!(
             "55516455597544811540149985232155473070193196202193483189274003004283034832642"
@@ -82,52 +84,27 @@ impl PedersenSuite for P256Sha256Tai {
     };
 }
 
-suite_types!(P256Sha256Tai);
+suite_types!(ThisSuite);
 
 #[cfg(test)]
-suite_tests!(P256Sha256Tai);
-
-#[cfg(test)]
-mod test_vectors_ietf {
+mod tests {
     use super::*;
+    use crate::testing::SuiteExt;
 
-    type V = crate::ietf::testing::TestVector<P256Sha256Tai>;
-    const VECTOR_ID: &str = "secp256_sha256_tai_ietf";
+    impl SuiteExt for ThisSuite {
+        fn suite_name() -> String {
+            "secp256r1_sha-256_tai".to_owned()
+        }
+    }
+
+    ietf_suite_tests!(ThisSuite);
+    pedersen_suite_tests!(ThisSuite);
+
     // Vectors from RFC-9381
-    const VECTOR_ID_RFC_9381: &str = "secp256_sha256_tai_ietf_rfc_9381";
-
     #[test]
-    #[ignore = "test vectors generator"]
-    fn generate() {
-        testing::test_vectors_generate::<V>(VECTOR_ID);
-    }
-
-    #[test]
-    fn process() {
-        testing::test_vectors_process::<V>(VECTOR_ID);
-    }
-
-    #[test]
-    fn process_rfc_9381() {
-        testing::test_vectors_process::<V>(VECTOR_ID_RFC_9381);
-    }
-}
-
-#[cfg(test)]
-mod test_vectors_pedersen {
-    use super::*;
-
-    type V = crate::pedersen::testing::TestVector<P256Sha256Tai>;
-    const VECTOR_ID: &str = "secp256r1_sha256_tai_pedersen";
-
-    #[test]
-    #[ignore = "test vectors generator"]
-    fn generate() {
-        testing::test_vectors_generate::<V>(VECTOR_ID);
-    }
-
-    #[test]
-    fn process() {
-        testing::test_vectors_process::<V>(VECTOR_ID);
+    fn vectors_process_rfc_9381() {
+        testing::test_vectors_process::<crate::ietf::testing::TestVector<ThisSuite>>(
+            "secp256r1_sha-256_tai_ietf_rfc_9381",
+        );
     }
 }

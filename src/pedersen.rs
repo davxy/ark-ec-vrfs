@@ -150,7 +150,7 @@ impl<S: PedersenSuite> Verifier<S> for Public<S> {
 #[cfg(test)]
 pub(crate) mod testing {
     use super::*;
-    use crate::testing::{self as common, random_val, TEST_SEED};
+    use crate::testing::{self as common, random_val, CheckPoint, SuiteExt, TEST_SEED};
 
     pub fn prove_verify<S: PedersenSuite>() {
         use pedersen::{Prover, Verifier};
@@ -169,24 +169,36 @@ pub(crate) mod testing {
         );
     }
 
-    pub fn blinding_base_check<S: PedersenSuite>() {
+    pub fn blinding_base_check<S: PedersenSuite>()
+    where
+        AffinePoint<S>: CheckPoint,
+    {
+        // Check that point has been computed using the magic spell.
         assert_eq!(
             S::data_to_point(PEDERSEN_BASE_SEED).unwrap(),
             S::BLINDING_BASE
         );
+        // Check that the point is on curve.
+        assert!(S::BLINDING_BASE.check(true).is_ok());
     }
 
     #[macro_export]
     macro_rules! pedersen_suite_tests {
-        ($suite:ident) => {
-            #[test]
-            fn pedersen_prove_verify() {
-                $crate::pedersen::testing::prove_verify::<$suite>();
-            }
+        ($suite:ty) => {
+            mod pedersen {
+                use super::*;
 
-            #[test]
-            fn pedersen_blinding_base_check() {
-                $crate::pedersen::testing::blinding_base_check::<$suite>();
+                #[test]
+                fn prove_verify() {
+                    $crate::pedersen::testing::prove_verify::<$suite>();
+                }
+
+                #[test]
+                fn blinding_base_check() {
+                    $crate::pedersen::testing::blinding_base_check::<$suite>();
+                }
+
+                $crate::test_vectors!($crate::pedersen::testing::TestVector<$suite>);
             }
         };
     }
@@ -211,7 +223,14 @@ pub(crate) mod testing {
         }
     }
 
-    impl<S: PedersenSuite + std::fmt::Debug> common::TestVectorTrait for TestVector<S> {
+    impl<S> common::TestVectorTrait for TestVector<S>
+    where
+        S: PedersenSuite + SuiteExt + std::fmt::Debug,
+    {
+        fn name() -> String {
+            S::suite_name() + "_pedersen"
+        }
+
         fn new(comment: &str, seed: &[u8], alpha: &[u8], salt: &[u8], ad: &[u8]) -> Self {
             use super::Prover;
             let base = common::TestVector::new(comment, seed, alpha, salt, ad);

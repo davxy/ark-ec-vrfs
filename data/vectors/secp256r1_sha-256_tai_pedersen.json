@@ -1,6 +1,6 @@
 [
   {
-    "comment": "secp256r1_sha256_tai_pedersen - vector-1",
+    "comment": "secp256r1_sha-256_tai_pedersen - vector-1",
     "sk": "9a4585773ce2ccd7a585c331d60a60d1e3b7d28cbb2ede3bc55445342f12f54b",
     "pk": "0218e11f9ef92fa3929aa8f078d2e73b58f0ac7d6f274e222b8515c7b0140138be",
     "alpha": "",
@@ -17,7 +17,7 @@
     "proof_sb": "9b6405578b722ad1f4fe712d03bda143d22588ef0ce37b4fc806af8e3c48912d"
   },
   {
-    "comment": "secp256r1_sha256_tai_pedersen - vector-2",
+    "comment": "secp256r1_sha-256_tai_pedersen - vector-2",
     "sk": "86d9576498ea764b49243efeb05df625010438c6a55d5b578de4ff00c9b4c1db",
     "pk": "03a47366bc18483e02261117304cdf77cc95f234c16d11a8356dc4514a7adaf120",
     "alpha": "0a",
@@ -34,7 +34,7 @@
     "proof_sb": "c5cfce2167a1c4e8d3339710c2701bd6613c1d67232bdeab1cd76418f98d4559"
   },
   {
-    "comment": "secp256r1_sha256_tai_pedersen - vector-3",
+    "comment": "secp256r1_sha-256_tai_pedersen - vector-3",
     "sk": "c529ffad9a5ab61162b11d616b639e00586ba846746a197d4daf78b908ed4f08",
     "pk": "02d984ff7d61ba3a11d8ade6cea6ba949fba3bbcf841506cf8c3a7b6e1bd67b926",
     "alpha": "",
@@ -51,7 +51,7 @@
     "proof_sb": "611d08b75146bd1c22b6d5ce499fa31a2ee1b80acd284007951bdec8871b06f5"
   },
   {
-    "comment": "secp256r1_sha256_tai_pedersen - vector-4",
+    "comment": "secp256r1_sha-256_tai_pedersen - vector-4",
     "sk": "719ec881a39ca062f09262ff75fc8a06d6cb91ad078c4d344723508c509c2de5",
     "pk": "02c8f77b17ec60330366b9e148dfa565a7c8d6a0768e5737786722e3c85a5ff054",
     "alpha": "73616d706c65",
@@ -68,7 +68,7 @@
     "proof_sb": "9efbc04b1969c69fa52253b9a4a72bb99e623d229a47aa2277fb1672fd5d02b6"
   },
   {
-    "comment": "secp256r1_sha256_tai_pedersen - vector-5",
+    "comment": "secp256r1_sha-256_tai_pedersen - vector-5",
     "sk": "db43b75a9c05eb89ae926b7b1d5081e79def64a210f5b6bd0d0be3e99a9a7be7",
     "pk": "03c443ab7bbb42585044551b7efac1d9c3c8f007bdf0c325d35fde5417bbb8e11d",
     "alpha": "42616e646572736e6174636820766563746f72",
@@ -85,7 +85,7 @@
     "proof_sb": "961936fc56be01c4ab739cb7057af7716df4bfd5e3db2ab15060e9fdb9c7a1ef"
   },
   {
-    "comment": "secp256r1_sha256_tai_pedersen - vector-6",
+    "comment": "secp256r1_sha-256_tai_pedersen - vector-6",
     "sk": "db43b75a9c05eb89ae926b7b1d5081e79def64a210f5b6bd0d0be3e99a9a7be7",
     "pk": "03c443ab7bbb42585044551b7efac1d9c3c8f007bdf0c325d35fde5417bbb8e11d",
     "alpha": "42616e646572736e6174636820766563746f72",
@@ -102,7 +102,7 @@
     "proof_sb": "7bd08b90b6dcabb5208fc7975e5b60ca10893de8c47f4e5872434dacd5a3a6e7"
   },
   {
-    "comment": "secp256r1_sha256_tai_pedersen - vector-7",
+    "comment": "secp256r1_sha-256_tai_pedersen - vector-7",
     "sk": "f6ecc50886479df8bea823e5b8b939c934efa139c08b96b9a07dd2fa986e5867",
     "pk": "0224d2dd7a97395b03103acb7ec1ae80743f453ff0711e6ad81bd9d59b7217809a",
     "alpha": "42616e646572736e6174636820766563746f72",

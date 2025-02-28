@@ -131,7 +131,7 @@ impl<S: IetfSuite> Verifier<S> for Public<S> {
 #[cfg(test)]
 pub mod testing {
     use super::*;
-    use crate::testing as common;
+    use crate::testing::{self as common, SuiteExt};
 
     pub fn prove_verify<S: IetfSuite>() {
         use ietf::{Prover, Verifier};
@@ -148,10 +148,16 @@ pub mod testing {
 
     #[macro_export]
     macro_rules! ietf_suite_tests {
-        ($suite:ident) => {
-            #[test]
-            fn ietf_prove_verify() {
-                $crate::ietf::testing::prove_verify::<$suite>();
+        ($suite:ty) => {
+            mod ietf {
+                use super::*;
+
+                #[test]
+                fn prove_verify() {
+                    $crate::ietf::testing::prove_verify::<$suite>();
+                }
+
+                $crate::test_vectors!($crate::ietf::testing::TestVector<$suite>);
             }
         };
     }
@@ -174,7 +180,14 @@ pub mod testing {
         }
     }
 
-    impl<S: IetfSuite + std::fmt::Debug> common::TestVectorTrait for TestVector<S> {
+    impl<S> common::TestVectorTrait for TestVector<S>
+    where
+        S: IetfSuite + SuiteExt + std::fmt::Debug,
+    {
+        fn name() -> String {
+            S::suite_name() + "_ietf"
+        }
+
         fn new(comment: &str, seed: &[u8], alpha: &[u8], salt: &[u8], ad: &[u8]) -> Self {
             use super::Prover;
             let base = common::TestVector::new(comment, seed, alpha, salt, ad);
