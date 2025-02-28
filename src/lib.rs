@@ -37,12 +37,13 @@ pub mod ring;
 #[cfg(test)]
 mod testing;
 
-// Re-export stuff that may be useful downstream
-pub mod prelude {
-    pub use ark_ec;
-    pub use ark_ff;
-    pub use ark_serialize;
-    pub use ark_std;
+// Re-export Arkworks stuff that may be useful downstream.
+#[doc(hidden)]
+pub mod ark {
+    pub use ark_ec as ec;
+    pub use ark_ff as ff;
+    pub use ark_serialize as serialize;
+    pub use ark_std as std;
 }
 
 pub type AffinePoint<S> = <S as Suite>::Affine;
