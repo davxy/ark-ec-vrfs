@@ -50,7 +50,7 @@ pub fn hash_to_curve_tai_rfc_9381<S: Suite>(data: &[u8]) -> Option<AffinePoint<S
 
     for ctr in 0..=255 {
         buf[ctr_pos] = ctr;
-        let hash = hash::<S::Hasher>(&buf).to_vec();
+        let hash = hash::<S::Hasher>(&buf);
         if let Ok(pt) = codec::point_decode::<S>(&hash[..]) {
             let pt = pt.clear_cofactor();
             if !pt.is_zero() {
