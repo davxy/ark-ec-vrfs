@@ -32,6 +32,17 @@ pub trait Codec<S: Suite> {
 
     /// Scalar decode.
     fn scalar_decode(buf: &[u8]) -> ScalarField<S>;
+
+    /// Point encoded length in bytes.
+    fn point_encoded_len() -> usize {
+        AffinePoint::<S>::generator().serialized_size(ark_serialize::Compress::Yes)
+    }
+
+    /// Point encoded length in bytes.
+    fn scalar_encoded_len() -> usize {
+        use ark_ff::Zero;
+        ScalarField::<S>::zero().serialized_size(ark_serialize::Compress::Yes)
+    }
 }
 
 /// Arkworks codec.
@@ -91,6 +102,15 @@ where
         buf.extend_from_slice(&tmp[..]);
     }
 
+    /// Point decode.
+    ///
+    /// Note: This procedure employs a small hack to identify point encodings
+    /// that lack the standard y-coordinate sign flag byte required by the
+    /// SEC1 codec. This validation is particularly valuable when this function
+    /// is used by a hashing algorithm where the input might be an arbitrary byte
+    /// sequences that we attempt to interpret as valid curve points. By detecting
+    /// non-compliant encodings, we prevent subtle security vulnerabilities that
+    /// could arise from improper point validation.
     fn point_decode(buf: &[u8]) -> Result<AffinePoint<S>, Error> {
         use ark_ff::biginteger::BigInteger;
         use te_sw_map::SWMapping;
@@ -101,7 +121,14 @@ where
         }
         let mut buf = buf.to_vec();
         buf.reverse();
-        let y_flag = buf.pop().unwrap();
+
+        let enc_len = S::Codec::point_encoded_len();
+        let y_flag = if buf.len() + 1 == enc_len {
+            // Flag has not been included by the encoder, use even.
+            0x02
+        } else {
+            buf.pop().unwrap()
+        };
 
         let x = BaseField::<S>::deserialize_compressed(&mut &buf[..])?;
         let (y1, y2) =

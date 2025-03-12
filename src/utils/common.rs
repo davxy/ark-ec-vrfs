@@ -37,40 +37,21 @@ fn hmac<H: Digest + digest::core_api::BlockSizeUser>(sk: &[u8], data: &[u8]) -> 
 /// ciphersuites specified in Section 5.5, this algorithm is expected to
 /// find a valid curve point after approximately two attempts on average.
 ///
-/// # Panics
-///
-/// This function panics if `Suite::Hasher` output is less than AffinePoint base field
-/// modulus size (in bytes).
+/// May systematically fail if `Suite::Hasher` output is not sufficient to
+/// construct a point according to the `Suite::Codec` in use.
 pub fn hash_to_curve_tai_rfc_9381<S: Suite>(data: &[u8]) -> Option<AffinePoint<S>> {
     use ark_ec::AffineRepr;
-    use ark_ff::Field;
 
     const DOM_SEP_FRONT: u8 = 0x01;
     const DOM_SEP_BACK: u8 = 0x00;
-
-    let mod_size =
-        <<BaseField<S> as Field>::BasePrimeField as PrimeField>::MODULUS_BIT_SIZE as usize / 8;
-
-    assert!(
-        S::Hasher::output_size() >= mod_size,
-        "Suite::Hasher output is required to be >= base field modulus size"
-    );
 
     let mut buf = [S::SUITE_ID, &[DOM_SEP_FRONT], data, &[0x00, DOM_SEP_BACK]].concat();
     let ctr_pos = buf.len() - 2;
 
     for ctr in 0..=255 {
         buf[ctr_pos] = ctr;
-
-        let mut buf = hash::<S::Hasher>(&buf).to_vec();
-        // TODO: remove this hack at some point!
-        // Maybe we can just leave `buf` "as-is", and introduce a default behavior in
-        // `point_decode` where, if flag is missing, then use the default one (e.g. 0x02).
-        if S::Codec::BIG_ENDIAN {
-            buf.insert(0, 0x02);
-        }
-
-        if let Ok(pt) = codec::point_decode::<S>(&buf[..]) {
+        let hash = hash::<S::Hasher>(&buf).to_vec();
+        if let Ok(pt) = codec::point_decode::<S>(&hash[..]) {
             let pt = pt.clear_cofactor();
             if !pt.is_zero() {
                 return Some(pt);
