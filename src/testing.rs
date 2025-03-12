@@ -22,7 +22,7 @@ pub const BLS12_381_PCS_SRS_FILE: &str = concat!(
 /// Domain size 2^9.
 pub const BN254_PCS_SRS_FILE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/data/srs/bn245-testing-2-9-uncompressed.bin"
+    "/data/srs/bn254-testing-2-9-uncompressed.bin"
 );
 
 // Test vectors folder
