@@ -19,7 +19,7 @@
 use zeroize::Zeroize;
 
 use ark_ec::{AffineRepr, CurveGroup};
-use ark_ff::PrimeField;
+use ark_ff::{One, PrimeField, Zero};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::vec::Vec;
 
@@ -58,7 +58,7 @@ pub use codec::Codec;
 
 #[derive(Debug)]
 pub enum Error {
-    /// Verification error(s)
+    /// Verification error
     VerificationFailure,
     /// Bad input data
     InvalidData,
@@ -135,9 +135,9 @@ pub trait Suite: Copy {
 
     /// Hash data to a curve point.
     ///
-    /// By default uses "try and increment" method described by RFC 9381.
+    /// By default uses "try and increment" method described by RFC-9381.
     ///
-    /// The input `data` is assumed to be `[salt||]alpha` according to the RFC 9381.
+    /// The input `data` is assumed to be `[salt||]alpha` according to the RFC-9381.
     /// In other words, salt is not applied by this function.
     #[inline(always)]
     fn data_to_point(data: &[u8]) -> Option<AffinePoint<Self>> {
@@ -146,10 +146,10 @@ pub trait Suite: Copy {
 
     /// Map the point to a hash value using `Self::Hasher`.
     ///
-    /// By default uses the algorithm described by RFC 9381.
+    /// By default uses the algorithm described by RFC-9381 without cofactor clearing.
     #[inline(always)]
     fn point_to_hash(pt: &AffinePoint<Self>) -> HashOutput<Self> {
-        utils::point_to_hash_rfc_9381::<Self>(pt)
+        utils::point_to_hash_rfc_9381::<Self>(pt, false)
     }
 
     /// Generator used through all the suite.
@@ -221,7 +221,10 @@ impl<S: Suite> Secret<S> {
     /// The `seed` is hashed using the `Suite::hash` to construct the secret scalar.
     pub fn from_seed(seed: &[u8]) -> Self {
         let bytes = utils::hash::<S::Hasher>(seed);
-        let scalar = ScalarField::<S>::from_le_bytes_mod_order(&bytes[..]);
+        let mut scalar = ScalarField::<S>::from_le_bytes_mod_order(&bytes[..]);
+        if scalar.is_zero() {
+            scalar.set_one();
+        }
         Self::from_scalar(scalar)
     }
 

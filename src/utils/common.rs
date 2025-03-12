@@ -110,11 +110,35 @@ pub fn challenge_rfc_9381<S: Suite>(pts: &[&AffinePoint<S>], ad: &[u8]) -> Scala
 }
 
 /// Point to a hash according to RFC-9381 section 5.2.
-pub fn point_to_hash_rfc_9381<S: Suite>(pt: &AffinePoint<S>) -> HashOutput<S> {
+///
+/// According to the RFC, the input point `pt` should be multiplied by the cofactor
+/// before being hashed. However, in typical usage, the hashed point is the result
+/// of a scalar multiplication on a point produced by the `Suite::data_to_point`
+/// (also referred to as the _hash-to-curve_ or _h2c_) algorithm, which is expected
+/// to yield a point that already belongs to the prime order subgroup of the curve.
+///
+/// Therefore, assuming the `data_to_point` function is implemented correctly, the
+/// input point `pt` will inherently reside in the prime order subgroup, making the
+/// cofactor multiplication unnecessary and redundant in terms of security. The primary
+/// purpose of multiplying by the cofactor is as a safeguard against potential issues
+/// with an incorrect implementation of `data_to_point`.
+///
+/// Since multiplying by the cofactor changes the point being hashed, this step is
+/// made optional to accommodate scenarios where strict compliance with the RFC's
+/// prescribed procedure is not required.
+pub fn point_to_hash_rfc_9381<S: Suite>(
+    pt: &AffinePoint<S>,
+    mul_by_cofactor: bool,
+) -> HashOutput<S> {
+    use ark_std::borrow::Cow::*;
     const DOM_SEP_START: u8 = 0x03;
     const DOM_SEP_END: u8 = 0x00;
     let mut buf = [S::SUITE_ID, &[DOM_SEP_START]].concat();
-    S::Codec::point_encode_into(pt, &mut buf);
+    let pt = match mul_by_cofactor {
+        false => Borrowed(pt),
+        true => Owned(pt.mul_by_cofactor()),
+    };
+    S::Codec::point_encode_into(&pt, &mut buf);
     buf.push(DOM_SEP_END);
     hash::<S::Hasher>(&buf)
 }
