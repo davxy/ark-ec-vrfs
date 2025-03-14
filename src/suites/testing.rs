@@ -1,6 +1,6 @@
 //! Suite for testing
 
-use crate::{pedersen::PedersenSuite, *};
+use crate::{pedersen::PedersenSuite, utils::hash, *};
 use ark_ff::MontFp;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -15,8 +15,16 @@ impl Suite for TestSuite {
     type Hasher = sha2::Sha256;
     type Codec = codec::ArkworksCodec;
 
-    fn nonce(_sk: &ScalarField, _pt: Input) -> ScalarField {
-        crate::testing::random_val(None)
+    fn nonce(sk: &ScalarField, pt: Input) -> ScalarField
+    where
+        Self: Suite,
+        Self::Codec: codec::Codec<Self>,
+    {
+        let mut buf = vec![];
+        <Self::Codec as codec::Codec<Self>>::scalar_encode_into(sk, &mut buf);
+        <Self::Codec as codec::Codec<Self>>::point_encode_into(&pt.0, &mut buf);
+        let h = &hash::<Self::Hasher>(&buf)[..];
+        <Self::Codec as codec::Codec<Self>>::scalar_decode(h)
     }
 }
 
