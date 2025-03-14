@@ -8,7 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: '-D warnings'
+  RUSTFLAGS: "-D warnings"
   RUST_BACKTRACE: 1
 
 jobs:
@@ -75,3 +75,14 @@ jobs:
       - name: Run tests
         run: cargo test --release --all-features
 
+  publish-dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - name: Publish dry-run
+        run: cargo publish --dry-run
