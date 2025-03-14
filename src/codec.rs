@@ -1,3 +1,5 @@
+//! Points and scalars encoding.
+
 use ark_ec::short_weierstrass::SWCurveConfig;
 use utils::te_sw_map;
 

@@ -61,13 +61,13 @@ pub fn hash_to_curve_tai_rfc_9381<S: Suite>(data: &[u8]) -> Option<AffinePoint<S
     None
 }
 
-/// Elligator2 method as defined by RFC 9380 and further refined in RFC 9381 section 5.4.1.2.
+/// Elligator2 method as defined by RFC-9380 and further refined in RFC-9381 section 5.4.1.2.
 ///
 /// Implements ECVRF_encode_to_curve using one of the several hash-to-curve options defined
-/// in [RFC9380].  The specific choice of the hash-to-curve option (called the Suite ID in [RFC9380])
+/// in RFC-9380.  The specific choice of the hash-to-curve option (called the Suite ID in RFC-9380)
 /// is given by the h2c_suite_ID_string parameter.
 ///
-/// The input `data` is defined to be `salt || alpha` according to the RFC 9281.
+/// The input `data` is defined to be `salt || alpha` according to the `RFC-9281`.
 #[allow(unused)]
 pub fn hash_to_curve_ell2_rfc_9380<S: Suite>(
     data: &[u8],

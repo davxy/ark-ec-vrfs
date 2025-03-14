@@ -1,3 +1,7 @@
+//! Featured suites.
+//!
+//! Each is conditionally compiled based on its corresponding feature flag.
+
 #[cfg(test)]
 pub(crate) mod testing;
 

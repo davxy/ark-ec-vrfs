@@ -21,7 +21,7 @@ supports customization of scheme parameters.
 
 ### Built-In suites
 
-The library includes the following pre-configured suites:
+The library conditionally includes the following pre-configured suites (see features section):
 
 - **Ed25519-SHA-512-TAI**: Supports IETF and Pedersen VRFs.
 - **Secp256r1-SHA-256-TAI**: Supports IETF and Pedersen VRFs.
@@ -41,13 +41,13 @@ let aux_data = b"optional aux data";
 ```
 #### IETF-VRF
 
-Prove
+_Prove_
 ```rust
 use ark_ec_vrfs::ietf::Prover;
 let proof = secret.prove(input, output, aux_data);
 ```
 
-Verify
+_Verify_
 ```rust
 use ark_ec_vrfs::ietf::Verifier;
 let result = public.verify(input, output, aux_data, &proof);
@@ -55,7 +55,7 @@ let result = public.verify(input, output, aux_data, &proof);
 
 #### Ring-VRF
 
-Ring construction
+_Ring construction_
 ```rust
 const RING_SIZE: usize = 100;
 let prover_key_index = 3;
@@ -67,12 +67,12 @@ ring[prover_key_index] = public.0;
 ring[0] = RingContext::padding_point();
 ```
 
-Ring context construction
+_Ring parameters construction_
 ```rust
 let ring_ctx = RingContext::from_seed(RING_SIZE, b"example seed");
 ```
 
-Prove
+_Prove_
 ```rust
 use ark_ec_vrfs::ring::Prover;
 let prover_key = ring_ctx.prover_key(&ring);
@@ -80,7 +80,7 @@ let prover = ring_ctx.prover(prover_key, prover_key_index);
 let proof = secret.prove(input, output, aux_data, &prover);
 ```
 
-Verify
+_Verify_
 ```rust
 use ark_ec_vrfs::ring::Verifier;
 let verifier_key = ring_ctx.verifier_key(&ring);
@@ -88,12 +88,36 @@ let verifier = ring_ctx.verifier(verifier_key);
 let result = Public::verify(input, output, aux_data, &proof, &verifier);
 ```
 
-Verifier key from commitment
+_Verifier key from commitment_
 ```rust
 let ring_commitment = ring_ctx.verifier_key().commitment();
 let verifier_key = ring_ctx.verifier_key_from_commitment(ring_commitment);
 ```
 
+## Features
+
+- `default`: `std`
+- `full`: Enables all features listed below except `secret-split`, `parallel`, `asm`, `rfc-6979`, `test-vectors`.
+- `secret-split`: Point scalar multiplication with secret split. Secret scalar is split into the sum
+   of two scalars, which randomly mutate but retain the same sum. Incurs 2x penalty in some internal
+   sensible scalar multiplications, but provides side channel defenses.
+- `ring`: Ring-VRF for the curves supporting it.
+- `rfc-6979`: Support for nonce generation according to RFC-9381 section 5.4.2.1.
+- `test-vectors`: Deterministic ring-vrf proof. Useful for reproducible test vectors generation.
+
+### Curves
+
+- `ed25519`
+- `jubjub`
+- `bandersnatch`
+- `baby-jubjub`
+- `secp256r1`
+
+### Arkworks optimizations
+
+- `parallel`: Parallel execution where worth using `rayon`.
+- `asm`: Assembly implementation of some low level operations.
+
 ## License
 
-Distributed under the [MIT License](LICENSE).
+Distributed under the [MIT License](./LICENSE).

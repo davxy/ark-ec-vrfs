@@ -4,7 +4,7 @@
 //!
 //! * `suite_string` = b"Bandersnatch_SHA-512_ELL2" for Twisted Edwards form.
 //!
-//! - The EC group is the prime subgroup of the Bandersnatch elliptic curve,
+//! - The EC group **G** is the prime subgroup of the Bandersnatch elliptic curve,
 //!   in Twisted Edwards form, with finite field and curve parameters as specified in
 //!   [MSZ21](https://eprint.iacr.org/2021/1152).
 //!   For this group, `fLen` = `qLen` = $32$ and `cofactor` = $4$.
@@ -15,8 +15,8 @@
 //!
 //! * `cLen` = 32.
 //!
-//! * The key pair generation primitive is `PK = sk * G`, with x the secret
-//!   key scalar and `G` the group generator. In this ciphersuite, the secret
+//! * The key pair generation primitive is _PK = sk * G_, with x the secret
+//!   key scalar and G the group generator. In this ciphersuite, the secret
 //!   scalar x is equal to the secret key scalar sk.
 //!
 //! * The ECVRF_nonce_generation function is as specified in Section 5.4.2.2
@@ -28,7 +28,7 @@
 //! * The string_to_int function decodes from the 32 bytes little endian
 //!   representation.
 //!
-//! * The point_to_string function converts a point in <G> to an octet
+//! * The point_to_string function converts a point in **G** to an octet
 //!   string using compressed form. The y coordinate is encoded using
 //!   int_to_string function and the most significant bit of the last
 //!   octet is used to keep track of the x's sign. This implies that

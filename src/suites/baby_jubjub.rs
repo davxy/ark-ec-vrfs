@@ -4,7 +4,7 @@
 //!
 //! * `suite_string` = b"Baby-JubJub_SHA-512_TAI".
 //!
-//! - The EC group is the prime subgroup of the Baby-JubJub elliptic curve
+//! - The EC group **G** is the prime subgroup of the Baby-JubJub elliptic curve
 //!   as defined by <https://github.com/barryWhiteHat/baby_jubjub>.
 //!   For this group, `fLen` = `qLen` = $32$ and `cofactor` = $8$.
 //!
@@ -27,7 +27,7 @@
 //! * The string_to_int function decodes from the 32 bytes little endian
 //!   representation.
 //!
-//! * The point_to_string function converts a point in <G> to an octet
+//! * The point_to_string function converts a point in **G** to an octet
 //!   string using compressed form. The y coordinate is encoded using
 //!   int_to_string function and the most significant bit of the last
 //!   octet is used to keep track of the x's sign. This implies that

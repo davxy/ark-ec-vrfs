@@ -1,3 +1,6 @@
+//! Ring VRF.
+//!
+//! This module is gated by the `ring` feature.
 use crate::*;
 use ark_ec::{
     pairing::Pairing,
@@ -543,7 +546,7 @@ where
     }
 }
 
-/// Define type aliases for the given ring suite.
+/// Type aliases for the given ring suite.
 #[macro_export]
 macro_rules! ring_suite_types {
     ($suite:ident) => {
@@ -734,7 +737,6 @@ pub(crate) mod testing {
         while !pks.is_empty() {
             let chunk_len = 1 + random_val::<usize>(Some(rng)) % 5;
             let chunk = pks.drain(..pks.len().min(chunk_len)).collect::<Vec<_>>();
-            println!("Appending {} items", chunk.len());
             vk_builder.append(&chunk[..], &loader).unwrap();
             assert_eq!(vk_builder.free_slots(), pks.len());
         }
