@@ -323,12 +323,15 @@ where
     /// Builder for incremental construction of verifier key.
     ///
     /// This returns both the builder and `RingBuilderKey`, which may be used to append
-    /// new key items to the ring builder (as it implements `SrsLoader`).
-    pub fn verifier_key_builder(&self) -> (RingVerifierKeyBuilder<S>, RingBuilderKey<S>) {
+    /// new key items to the ring builder (as it implements `SrsLookup`).
+    pub fn verifier_key_builder(&self) -> (RingVerifierKeyBuilder<S>, RingBuilderPcsParams<S>) {
+        type RingBuilderKey<S> =
+            ring_proof::ring::RingBuilderKey<BaseField<S>, <S as RingSuite>::Pairing>;
         let domain_size = piop_domain_size_from_pcs_params::<S>(&self.pcs_params);
-        let loader = RingBuilderKey::<S>::from_srs(&self.pcs_params, domain_size);
-        let builder = RingVerifierKeyBuilder::new(self, &loader);
-        (builder, loader)
+        let builder_key = RingBuilderKey::<S>::from_srs(&self.pcs_params, domain_size);
+        let builder_pcs_params = RingBuilderPcsParams(builder_key.lis_in_g1);
+        let builder = RingVerifierKeyBuilder::new(self, &builder_pcs_params);
+        (builder, builder_pcs_params)
     }
 
     /// Construct `RingVerifier` from `RingVerifierKey`.
@@ -424,10 +427,13 @@ where
 
 /// Information required for incremental ring construction.
 ///
-/// Basically the SRS in Lagrangian form plus G1 generator used in the monomial form.
+/// Basically the SRS in Lagrangian form.
 /// Can be constructed via the `PcsParams::ck_with_lagrangian()` method.
-pub type RingBuilderKey<S> =
-    ring_proof::ring::RingBuilderKey<BaseField<S>, <S as RingSuite>::Pairing>;
+pub struct RingBuilderPcsParams<S: RingSuite>(pub Vec<G1Affine<S>>)
+where
+    BaseField<S>: ark_ff::PrimeField,
+    CurveConfig<S>: TECurveConfig + Clone,
+    AffinePoint<S>: TEMapping<CurveConfig<S>>;
 
 // Under construction ring commitment.
 type PartialRingCommitment<S> =
@@ -451,38 +457,38 @@ pub type G1Affine<S> = <<S as RingSuite>::Pairing as Pairing>::G1Affine;
 pub type G2Affine<S> = <<S as RingSuite>::Pairing as Pairing>::G2Affine;
 
 /// Lagrangian form SRS loader.
-pub trait SrsLoader<S: RingSuite>
+pub trait SrsLookup<S: RingSuite>
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: TECurveConfig + Clone,
     AffinePoint<S>: TEMapping<CurveConfig<S>>,
 {
-    fn load(&self, range: Range<usize>) -> Option<Vec<G1Affine<S>>>;
+    fn lookup(&self, range: Range<usize>) -> Option<Vec<G1Affine<S>>>;
 }
 
-impl<S: RingSuite, F> SrsLoader<S> for F
+impl<S: RingSuite, F> SrsLookup<S> for F
 where
     F: Fn(Range<usize>) -> Option<Vec<G1Affine<S>>>,
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: TECurveConfig + Clone,
     AffinePoint<S>: TEMapping<CurveConfig<S>>,
 {
-    fn load(&self, range: Range<usize>) -> Option<Vec<G1Affine<S>>> {
+    fn lookup(&self, range: Range<usize>) -> Option<Vec<G1Affine<S>>> {
         self(range)
     }
 }
 
-impl<S: RingSuite> SrsLoader<S> for &RingBuilderKey<S>
+impl<S: RingSuite> SrsLookup<S> for &RingBuilderPcsParams<S>
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: TECurveConfig + Clone,
     AffinePoint<S>: TEMapping<CurveConfig<S>>,
 {
-    fn load(&self, range: Range<usize>) -> Option<Vec<G1Affine<S>>> {
-        if range.end > self.lis_in_g1.len() {
+    fn lookup(&self, range: Range<usize>) -> Option<Vec<G1Affine<S>>> {
+        if range.end > self.0.len() {
             return None;
         }
-        Some(self.lis_in_g1[range].to_vec())
+        Some(self.0[range].to_vec())
     }
 }
 
@@ -493,9 +499,9 @@ where
     AffinePoint<S>: TEMapping<CurveConfig<S>>,
 {
     /// Construct an empty ring verifier key builder.
-    pub fn new(ctx: &RingContext<S>, srs_loader: impl SrsLoader<S>) -> Self {
+    pub fn new(ctx: &RingContext<S>, lookup: impl SrsLookup<S>) -> Self {
         use ring_proof::pcs::PcsParams;
-        let srs_loader = |range: Range<usize>| srs_loader.load(range).ok_or(());
+        let srs_loader = |range: Range<usize>| lookup.lookup(range).ok_or(());
         let raw_vk = ctx.pcs_params.raw_vk();
         let partial =
             PartialRingCommitment::<S>::empty(&ctx.piop_params, srs_loader, raw_vk.g1.into_group());
@@ -520,23 +526,23 @@ where
     pub fn append(
         &mut self,
         pks: &[AffinePoint<S>],
-        srs_loader: impl SrsLoader<S>,
+        lookup: impl SrsLookup<S>,
     ) -> Result<(), usize> {
         let avail_slots = self.free_slots();
         if avail_slots < pks.len() {
             return Err(avail_slots);
         }
-        // Currently `ring-proof` backend panics if `srs_loader` fails.
-        // This workaround makes loader failures a bit less harsh.
-        let segment = srs_loader
-            .load(self.partial.curr_keys..self.partial.curr_keys + pks.len())
+        // Currently `ring-proof` backend panics if lookup fails.
+        // This workaround makes lookup failures a bit less harsh.
+        let segment = lookup
+            .lookup(self.partial.curr_keys..self.partial.curr_keys + pks.len())
             .ok_or(usize::MAX)?;
-        let srs_loader = |range: Range<usize>| {
+        let lookup = |range: Range<usize>| {
             debug_assert_eq!(segment.len(), range.len());
             Ok(segment.clone())
         };
         let pks = TEMapping::to_te_slice(pks);
-        self.partial.append(&pks, srs_loader);
+        self.partial.append(&pks, lookup);
         Ok(())
     }
 
@@ -724,7 +730,7 @@ pub(crate) mod testing {
         let proof = secret.prove(input, output, b"foo", &prover);
 
         // Incremental ring verifier key construction
-        let (mut vk_builder, loader) = ring_ctx.verifier_key_builder();
+        let (mut vk_builder, lookup) = ring_ctx.verifier_key_builder();
         assert_eq!(vk_builder.free_slots(), pks.len());
 
         let extra_pk = random_val::<AffinePoint<S>>(Some(rng));
@@ -737,12 +743,12 @@ pub(crate) mod testing {
         while !pks.is_empty() {
             let chunk_len = 1 + random_val::<usize>(Some(rng)) % 5;
             let chunk = pks.drain(..pks.len().min(chunk_len)).collect::<Vec<_>>();
-            vk_builder.append(&chunk[..], &loader).unwrap();
+            vk_builder.append(&chunk[..], &lookup).unwrap();
             assert_eq!(vk_builder.free_slots(), pks.len());
         }
         // No more space left
         let extra_pk = random_val::<AffinePoint<S>>(Some(rng));
-        assert_eq!(vk_builder.append(&[extra_pk], &loader).unwrap_err(), 0);
+        assert_eq!(vk_builder.append(&[extra_pk], &lookup).unwrap_err(), 0);
         let verifier_key = vk_builder.finalize();
         let verifier = ring_ctx.verifier(verifier_key);
         let result = Public::verify(input, output, b"foo", &proof, &verifier);
