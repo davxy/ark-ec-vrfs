@@ -456,7 +456,7 @@ where
 pub type G1Affine<S> = <<S as RingSuite>::Pairing as Pairing>::G1Affine;
 pub type G2Affine<S> = <<S as RingSuite>::Pairing as Pairing>::G2Affine;
 
-/// Lagrangian form SRS loader.
+/// Lagrangian form SRS lookup.
 pub trait SrsLookup<S: RingSuite>
 where
     BaseField<S>: ark_ff::PrimeField,
@@ -501,10 +501,10 @@ where
     /// Construct an empty ring verifier key builder.
     pub fn new(ctx: &RingContext<S>, lookup: impl SrsLookup<S>) -> Self {
         use ring_proof::pcs::PcsParams;
-        let srs_loader = |range: Range<usize>| lookup.lookup(range).ok_or(());
+        let lookup = |range: Range<usize>| lookup.lookup(range).ok_or(());
         let raw_vk = ctx.pcs_params.raw_vk();
         let partial =
-            PartialRingCommitment::<S>::empty(&ctx.piop_params, srs_loader, raw_vk.g1.into_group());
+            PartialRingCommitment::<S>::empty(&ctx.piop_params, lookup, raw_vk.g1.into_group());
         RingVerifierKeyBuilder { partial, raw_vk }
     }
 
@@ -521,7 +521,7 @@ where
     ///
     /// If the available free slots are not sufficient to append `pks` sequence, the
     /// number of available slots are returned in the error variant.
-    /// If the supplied loader returns `None`, then an error with `usize::MAX` is
+    /// If the supplied `lookup` returns `None`, then an error with `usize::MAX` is
     /// returned.
     pub fn append(
         &mut self,
@@ -734,9 +734,8 @@ pub(crate) mod testing {
         assert_eq!(vk_builder.free_slots(), pks.len());
 
         let extra_pk = random_val::<AffinePoint<S>>(Some(rng));
-        let faulty_loader = |_| None;
         assert_eq!(
-            vk_builder.append(&[extra_pk], faulty_loader).unwrap_err(),
+            vk_builder.append(&[extra_pk], |_| None).unwrap_err(),
             usize::MAX
         );
 
