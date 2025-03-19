@@ -42,18 +42,19 @@ where
     const PADDING: AffinePoint<Self>;
 }
 
-/// Polinomial Commitment Scheme (KZG)
-type Pcs<S> = ring_proof::pcs::kzg::KZG<<S as RingSuite>::Pairing>;
+/// KZG Polinomial Commitment Scheme.
+pub type Pcs<S> = ring_proof::pcs::kzg::KZG<<S as RingSuite>::Pairing>;
 
-/// Single PCS commitment.
-type PcsCommitment<S> = ring_proof::pcs::kzg::commitment::KzgCommitment<<S as RingSuite>::Pairing>;
+/// KZG commitment.
+pub type PcsCommitment<S> =
+    ring_proof::pcs::kzg::commitment::KzgCommitment<<S as RingSuite>::Pairing>;
 
-/// KZG "Polynomial Commitment Scheme" (PCS) parameters.
+/// KZG Polynomial Commitment Scheme parameters.
 ///
 /// Basically powers of tau SRS.
 pub type PcsParams<S> = ring_proof::pcs::kzg::urs::URS<<S as RingSuite>::Pairing>;
 
-/// Polynomial "Interactive Oracle Proof" (IOP) parameters.
+/// Polynomial Interactive Oracle Proof (IOP) parameters.
 ///
 /// Basically all the application specific parameters required to construct and
 /// verify the ring proof.
@@ -176,16 +177,18 @@ where
 
 /// Ring proof full parameters.
 ///
-/// Wraps `PcsParams` and `PiopParams`.
+/// Wraps [`PcsParams`] and [`PiopParams`].
 #[derive(Clone)]
-pub struct RingContext<S: RingSuite>
+pub struct RingProofParams<S: RingSuite>
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: TECurveConfig + Clone,
     AffinePoint<S>: TEMapping<CurveConfig<S>>,
 {
-    pub pcs_params: PcsParams<S>,
-    pub piop_params: PiopParams<S>,
+    /// PCS parameters.
+    pub pcs: PcsParams<S>,
+    /// PIOP parameters.
+    pub piop: PiopParams<S>,
 }
 
 /// Evaluation domain size required for the given ring size.
@@ -203,7 +206,7 @@ where
 
 /// PCS params `powers_in_g1` is expected to have length equal to 3*piop_domain_size +1.
 /// This is a strong assumption, guaranteed only for internal usage (e.g.
-/// `PcsParams` constructed as part of `RingContext`)
+/// `PcsParams` constructed as part of `RingProofParams`)
 #[inline(always)]
 fn piop_domain_size_from_pcs_params<S: RingSuite>(pcs_params: &PcsParams<S>) -> usize
 where
@@ -228,7 +231,7 @@ where
     )
 }
 
-impl<S: RingSuite> RingContext<S>
+impl<S: RingSuite> RingProofParams<S>
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: TECurveConfig + Clone,
@@ -236,7 +239,7 @@ where
 {
     /// Construct a new ring context suitable to manage the given ring size.
     ///
-    /// Calls into [`RingContext::from_rand`] with a `ChaCha20Rng` seeded with `seed`.
+    /// Calls into [`RingProofParams::from_rand`] with a `ChaCha20Rng` seeded with `seed`.
     pub fn from_seed(ring_size: usize, seed: [u8; 32]) -> Self {
         use ark_std::rand::SeedableRng;
         let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
@@ -245,7 +248,7 @@ where
 
     /// Construct a new random ring context suitable for the given ring size.
     ///
-    /// Calls into [`RingContext::from_srs`] with a randomly generated [`PcsParams`]
+    /// Calls into [`RingProofParams::from_srs`] with a randomly generated [`PcsParams`]
     /// large enough to be used with the given `ring_size`.
     pub fn from_rand(ring_size: usize, rng: &mut impl ark_std::rand::RngCore) -> Self {
         use ring_proof::pcs::PCS;
@@ -266,15 +269,15 @@ where
         pcs_params.powers_in_g1.truncate(3 * domain_size + 1);
         pcs_params.powers_in_g2.truncate(2);
         Ok(Self {
-            pcs_params,
-            piop_params: piop_params::<S>(domain_size),
+            pcs: pcs_params,
+            piop: piop_params::<S>(domain_size),
         })
     }
 
     /// The max ring size this context is able to manage.
     #[inline(always)]
     pub fn max_ring_size(&self) -> usize {
-        self.piop_params.keyset_part_size
+        self.piop.keyset_part_size
     }
 
     /// Construct [`RingProverKey`] for the given ring.
@@ -282,7 +285,7 @@ where
     /// Note: if `pks.len() > self.max_ring_size()` the extra keys in the tail are ignored.
     pub fn prover_key(&self, pks: &[AffinePoint<S>]) -> RingProverKey<S> {
         let pks = TEMapping::to_te_slice(&pks[..pks.len().min(self.max_ring_size())]);
-        ring_proof::index(&self.pcs_params, &self.piop_params, &pks).0
+        ring_proof::index(&self.pcs, &self.piop, &pks).0
     }
 
     /// Construct [`RingProver`] from [`RingProverKey`] for the prover implied by `key_index`.
@@ -292,7 +295,7 @@ where
     pub fn prover(&self, prover_key: RingProverKey<S>, key_index: usize) -> RingProver<S> {
         RingProver::<S>::init(
             prover_key,
-            self.piop_params.clone(),
+            self.piop.clone(),
             key_index,
             ring_proof::ArkTranscript::new(S::SUITE_ID),
         )
@@ -303,7 +306,7 @@ where
     /// Note: if `pks.len() > self.max_ring_size()` the extra keys in the tail are ignored.
     pub fn verifier_key(&self, pks: &[AffinePoint<S>]) -> RingVerifierKey<S> {
         let pks = TEMapping::to_te_slice(&pks[..pks.len().min(self.max_ring_size())]);
-        ring_proof::index(&self.pcs_params, &self.piop_params, &pks).1
+        ring_proof::index(&self.pcs, &self.piop, &pks).1
     }
 
     /// Construct `RingVerifierKey` instance for the ring previously committed.
@@ -317,7 +320,7 @@ where
         commitment: RingCommitment<S>,
     ) -> RingVerifierKey<S> {
         use ring_proof::pcs::PcsParams;
-        RingVerifierKey::<S>::from_commitment_and_kzg_vk(commitment, self.pcs_params.raw_vk())
+        RingVerifierKey::<S>::from_commitment_and_kzg_vk(commitment, self.pcs.raw_vk())
     }
 
     /// Builder for incremental construction of verifier key.
@@ -327,8 +330,8 @@ where
     pub fn verifier_key_builder(&self) -> (RingVerifierKeyBuilder<S>, RingBuilderPcsParams<S>) {
         type RingBuilderKey<S> =
             ring_proof::ring::RingBuilderKey<BaseField<S>, <S as RingSuite>::Pairing>;
-        let domain_size = piop_domain_size_from_pcs_params::<S>(&self.pcs_params);
-        let builder_key = RingBuilderKey::<S>::from_srs(&self.pcs_params, domain_size);
+        let domain_size = piop_domain_size_from_pcs_params::<S>(&self.pcs);
+        let builder_key = RingBuilderKey::<S>::from_srs(&self.pcs, domain_size);
         let builder_pcs_params = RingBuilderPcsParams(builder_key.lis_in_g1);
         let builder = RingVerifierKeyBuilder::new(self, &builder_pcs_params);
         (builder, builder_pcs_params)
@@ -338,16 +341,16 @@ where
     pub fn verifier(&self, verifier_key: RingVerifierKey<S>) -> RingVerifier<S> {
         RingVerifier::<S>::init(
             verifier_key,
-            self.piop_params.clone(),
+            self.piop.clone(),
             ring_proof::ArkTranscript::new(S::SUITE_ID),
         )
     }
 
-    /// Constructs a `RingVerifier` from `RingVerifierKey` without no `RingContext`.
+    /// Constructs a `RingVerifier` from `RingVerifierKey` without no `RingProofParams`.
     ///
-    /// While this approach is slightly less efficient than using a pre-constructed `RingContext`,
+    /// While this approach is slightly less efficient than using a pre-constructed `RingProofParams`,
     /// as some parameters need to be computed on-the-fly, it is beneficial in memory or
-    /// storage constrained environments. This avoids the need to retain the full `RingContext` for
+    /// storage constrained environments. This avoids the need to retain the full `RingProofParams` for
     /// ring signature verification. Instead, the `VerifierKey` contains only the essential information
     /// needed to verify ring proofs.
     pub fn verifier_no_context(
@@ -371,7 +374,7 @@ where
     }
 }
 
-impl<S: RingSuite> CanonicalSerialize for RingContext<S>
+impl<S: RingSuite> CanonicalSerialize for RingProofParams<S>
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: TECurveConfig + Clone,
@@ -382,15 +385,15 @@ where
         mut writer: W,
         compress: ark_serialize::Compress,
     ) -> Result<(), ark_serialize::SerializationError> {
-        self.pcs_params.serialize_with_mode(&mut writer, compress)
+        self.pcs.serialize_with_mode(&mut writer, compress)
     }
 
     fn serialized_size(&self, compress: ark_serialize::Compress) -> usize {
-        self.pcs_params.serialized_size(compress)
+        self.pcs.serialized_size(compress)
     }
 }
 
-impl<S: RingSuite> CanonicalDeserialize for RingContext<S>
+impl<S: RingSuite> CanonicalDeserialize for RingProofParams<S>
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: TECurveConfig + Clone,
@@ -408,20 +411,20 @@ where
         )?;
         let piop_domain_size = piop_domain_size_from_pcs_params::<S>(&pcs_params);
         Ok(Self {
-            pcs_params,
-            piop_params: piop_params::<S>(piop_domain_size),
+            pcs: pcs_params,
+            piop: piop_params::<S>(piop_domain_size),
         })
     }
 }
 
-impl<S: RingSuite> ark_serialize::Valid for RingContext<S>
+impl<S: RingSuite> ark_serialize::Valid for RingProofParams<S>
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: TECurveConfig + Clone,
     AffinePoint<S>: TEMapping<CurveConfig<S>>,
 {
     fn check(&self) -> Result<(), ark_serialize::SerializationError> {
-        self.pcs_params.check()
+        self.pcs.check()
     }
 }
 
@@ -499,12 +502,12 @@ where
     AffinePoint<S>: TEMapping<CurveConfig<S>>,
 {
     /// Construct an empty ring verifier key builder.
-    pub fn new(ctx: &RingContext<S>, lookup: impl SrsLookup<S>) -> Self {
+    pub fn new(params: &RingProofParams<S>, lookup: impl SrsLookup<S>) -> Self {
         use ring_proof::pcs::PcsParams;
         let lookup = |range: Range<usize>| lookup.lookup(range).ok_or(());
-        let raw_vk = ctx.pcs_params.raw_vk();
+        let raw_vk = params.pcs.raw_vk();
         let partial =
-            PartialRingCommitment::<S>::empty(&ctx.piop_params, lookup, raw_vk.g1.into_group());
+            PartialRingCommitment::<S>::empty(&params.piop, lookup, raw_vk.g1.into_group());
         RingVerifierKeyBuilder { partial, raw_vk }
     }
 
@@ -559,7 +562,9 @@ macro_rules! ring_suite_types {
         #[allow(dead_code)]
         pub type PcsParams = $crate::ring::PcsParams<$suite>;
         #[allow(dead_code)]
-        pub type RingContext = $crate::ring::RingContext<$suite>;
+        pub type PiopParams = $crate::ring::PiopParams<$suite>;
+        #[allow(dead_code)]
+        pub type RingProofParams = $crate::ring::RingProofParams<$suite>;
         #[allow(dead_code)]
         pub type RingProverKey = $crate::ring::RingProverKey<$suite>;
         #[allow(dead_code)]
@@ -646,25 +651,25 @@ pub(crate) mod testing {
         AffinePoint<S>: TEMapping<CurveConfig<S>>,
     {
         let rng = &mut ark_std::test_rng();
-        let ring_ctx = RingContext::<S>::from_rand(TEST_RING_SIZE, rng);
+        let params = RingProofParams::<S>::from_rand(TEST_RING_SIZE, rng);
 
         let secret = Secret::<S>::from_seed(TEST_SEED);
         let public = secret.public();
         let input = Input::from(common::random_val(Some(rng)));
         let output = secret.output(input);
 
-        let ring_size = ring_ctx.max_ring_size();
+        let ring_size = params.max_ring_size();
 
         let prover_idx = 3;
         let mut pks = common::random_vec::<AffinePoint<S>>(ring_size, Some(rng));
         pks[prover_idx] = public.0;
 
-        let prover_key = ring_ctx.prover_key(&pks);
-        let prover = ring_ctx.prover(prover_key, prover_idx);
+        let prover_key = params.prover_key(&pks);
+        let prover = params.prover(prover_key, prover_idx);
         let proof = secret.prove(input, output, b"foo", &prover);
 
-        let verifier_key = ring_ctx.verifier_key(&pks);
-        let verifier = ring_ctx.verifier(verifier_key);
+        let verifier_key = params.verifier_key(&pks);
+        let verifier = params.verifier(verifier_key);
         let result = Public::verify(input, output, b"foo", &proof, &verifier);
         assert!(result.is_ok());
     }
@@ -709,28 +714,27 @@ pub(crate) mod testing {
         CurveConfig<S>: TECurveConfig + Clone,
         AffinePoint<S>: TEMapping<CurveConfig<S>>,
     {
-        // use crate::ring::{testing::RingSuiteExt, Prover, Verifier};
         use crate::testing::{random_val, random_vec};
 
         let rng = &mut ark_std::test_rng();
-        let ring_ctx = RingContext::<S>::from_rand(TEST_RING_SIZE, rng);
+        let params = RingProofParams::<S>::from_rand(TEST_RING_SIZE, rng);
 
         let secret = Secret::<S>::from_seed(TEST_SEED);
         let public = secret.public();
         let input = Input::from(common::random_val(Some(rng)));
         let output = secret.output(input);
 
-        let ring_size = ring_ctx.max_ring_size();
+        let ring_size = params.max_ring_size();
         let prover_idx = random_val::<usize>(Some(rng)) % ring_size;
         let mut pks = random_vec::<AffinePoint<S>>(ring_size, Some(rng));
         pks[prover_idx] = public.0;
 
-        let prover_key = ring_ctx.prover_key(&pks);
-        let prover = ring_ctx.prover(prover_key, prover_idx);
+        let prover_key = params.prover_key(&pks);
+        let prover = params.prover(prover_key, prover_idx);
         let proof = secret.prove(input, output, b"foo", &prover);
 
         // Incremental ring verifier key construction
-        let (mut vk_builder, lookup) = ring_ctx.verifier_key_builder();
+        let (mut vk_builder, lookup) = params.verifier_key_builder();
         assert_eq!(vk_builder.free_slots(), pks.len());
 
         let extra_pk = random_val::<AffinePoint<S>>(Some(rng));
@@ -749,7 +753,7 @@ pub(crate) mod testing {
         let extra_pk = random_val::<AffinePoint<S>>(Some(rng));
         assert_eq!(vk_builder.append(&[extra_pk], &lookup).unwrap_err(), 0);
         let verifier_key = vk_builder.finalize();
-        let verifier = ring_ctx.verifier(verifier_key);
+        let verifier = params.verifier(verifier_key);
         let result = Public::verify(input, output, b"foo", &proof, &verifier);
         assert!(result.is_ok());
     }
@@ -793,10 +797,10 @@ pub(crate) mod testing {
     {
         const SRS_FILE: &str;
 
-        fn context() -> &'static RingContext<Self>;
+        fn params() -> &'static RingProofParams<Self>;
 
         #[allow(unused)]
-        fn load_context() -> RingContext<Self> {
+        fn load_context() -> RingProofParams<Self> {
             use ark_serialize::CanonicalDeserialize;
             use std::{fs::File, io::Read};
             let mut file = File::open(Self::SRS_FILE).unwrap();
@@ -804,16 +808,16 @@ pub(crate) mod testing {
             file.read_to_end(&mut buf).unwrap();
             let pcs_params =
                 PcsParams::<Self>::deserialize_uncompressed_unchecked(&mut &buf[..]).unwrap();
-            RingContext::from_srs(crate::ring::testing::TEST_RING_SIZE, pcs_params).unwrap()
+            RingProofParams::from_srs(crate::ring::testing::TEST_RING_SIZE, pcs_params).unwrap()
         }
 
         #[allow(unused)]
-        fn write_context(ctx: &RingContext<Self>) {
+        fn write_context(params: &RingProofParams<Self>) {
             use ark_serialize::CanonicalSerialize;
             use std::{fs::File, io::Write};
             let mut file = File::create(Self::SRS_FILE).unwrap();
             let mut buf = Vec::new();
-            ctx.pcs_params.serialize_uncompressed(&mut buf).unwrap();
+            params.pcs.serialize_uncompressed(&mut buf).unwrap();
             file.write_all(&buf).unwrap();
         }
     }
@@ -865,7 +869,7 @@ pub(crate) mod testing {
             let input = Input::<S>::from(pedersen.base.h);
             let output = Output::from(pedersen.base.gamma);
 
-            let ring_ctx = <S as RingSuiteExt>::context();
+            let params = <S as RingSuiteExt>::params();
 
             use ark_std::rand::SeedableRng;
             let rng = &mut rand_chacha::ChaCha20Rng::from_seed([0x11; 32]);
@@ -873,11 +877,11 @@ pub(crate) mod testing {
             let mut ring_pks = common::random_vec::<AffinePoint<S>>(TEST_RING_SIZE, Some(rng));
             ring_pks[prover_idx] = public.0;
 
-            let prover_key = ring_ctx.prover_key(&ring_pks);
-            let prover = ring_ctx.prover(prover_key, prover_idx);
+            let prover_key = params.prover_key(&ring_pks);
+            let prover = params.prover(prover_key, prover_idx);
             let proof = secret.prove(input, output, ad, &prover);
 
-            let verifier_key = ring_ctx.verifier_key(&ring_pks);
+            let verifier_key = params.verifier_key(&ring_pks);
             let ring_pks_com = verifier_key.commitment();
 
             {
@@ -929,15 +933,15 @@ pub(crate) mod testing {
             let public = secret.public();
             assert_eq!(public.0, self.pedersen.base.pk);
 
-            let ring_ctx = <S as RingSuiteExt>::context();
+            let params = <S as RingSuiteExt>::params();
 
             let prover_idx = self.ring_pks.iter().position(|&pk| pk == public.0).unwrap();
 
-            let prover_key = ring_ctx.prover_key(&self.ring_pks);
-            let prover = ring_ctx.prover(prover_key, prover_idx);
+            let prover_key = params.prover_key(&self.ring_pks);
+            let prover = params.prover(prover_key, prover_idx);
 
-            let verifier_key = ring_ctx.verifier_key(&self.ring_pks);
-            let verifier = ring_ctx.verifier(verifier_key);
+            let verifier_key = params.verifier_key(&self.ring_pks);
+            let verifier = params.verifier(verifier_key);
 
             let proof = secret.prove(input, output, &self.pedersen.base.ad, &prover);
 

@@ -64,34 +64,34 @@ let mut ring = (0..RING_SIZE).map(|i| Secret::from_seed(&i.to_le_bytes()).public
 // Patch the ring with the public key of the prover
 ring[prover_key_index] = public.0;
 // Any key can be replaced with the padding point
-ring[0] = RingContext::padding_point();
+ring[0] = RingProofParams::padding_point();
 ```
 
 _Ring parameters construction_
 ```rust
-let ring_ctx = RingContext::from_seed(RING_SIZE, b"example seed");
+let params = RingProofParams::from_seed(RING_SIZE, b"example seed");
 ```
 
 _Prove_
 ```rust
 use ark_ec_vrfs::ring::Prover;
-let prover_key = ring_ctx.prover_key(&ring);
-let prover = ring_ctx.prover(prover_key, prover_key_index);
+let prover_key = params.prover_key(&ring);
+let prover = params.prover(prover_key, prover_key_index);
 let proof = secret.prove(input, output, aux_data, &prover);
 ```
 
 _Verify_
 ```rust
 use ark_ec_vrfs::ring::Verifier;
-let verifier_key = ring_ctx.verifier_key(&ring);
-let verifier = ring_ctx.verifier(verifier_key);
+let verifier_key = params.verifier_key(&ring);
+let verifier = params.verifier(verifier_key);
 let result = Public::verify(input, output, aux_data, &proof, &verifier);
 ```
 
 _Verifier key from commitment_
 ```rust
-let ring_commitment = ring_ctx.verifier_key().commitment();
-let verifier_key = ring_ctx.verifier_key_from_commitment(ring_commitment);
+let ring_commitment = params.verifier_key().commitment();
+let verifier_key = params.verifier_key_from_commitment(ring_commitment);
 ```
 
 ## Features
