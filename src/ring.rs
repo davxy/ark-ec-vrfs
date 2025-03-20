@@ -1,6 +1,7 @@
 //! Ring VRF.
 //!
 //! This module is gated by the `ring` feature.
+
 use crate::*;
 use ark_ec::{
     pairing::Pairing,
@@ -21,6 +22,35 @@ pub const ACCUMULATOR_BASE_SEED: &[u8] =
 /// (en) *"A shadow that fills the void left by lost souls echoing among the darkness"*
 pub const PADDING_SEED: &[u8] =
     b"umbra quae vacuum implet ab animabus perditis relictum inter tenebras resonans";
+
+/// Max ring size that can be managed with the given PCS domain size.
+pub const fn max_ring_size_from_pcs_domain_size<S: Suite>(pcs_domain_size: usize) -> usize {
+    let piop_domain_size = piop_domain_size_from_pcs_domain_size(pcs_domain_size);
+    max_ring_size_from_piop_domain_size::<S>(piop_domain_size)
+}
+
+/// PCS domain size required to manage the given ring size.
+pub const fn pcs_domain_size<S: Suite>(ring_size: usize) -> usize {
+    3 * piop_domain_size::<S>(ring_size) + 1
+}
+
+/// Max ring size that can be managed with the given PIOP domain size.
+const fn max_ring_size_from_piop_domain_size<S: Suite>(piop_domain_size: usize) -> usize {
+    piop_domain_size - (4 + ScalarField::<S>::MODULUS_BIT_SIZE as usize)
+}
+
+/// PIOP domain size required to manage the given ring size.
+///
+/// Next power of two after accouting for 3 ZK + 1 extra point used internally.
+const fn piop_domain_size<S: Suite>(ring_size: usize) -> usize {
+    (ring_size + 4 + ScalarField::<S>::MODULUS_BIT_SIZE as usize).next_power_of_two()
+}
+
+/// A properly constructed PCS domain has size equal to 3*piop_domain_size+1,
+/// with piop_domain_size a power of 2.
+const fn piop_domain_size_from_pcs_domain_size(pcs_domain_size: usize) -> usize {
+    1 << ((pcs_domain_size - 1) / 3).ilog2()
+}
 
 /// Ring suite.
 pub trait RingSuite: PedersenSuite
@@ -191,33 +221,7 @@ where
     pub piop: PiopParams<S>,
 }
 
-/// Evaluation domain size required for the given ring size.
-///
-/// This determines the size of the [`PcsParams`] multiples of g1.
-#[inline(always)]
-pub fn piop_domain_size<S: RingSuite>(ring_size: usize) -> usize
-where
-    BaseField<S>: ark_ff::PrimeField,
-    CurveConfig<S>: TECurveConfig + Clone,
-    AffinePoint<S>: TEMapping<CurveConfig<S>>,
-{
-    1 << ark_std::log2(ring_size + ScalarField::<S>::MODULUS_BIT_SIZE as usize + 4)
-}
-
-/// PCS params `powers_in_g1` is expected to have length equal to 3*piop_domain_size +1.
-/// This is a strong assumption, guaranteed only for internal usage (e.g.
-/// `PcsParams` constructed as part of `RingProofParams`)
-#[inline(always)]
-fn piop_domain_size_from_pcs_params<S: RingSuite>(pcs_params: &PcsParams<S>) -> usize
-where
-    BaseField<S>: ark_ff::PrimeField,
-    CurveConfig<S>: TECurveConfig + Clone,
-    AffinePoint<S>: TEMapping<CurveConfig<S>>,
-{
-    pcs_params.powers_in_g1.len() / 3
-}
-
-fn piop_params<S: RingSuite>(domain_size: usize) -> PiopParams<S>
+pub(crate) fn piop_params<S: RingSuite>(domain_size: usize) -> PiopParams<S>
 where
     BaseField<S>: ark_ff::PrimeField,
     CurveConfig<S>: TECurveConfig + Clone,
@@ -237,7 +241,7 @@ where
     CurveConfig<S>: TECurveConfig + Clone,
     AffinePoint<S>: TEMapping<CurveConfig<S>>,
 {
-    /// Construct a new ring context suitable to manage the given ring size.
+    /// Construct new ring proof params suitable for the given ring size.
     ///
     /// Calls into [`RingProofParams::from_rand`] with a `ChaCha20Rng` seeded with `seed`.
     pub fn from_seed(ring_size: usize, seed: [u8; 32]) -> Self {
@@ -248,33 +252,37 @@ where
 
     /// Construct a new random ring context suitable for the given ring size.
     ///
-    /// Calls into [`RingProofParams::from_srs`] with a randomly generated [`PcsParams`]
-    /// large enough to be used with the given `ring_size`.
+    /// Calls into [`RingProofParams::from_srs`] with randomly generated [`PcsParams`]
+    /// large enough to be used for the given `ring_size`.
     pub fn from_rand(ring_size: usize, rng: &mut impl ark_std::rand::RngCore) -> Self {
         use ring_proof::pcs::PCS;
-        let domain_size = piop_domain_size::<S>(ring_size);
-        let pcs_params = Pcs::<S>::setup(3 * domain_size, rng);
-        Self::from_srs(ring_size, pcs_params).expect("PCS params is correct")
+        let max_degree = pcs_domain_size::<S>(ring_size) - 1;
+        let pcs_params = Pcs::<S>::setup(max_degree, rng);
+        Self::from_pcs_params(ring_size, pcs_params).expect("PCS params is correct")
     }
 
     /// Construct a new random ring context suitable for the given [`PcsParams`].
     ///
-    /// Fails if `PcsParams` are not
-    pub fn from_srs(ring_size: usize, mut pcs_params: PcsParams<S>) -> Result<Self, Error> {
-        let domain_size = piop_domain_size::<S>(ring_size);
-        if pcs_params.powers_in_g1.len() <= 3 * domain_size || pcs_params.powers_in_g2.len() < 2 {
+    /// Fails if the domain representable via the supplied `PcsParams` is not sufficiently
+    /// large for the given `ring_size`.
+    ///
+    /// If the domain size of `PcsParams` exceeds the required limit, the extra items are truncated.
+    pub fn from_pcs_params(ring_size: usize, mut pcs_params: PcsParams<S>) -> Result<Self, Error> {
+        let pcs_domain_size = pcs_domain_size::<S>(ring_size);
+        if pcs_params.powers_in_g1.len() < pcs_domain_size || pcs_params.powers_in_g2.len() < 2 {
             return Err(Error::InvalidData);
         }
         // Keep only the required powers of tau.
-        pcs_params.powers_in_g1.truncate(3 * domain_size + 1);
+        pcs_params.powers_in_g1.truncate(pcs_domain_size);
         pcs_params.powers_in_g2.truncate(2);
+        let piop_domain_size = piop_domain_size::<S>(ring_size);
         Ok(Self {
             pcs: pcs_params,
-            piop: piop_params::<S>(domain_size),
+            piop: piop_params::<S>(piop_domain_size),
         })
     }
 
-    /// The max ring size this context is able to manage.
+    /// The max ring size these parameters are able to handle.
     #[inline(always)]
     pub fn max_ring_size(&self) -> usize {
         self.piop.keyset_part_size
@@ -323,15 +331,15 @@ where
         RingVerifierKey::<S>::from_commitment_and_kzg_vk(commitment, self.pcs.raw_vk())
     }
 
-    /// Builder for incremental construction of verifier key.
+    /// Builder for incremental construction of the verifier key.
     ///
-    /// This returns both the builder and `RingBuilderKey`, which may be used to append
-    /// new key items to the ring builder (as it implements `SrsLookup`).
+    /// This also returns a `RingBuilderPcsParams` which may be used to append new key items
+    /// to the `RingVerifierKeyBuilder` instance its tne `SrsLookup` implementation.
     pub fn verifier_key_builder(&self) -> (RingVerifierKeyBuilder<S>, RingBuilderPcsParams<S>) {
         type RingBuilderKey<S> =
             ring_proof::ring::RingBuilderKey<BaseField<S>, <S as RingSuite>::Pairing>;
-        let domain_size = piop_domain_size_from_pcs_params::<S>(&self.pcs);
-        let builder_key = RingBuilderKey::<S>::from_srs(&self.pcs, domain_size);
+        let piop_domain_size = piop_domain_size_from_pcs_domain_size(self.pcs.powers_in_g1.len());
+        let builder_key = RingBuilderKey::<S>::from_srs(&self.pcs, piop_domain_size);
         let builder_pcs_params = RingBuilderPcsParams(builder_key.lis_in_g1);
         let builder = RingVerifierKeyBuilder::new(self, &builder_pcs_params);
         (builder, builder_pcs_params)
@@ -348,7 +356,7 @@ where
 
     /// Constructs a `RingVerifier` from `RingVerifierKey` without no `RingProofParams`.
     ///
-    /// While this approach is slightly less efficient than using a pre-constructed `RingProofParams`,
+    /// While this approach is slightly less efficient than using pre-constructed `RingProofParams`,
     /// as some parameters need to be computed on-the-fly, it is beneficial in memory or
     /// storage constrained environments. This avoids the need to retain the full `RingProofParams` for
     /// ring signature verification. Instead, the `VerifierKey` contains only the essential information
@@ -366,7 +374,7 @@ where
 
     /// Get the padding point.
     ///
-    /// This is a point of unknown dlog that can be used to replace of any key during
+    /// This is a point of unknown dlog that can be used in place of any key during
     /// ring construciton.
     #[inline(always)]
     pub const fn padding_point() -> AffinePoint<S> {
@@ -409,7 +417,7 @@ where
             compress,
             validate,
         )?;
-        let piop_domain_size = piop_domain_size_from_pcs_params::<S>(&pcs_params);
+        let piop_domain_size = piop_domain_size_from_pcs_domain_size(pcs_params.powers_in_g1.len());
         Ok(Self {
             pcs: pcs_params,
             piop: piop_params::<S>(piop_domain_size),
@@ -659,6 +667,14 @@ pub(crate) mod testing {
         let output = secret.output(input);
 
         let ring_size = params.max_ring_size();
+        let pcs_dom_size = pcs_domain_size::<S>(ring_size);
+        assert_eq!(pcs_dom_size, params.pcs.powers_in_g1.len());
+        assert_eq!(pcs_dom_size / 3, piop_domain_size::<S>(ring_size));
+
+        assert_eq!(
+            max_ring_size_from_pcs_domain_size::<S>(pcs_dom_size),
+            ring_size
+        );
 
         let prover_idx = 3;
         let mut pks = common::random_vec::<AffinePoint<S>>(ring_size, Some(rng));
@@ -808,7 +824,8 @@ pub(crate) mod testing {
             file.read_to_end(&mut buf).unwrap();
             let pcs_params =
                 PcsParams::<Self>::deserialize_uncompressed_unchecked(&mut &buf[..]).unwrap();
-            RingProofParams::from_srs(crate::ring::testing::TEST_RING_SIZE, pcs_params).unwrap()
+            RingProofParams::from_pcs_params(crate::ring::testing::TEST_RING_SIZE, pcs_params)
+                .unwrap()
         }
 
         #[allow(unused)]
