@@ -30,6 +30,7 @@ pub const fn max_ring_size_from_pcs_domain_size<S: Suite>(pcs_domain_size: usize
 }
 
 /// PCS domain size required to manage the given ring size.
+// This is the size required by the prover, verifier can just use piop_domain_size
 pub const fn pcs_domain_size<S: Suite>(ring_size: usize) -> usize {
     3 * piop_domain_size::<S>(ring_size) + 1
 }
@@ -338,7 +339,7 @@ where
     pub fn verifier_key_builder(&self) -> (RingVerifierKeyBuilder<S>, RingBuilderPcsParams<S>) {
         type RingBuilderKey<S> =
             ring_proof::ring::RingBuilderKey<BaseField<S>, <S as RingSuite>::Pairing>;
-        let piop_domain_size = piop_domain_size_from_pcs_domain_size(self.pcs.powers_in_g1.len());
+        let piop_domain_size = piop_domain_size::<S>(self.piop.keyset_part_size);
         let builder_key = RingBuilderKey::<S>::from_srs(&self.pcs, piop_domain_size);
         let builder_pcs_params = RingBuilderPcsParams(builder_key.lis_in_g1);
         let builder = RingVerifierKeyBuilder::new(self, &builder_pcs_params);
@@ -440,6 +441,7 @@ where
 ///
 /// Basically the SRS in Lagrangian form.
 /// Can be constructed via the `PcsParams::ck_with_lagrangian()` method.
+#[derive(Clone, CanonicalSerialize, CanonicalDeserialize)]
 pub struct RingBuilderPcsParams<S: RingSuite>(pub Vec<G1Affine<S>>)
 where
     BaseField<S>: ark_ff::PrimeField,
@@ -467,7 +469,7 @@ where
 pub type G1Affine<S> = <<S as RingSuite>::Pairing as Pairing>::G1Affine;
 pub type G2Affine<S> = <<S as RingSuite>::Pairing as Pairing>::G2Affine;
 
-/// Lagrangian form SRS lookup.
+/// Lagrangian form SRS entries lookup.
 pub trait SrsLookup<S: RingSuite>
 where
     BaseField<S>: ark_ff::PrimeField,
