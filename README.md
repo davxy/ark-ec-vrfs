@@ -1,4 +1,4 @@
-# Elliptic Curve VRF-AD
+# Elliptic Curve VRF
 
 This library provides flexible and efficient implementations of Verifiable
 Random Functions with Additional Data (VRF-AD), a cryptographic construct
