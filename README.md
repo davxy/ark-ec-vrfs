@@ -8,7 +8,7 @@ into its signature.
 It leverages the [Arkworks](https://github.com/arkworks-rs) framework and
 supports customization of scheme parameters.
 
-### Supported VRFs
+### Supported Schemes
 
 - **IETF VRF**: Complies with ECVRF described in [RFC9381](https://datatracker.ietf.org/doc/rfc9381).
 - **Pedersen VRF**: Described in [BCHSV23](https://eprint.iacr.org/2023/002).
@@ -16,18 +16,18 @@ supports customization of scheme parameters.
 
 ### Schemes Specifications
 
-- [VRF Schemes Details](https://github.com/davxy/bandersnatch-vrfs-spec)
+- [VRF Schemes Details](https://github.com/davxy/bandersnatch-vrf-spec)
 - [Ring VRF ZK Proof](https://github.com/davxy/ring-proof-spec)
 
 ### Built-In suites
 
 The library conditionally includes the following pre-configured suites (see features section):
 
-- **Ed25519-SHA-512-TAI**: Supports IETF and Pedersen VRFs.
-- **Secp256r1-SHA-256-TAI**: Supports IETF and Pedersen VRFs.
-- **Bandersnatch** (_Edwards curve on BLS12-381_): Supports IETF, Pedersen, and Ring VRFs.
-- **JubJub** (_Edwards curve on BLS12-381_): Supports IETF, Pedersen, and Ring VRFs.
-- **Baby-JubJub** (_Edwards curve on BN254_): Supports IETF, Pedersen, and Ring VRFs.
+- **Ed25519-SHA-512-TAI**: Supports IETF and Pedersen VRF.
+- **Secp256r1-SHA-256-TAI**: Supports IETF and Pedersen VRF.
+- **Bandersnatch** (_Edwards curve on BLS12-381_): Supports IETF, Pedersen, and Ring VRF.
+- **JubJub** (_Edwards curve on BLS12-381_): Supports IETF, Pedersen, and Ring VRF.
+- **Baby-JubJub** (_Edwards curve on BN254_): Supports IETF, Pedersen, and Ring VRF.
 
 ### Basic Usage
 
