@@ -32,7 +32,7 @@ The library conditionally includes the following pre-configured suites (see feat
 ### Basic Usage
 
 ```rust
-use ark_ec_vrfs::suites::bandersnatch::*;
+use ark_vrf::suites::bandersnatch::*;
 let secret = Secret::from_seed(b"example seed");
 let public = secret.public();
 let input = Input::new(b"example input");
@@ -43,13 +43,13 @@ let aux_data = b"optional aux data";
 
 _Prove_
 ```rust
-use ark_ec_vrfs::ietf::Prover;
+use ark_vrf::ietf::Prover;
 let proof = secret.prove(input, output, aux_data);
 ```
 
 _Verify_
 ```rust
-use ark_ec_vrfs::ietf::Verifier;
+use ark_vrf::ietf::Verifier;
 let result = public.verify(input, output, aux_data, &proof);
 ```
 
@@ -74,7 +74,7 @@ let params = RingProofParams::from_seed(RING_SIZE, b"example seed");
 
 _Prove_
 ```rust
-use ark_ec_vrfs::ring::Prover;
+use ark_vrf::ring::Prover;
 let prover_key = params.prover_key(&ring);
 let prover = params.prover(prover_key, prover_key_index);
 let proof = secret.prove(input, output, aux_data, &prover);
@@ -82,7 +82,7 @@ let proof = secret.prove(input, output, aux_data, &prover);
 
 _Verify_
 ```rust
-use ark_ec_vrfs::ring::Verifier;
+use ark_vrf::ring::Verifier;
 let verifier_key = params.verifier_key(&ring);
 let verifier = params.verifier(verifier_key);
 let result = Public::verify(input, output, aux_data, &proof, &verifier);

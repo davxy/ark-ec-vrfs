@@ -32,7 +32,7 @@
 //! ### Basic Usage
 //!
 //! ```rust,ignore
-//! use ark_ec_vrfs::suites::bandersnatch::*;
+//! use ark_vrf::suites::bandersnatch::*;
 //! let secret = Secret::from_seed(b"example seed");
 //! let public = secret.public();
 //! let input = Input::new(b"example input").unwrap();
@@ -43,13 +43,13 @@
 //!
 //! _Prove_
 //! ```rust,ignore
-//! use ark_ec_vrfs::ietf::Prover;
+//! use ark_vrf::ietf::Prover;
 //! let proof = secret.prove(input, output, aux_data);
 //! ```
 //!
 //! _Verify_
 //! ```rust,ignore
-//! use ark_ec_vrfs::ietf::Verifier;
+//! use ark_vrf::ietf::Verifier;
 //! let result = public.verify(input, output, aux_data, &proof);
 //! ```
 //!
@@ -74,7 +74,7 @@
 //!
 //! _Prove_
 //! ```rust,ignore
-//! use ark_ec_vrfs::ring::Prover;
+//! use ark_vrf::ring::Prover;
 //! let prover_key = params.prover_key(&ring);
 //! let prover = params.prover(prover_key, prover_key_index);
 //! let proof = secret.prove(input, output, aux_data, &prover);
@@ -82,7 +82,7 @@
 //!
 //! _Verify_
 //! ```rust,ignore
-//! use ark_ec_vrfs::ring::Verifier;
+//! use ark_vrf::ring::Verifier;
 //! let verifier_key = params.verifier_key(&ring);
 //! let verifier = params.verifier(verifier_key);
 //! let result = Public::verify(input, output, aux_data, &proof, &verifier);
@@ -127,6 +127,7 @@
 
 use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::{One, PrimeField, Zero};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::vec::Vec;
 
 use digest::Digest;
@@ -143,9 +144,6 @@ pub mod ring;
 
 #[cfg(test)]
 mod testing;
-
-// Some essential re-exports
-pub use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 
 /// Re-export stuff that may be useful downstream.
 pub mod reexports {
