@@ -127,7 +127,6 @@
 
 use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::{One, PrimeField, Zero};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::vec::Vec;
 
 use digest::Digest;
@@ -145,7 +144,8 @@ pub mod ring;
 #[cfg(test)]
 mod testing;
 
-use codec::Codec;
+// Some essential re-exports
+pub use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 
 /// Re-export stuff that may be useful downstream.
 pub mod reexports {
@@ -154,6 +154,8 @@ pub mod reexports {
     pub use ark_serialize;
     pub use ark_std;
 }
+
+use codec::Codec;
 
 pub type AffinePoint<S> = <S as Suite>::Affine;
 pub type BaseField<S> = <AffinePoint<S> as AffineRepr>::BaseField;
