@@ -1,12 +1,12 @@
 [package]
-name = "ark-ec-vrfs"
-version = "0.1.2"
+name = "ark-vrf"
+version = "0.1.0"
 edition = "2021"
 authors = [ "Davide Galassi <davxy@datawok.net>" ]
 license = "MIT"
 description = "Elliptic curve VRF with additional data"
-keywords = [ "cryptography", "vrf", "ring-vrf", "zk-snark" ]
-repository = "https://github.com/davxy/ark-ec-vrfs"
+keywords = [ "cryptography", "vrf", "ec-vrf", "ring-vrf", "zk-snark" ]
+repository = "https://github.com/davxy/ark-vrf"
 
 [dependencies]
 ark-ec = { version = "0.5", default-features = false }
